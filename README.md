@@ -53,3 +53,32 @@ CLAUDE.md
 ## Current development rule
 
 Work step by step. Do not implement later milestones before the current milestone works.
+
+
+## toml config setup
+
+This tells Ruff which linting rules to use.
+
+```toml
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = []
+```
+
+```
+E  = pycodestyle errors
+F  = pyflakes errors
+W  = pycodestyle warnings
+I  = import sorting
+UP = pyupgrade suggestions
+B  = bugbear bug-risk rules
+```
+
+This configures Ruff formatter.
+
+```
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+```
+
