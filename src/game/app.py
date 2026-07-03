@@ -3,12 +3,12 @@ from __future__ import annotations
 import pygame
 
 from game.settings import (
-    WINDOW_WIDTH,
-    WINDOW_HEIGHT,
+    BACKGROUND_COLOR,
     FPS,
     GAME_TITLE,
-    BACKGROUND_COLOR,
     TEXT_COLOR,
+    WINDOW_HEIGHT,
+    WINDOW_WIDTH,
 )
 
 
