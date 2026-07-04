@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pygame
+
 from game.entities.exit_hotspot import ExitHotspot
 from game.scenes.base_scene import BaseScene
 
