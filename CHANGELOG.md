@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.1 - 2026-07-05
+
+### Added
+- Added automated tests for input bindings.
+- Added automated tests for consumed scene events and event-driven scene transitions.
+
+### Changed
+- Refactored scene input handling to use reusable event results.
+- Added centralized key-binding helpers for primary action, dialogue advance, and cancel actions.
+- Decoupled global application input handling from AdventureScene.
+- Centralized scene IDs to reduce string duplication and typo risk.
+- Updated scene manager event handling to report whether an event was consumed.
+- Added support for keypad Enter when advancing dialogue.
 ## 0.4.0 - 2026-07-05
 
 ### Added
