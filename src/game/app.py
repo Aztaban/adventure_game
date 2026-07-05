@@ -3,6 +3,7 @@ from __future__ import annotations
 import pygame
 
 from game.entities.exit_hotspot import ExitHotspot
+from game.entities.hotspot import Hotspot
 from game.scene_manager import SceneManager
 from game.scenes.adventure_scene import AdventureScene
 from game.settings import (
@@ -83,6 +84,18 @@ class GameApp:
                     label="To Forest",
                 )
             ],
+            hotspots=[
+                Hotspot(
+                    rect=pygame.Rect(120, 250, 240, 120),
+                    label="Notice Board",
+                    inspect_text=("The notice says: Beware the forest. Also, bake sale Friday."),
+                ),
+                Hotspot(
+                    rect=pygame.Rect(450, 300, 180, 100),
+                    label="Old Well",
+                    inspect_text=("The well whispers something about unpaid rent."),
+                ),
+            ],
         )
 
         forest_path = AdventureScene(
@@ -100,6 +113,18 @@ class GameApp:
                     target_scene_id="village_square",
                     label="To Village",
                 )
+            ],
+            hotspots=[
+                Hotspot(
+                    rect=pygame.Rect(500, 260, 240, 120),
+                    label="Suspicious Stump",
+                    inspect_text=("The stump looks back at you. You decide not to mention it."),
+                ),
+                Hotspot(
+                    rect=pygame.Rect(850, 350, 180, 100),
+                    label="Moon Herb",
+                    inspect_text=("A glowing herb with an unreasonable amount of confidence."),
+                ),
             ],
         )
 
