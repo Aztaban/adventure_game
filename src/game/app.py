@@ -13,6 +13,7 @@ from game.settings import (
     WINDOW_HEIGHT,
     WINDOW_WIDTH,
 )
+from game.systems.inventory import Inventory
 
 
 class GameApp:
@@ -21,17 +22,17 @@ class GameApp:
     def __init__(self) -> None:
         pygame.init()
 
-        self.screen = pygame.display.set_mode(
-            (WINDOW_WIDTH, WINDOW_HEIGHT)
-        )
+        self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption(GAME_TITLE)
 
         self.clock = pygame.time.Clock()
         self.is_running = True
         self.debug_font = pygame.font.Font(None, 26)
 
+        self.inventory = Inventory()
+
         self.scene_manager = SceneManager(
-            scenes=create_demo_scenes(),
+            scenes=create_demo_scenes(self.inventory),
             starting_scene_id=STARTING_SCENE_ID,
         )
 
@@ -65,10 +66,7 @@ class GameApp:
         self.scene_manager.draw(self.screen)
 
         fps = int(self.clock.get_fps())
-        debug_text = (
-            f"Scene: {self.scene_manager.current_scene_id} | "
-            f"FPS: {fps}"
-        )
+        debug_text = f"Scene: {self.scene_manager.current_scene_id} | FPS: {fps}"
         debug_surface = self.debug_font.render(
             debug_text,
             True,

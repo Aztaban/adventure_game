@@ -17,9 +17,7 @@ class SceneManager:
             raise ValueError("Scene manager requires at least one scene.")
 
         if starting_scene_id not in scenes:
-            raise ValueError(
-                f"Starting scene does not exist: {starting_scene_id}"
-            )
+            raise ValueError(f"Starting scene does not exist: {starting_scene_id}")
 
         self._scenes = scenes
         self._current_scene_id = starting_scene_id

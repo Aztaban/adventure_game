@@ -17,18 +17,12 @@ CANCEL_KEY = pygame.K_ESCAPE
 
 def is_primary_action(event: pygame.event.Event) -> bool:
     """Return whether an event is the primary mouse action."""
-    return (
-        event.type == pygame.MOUSEBUTTONDOWN
-        and event.button == PRIMARY_ACTION_BUTTON
-    )
+    return event.type == pygame.MOUSEBUTTONDOWN and event.button == PRIMARY_ACTION_BUTTON
 
 
 def is_dialogue_advance(event: pygame.event.Event) -> bool:
     """Return whether an event should advance active dialogue."""
-    return (
-        event.type == pygame.KEYDOWN
-        and event.key in DIALOGUE_ADVANCE_KEYS
-    )
+    return event.type == pygame.KEYDOWN and event.key in DIALOGUE_ADVANCE_KEYS
 
 
 def is_cancel(event: pygame.event.Event) -> bool:

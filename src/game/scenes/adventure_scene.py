@@ -4,6 +4,7 @@ import pygame
 
 from game.entities.exit_hotspot import ExitHotspot
 from game.entities.hotspot import Hotspot
+from game.entities.item_hotspot import ItemHotspot
 from game.entities.npc import NPC
 from game.input.bindings import (
     is_cancel,
@@ -13,6 +14,7 @@ from game.input.bindings import (
 from game.scene_event_result import SceneEventResult
 from game.scenes.base_scene import BaseScene
 from game.systems.dialogue import Dialogue
+from game.systems.inventory import Inventory
 from game.theme import (
     BORDER_DEFAULT,
     PANEL_BACKGROUND,
@@ -21,6 +23,7 @@ from game.theme import (
     TEXT_SECONDARY,
 )
 from game.ui.dialogue_box import DialogueBox
+from game.ui.inventory_bar import InventoryBar
 
 
 class AdventureScene(BaseScene):
@@ -33,26 +36,33 @@ class AdventureScene(BaseScene):
         background_color: tuple[int, int, int],
         exits: list[ExitHotspot],
         hotspots: list[Hotspot],
+        item_hotspots: list[ItemHotspot],
         npcs: list[NPC],
+        inventory: Inventory,
     ) -> None:
         self.name = name
         self.description = description
         self.background_color = background_color
+
         self.exits = exits
         self.hotspots = hotspots
+        self.item_hotspots = item_hotspots
         self.npcs = npcs
+
+        self.inventory = inventory
 
         self.interaction_text: str | None = None
         self.active_speaker_name = ""
 
         self.dialogue = Dialogue()
         self.dialogue_box = DialogueBox()
+        self.inventory_bar = InventoryBar()
 
         self.title_font = pygame.font.Font(None, 52)
         self.body_font = pygame.font.Font(None, 30)
 
     def handle_event(self, event: pygame.event.Event) -> SceneEventResult:
-        """Handle dialogue, NPC, exit, and hotspot interactions."""
+        """Handle dialogue, NPC, exit, item and hotspot interactions."""
         if self.dialogue.is_active:
             return self._handle_dialogue_event(event)
 
@@ -65,6 +75,7 @@ class AdventureScene(BaseScene):
             self.active_speaker_name = npc.name
             self.dialogue.start(npc.dialogue_lines)
             self.interaction_text = None
+
             return SceneEventResult(consumed=True)
 
         for exit_hotspot in self.exits:
@@ -73,6 +84,12 @@ class AdventureScene(BaseScene):
                     consumed=True,
                     target_scene_id=exit_hotspot.target_scene_id,
                 )
+
+        item_hotspot = self._find_item_hotspot(event.pos)
+
+        if item_hotspot is not None:
+            self._collect_item(item_hotspot)
+            return SceneEventResult(consumed=True)
 
         hotspot = self._find_hotspot(event.pos)
 
@@ -105,7 +122,9 @@ class AdventureScene(BaseScene):
         surface.blit(description_surface, (40, 100))
 
         mouse_position = pygame.mouse.get_pos()
+
         hovered_hotspot = self._find_hotspot(mouse_position)
+        hovered_item = self._find_item_hotspot(mouse_position)
         hovered_npc = self._find_npc(mouse_position)
 
         for hotspot in self.hotspots:
@@ -114,6 +133,9 @@ class AdventureScene(BaseScene):
                 self.body_font,
                 is_hovered=hotspot is hovered_hotspot,
             )
+
+        for item_hotspot in self.item_hotspots:
+            item_hotspot.draw(surface, self.body_font, is_hovered=item_hotspot is hovered_npc)
 
         for npc in self.npcs:
             npc.draw(
@@ -126,11 +148,14 @@ class AdventureScene(BaseScene):
             exit_hotspot.draw(surface, self.body_font)
 
         self._draw_hover_text(
-            surface,
-            hovered_npc,
-            hovered_hotspot,
+            surface=surface,
+            hovered_npc=hovered_npc,
+            hovered_item=hovered_item,
+            hovered_hotspot=hovered_hotspot,
         )
         self._draw_interaction_text(surface)
+
+        self.inventory_bar.draw(surface, self.inventory.items)
 
         current_line = self.dialogue.current_line
 
@@ -140,6 +165,17 @@ class AdventureScene(BaseScene):
                 speaker_name=self.active_speaker_name,
                 text=current_line,
             )
+
+    def _collect_item(self, item_hotspot: ItemHotspot) -> None:
+        """Add a scene item to inventory and remove it from the scene."""
+        was_added = self.inventory.add(item_hotspot.item)
+
+        self.item_hotspots.remove(item_hotspot)
+
+        if was_added:
+            self.interaction_text = item_hotspot.pickup_text
+        else:
+            self.interaction_text = f"You alread have {item_hotspot.item.name}"
 
     def _handle_dialogue_event(
         self,
@@ -160,6 +196,7 @@ class AdventureScene(BaseScene):
         self,
         surface: pygame.Surface,
         hovered_npc: NPC | None,
+        hovered_item: ItemHotspot | None,
         hovered_hotspot: Hotspot | None,
     ) -> None:
         """Draw information for the currently hovered entity."""
@@ -167,6 +204,8 @@ class AdventureScene(BaseScene):
 
         if hovered_npc is not None:
             hover_text = f"Talk to: {hovered_npc.name}"
+        elif hovered_item is not None:
+            hover_text = f"Pick up: {hovered_item.item.name}"
         elif hovered_hotspot is not None:
             hover_text = f"Inspect: {hovered_hotspot.label}"
 
@@ -222,6 +261,14 @@ class AdventureScene(BaseScene):
         for hotspot in self.hotspots:
             if hotspot.contains_point(position):
                 return hotspot
+
+        return None
+
+    def _find_item_hotspot(self, position: tuple[int, int]) -> ItemHotspot | None:
+        """Return the collectible item at a position."""
+        for item_hotspot in self.item_hotspots:
+            if item_hotspot.contains_point(position):
+                return item_hotspot
 
         return None
 
