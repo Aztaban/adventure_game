@@ -4,6 +4,14 @@ from dataclasses import dataclass
 
 import pygame
 
+from game.theme import (
+    BORDER_DEFAULT,
+    HOTSPOT_BACKGROUND,
+    HOTSPOT_BACKGROUND_HOVERED,
+    TEXT_HIGHLIGHT,
+    TEXT_PRIMARY,
+)
+
 
 @dataclass
 class Hotspot:
@@ -24,8 +32,8 @@ class Hotspot:
         is_hovered: bool,
     ) -> None:
         """Draw a visible placeholder for the hotspot."""
-        fill_color = (125, 105, 145) if is_hovered else (90, 75, 110)
-        border_color = (255, 240, 180) if is_hovered else (220, 215, 230)
+        fill_color = HOTSPOT_BACKGROUND_HOVERED if is_hovered else HOTSPOT_BACKGROUND
+        border_color = TEXT_HIGHLIGHT if is_hovered else BORDER_DEFAULT
 
         pygame.draw.rect(surface, fill_color, self.rect)
         pygame.draw.rect(surface, border_color, self.rect, width=2)

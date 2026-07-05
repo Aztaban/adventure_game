@@ -1,0 +1,15 @@
+from typing import TypeAlias
+
+Color: TypeAlias = tuple[int, int, int]
+
+TEXT_PRIMARY: Color = (245, 245, 245)
+TEXT_SECONDARY: Color = (225, 225, 225)
+TEXT_HIGHLIGHT: Color = (255, 240, 180)
+
+PANEL_BACKGROUND: Color = (25, 22, 35)
+BORDER_DEFAULT: Color = (220, 215, 230)
+
+HOTSPOT_BACKGROUND: Color = (90, 75, 110)
+HOTSPOT_BACKGROUND_HOVERED: Color = (125, 105, 145)
+
+EXIT_BACKGROUND: Color = (75, 70, 90)
