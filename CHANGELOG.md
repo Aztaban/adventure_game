@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.5.0 - 2026-07-06
+
+### Added
+
+- Added immutable item definitions.
+- Added collectible item hotspots.
+- Added a shared player inventory system.
+- Added an inventory panel showing collected items.
+- Added the collectible Empty Cup and Moon Herb.
+- Added automated tests for inventory operations.
+- Added automated tests for item hotspot collision detection.
+
+### Changed
+
+- Updated adventure scenes to support collectible items.
+- Updated the game application to own a shared inventory.
+- Changed the Moon Herb from an inspectable hotspot into a collectible item.
+- Removed collected items from their scenes after pickup.
+
 ## 0.4.1 - 2026-07-05
 
 ### Added
