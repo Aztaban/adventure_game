@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.0 - 2026-07-05
+
+### Added
+
+- Added reusable inspectable hotspots.
+- Added hotspot hover detection and visual feedback.
+- Added click interaction text for scene objects.
+- Added placeholder objects to Village Square and Forest Path.
+- Added automated hotspot collision tests.
+
+### Changed
+
+- Updated adventure scenes to support both exits and inspectable objects.
+
 ## 0.2.0 - 2026-07-05
 
 ### Added
