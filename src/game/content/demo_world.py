@@ -1,5 +1,6 @@
 import pygame
 
+from game.content.scene_ids import FOREST_PATH, VILLAGE_SQUARE
 from game.entities.exit_hotspot import ExitHotspot
 from game.entities.hotspot import Hotspot
 from game.entities.npc import NPC
@@ -22,7 +23,7 @@ def create_demo_scenes() -> dict[str, BaseScene]:
                     190,
                     100,
                 ),
-                target_scene_id="forest_path",
+                target_scene_id=FOREST_PATH,
                 label="To Forest",
             )
         ],
@@ -30,12 +31,17 @@ def create_demo_scenes() -> dict[str, BaseScene]:
             Hotspot(
                 rect=pygame.Rect(120, 250, 240, 120),
                 label="Notice Board",
-                inspect_text=("The notice says: Beware the forest. Also, bake sale Friday."),
+                inspect_text=(
+                    "The notice says: Beware the forest. "
+                    "Also, bake sale Friday."
+                ),
             ),
             Hotspot(
                 rect=pygame.Rect(450, 300, 180, 100),
                 label="Old Well",
-                inspect_text=("The well whispers something about unpaid rent."),
+                inspect_text=(
+                    "The well whispers something about unpaid rent."
+                ),
             ),
         ],
         npcs=[
@@ -63,7 +69,7 @@ def create_demo_scenes() -> dict[str, BaseScene]:
                     190,
                     100,
                 ),
-                target_scene_id="village_square",
+                target_scene_id=VILLAGE_SQUARE,
                 label="To Village",
             )
         ],
@@ -71,12 +77,18 @@ def create_demo_scenes() -> dict[str, BaseScene]:
             Hotspot(
                 rect=pygame.Rect(500, 260, 240, 120),
                 label="Suspicious Stump",
-                inspect_text=("The stump looks back at you. You decide not to mention it."),
+                inspect_text=(
+                    "The stump looks back at you. "
+                    "You decide not to mention it."
+                ),
             ),
             Hotspot(
                 rect=pygame.Rect(850, 350, 180, 100),
                 label="Moon Herb",
-                inspect_text=("A glowing herb with an unreasonable amount of confidence."),
+                inspect_text=(
+                    "A glowing herb with an unreasonable amount "
+                    "of confidence."
+                ),
             ),
         ],
         npcs=[
@@ -92,6 +104,6 @@ def create_demo_scenes() -> dict[str, BaseScene]:
     )
 
     return {
-        "village_square": village_square,
-        "forest_path": forest_path,
+        VILLAGE_SQUARE: village_square,
+        FOREST_PATH: forest_path,
     }

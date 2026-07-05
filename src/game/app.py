@@ -3,8 +3,9 @@ from __future__ import annotations
 import pygame
 
 from game.content.demo_world import create_demo_scenes
+from game.content.scene_ids import STARTING_SCENE_ID
+from game.input.bindings import is_cancel
 from game.scene_manager import SceneManager
-from game.scenes.adventure_scene import AdventureScene
 from game.settings import (
     FPS,
     GAME_TITLE,
@@ -15,19 +16,14 @@ from game.settings import (
 
 
 class GameApp:
-    """Main game application.
-
-    - initialize Pygame
-    - open a window
-    - run a stable game loop
-    - handle quit / ESC
-    - draw a simple background and text
-    """
+    """Main game application."""
 
     def __init__(self) -> None:
         pygame.init()
 
-        self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+        self.screen = pygame.display.set_mode(
+            (WINDOW_WIDTH, WINDOW_HEIGHT)
+        )
         pygame.display.set_caption(GAME_TITLE)
 
         self.clock = pygame.time.Clock()
@@ -36,7 +32,7 @@ class GameApp:
 
         self.scene_manager = SceneManager(
             scenes=create_demo_scenes(),
-            starting_scene_id="village_square",
+            starting_scene_id=STARTING_SCENE_ID,
         )
 
     def run(self) -> None:
@@ -52,31 +48,32 @@ class GameApp:
             pygame.quit()
 
     def _handle_events(self) -> None:
-        """Handle window events and forward input to the active scene."""
+        """Handle window events, scene input, and global cancellation."""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.is_running = False
                 continue
 
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                current_scene = self.scene_manager.current_scene
-
-                if isinstance(current_scene, AdventureScene) and current_scene.dialogue.is_active:
-                    self.scene_manager.handle_event(event)
-                else:
-                    self.is_running = False
-
+            if self.scene_manager.handle_event(event):
                 continue
 
-            self.scene_manager.handle_event(event)
+            if is_cancel(event):
+                self.is_running = False
 
     def _draw(self) -> None:
         """Draw the active scene and debug information."""
         self.scene_manager.draw(self.screen)
 
         fps = int(self.clock.get_fps())
-        debug_text = f"Scene: {self.scene_manager.current_scene_id} | FPS: {fps}"
-        debug_surface = self.debug_font.render(debug_text, True, TEXT_COLOR)
+        debug_text = (
+            f"Scene: {self.scene_manager.current_scene_id} | "
+            f"FPS: {fps}"
+        )
+        debug_surface = self.debug_font.render(
+            debug_text,
+            True,
+            TEXT_COLOR,
+        )
 
         self.screen.blit(debug_surface, (20, WINDOW_HEIGHT - 35))
 
