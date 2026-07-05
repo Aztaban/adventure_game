@@ -18,6 +18,9 @@ test:
 lint:
 	$(PYTHON) -m ruff check src tests
 
+fix:
+	$(PYTHON) -m ruff check src tests --fix
+
 format:
 	$(PYTHON) -m ruff format src tests
 

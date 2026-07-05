@@ -9,7 +9,6 @@ from game.theme import (
     HOTSPOT_BACKGROUND,
     HOTSPOT_BACKGROUND_HOVERED,
     TEXT_HIGHLIGHT,
-    TEXT_PRIMARY,
 )
 
 

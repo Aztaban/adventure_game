@@ -3,8 +3,6 @@ from __future__ import annotations
 import pygame
 
 from game.content.demo_world import create_demo_scenes
-from game.entities.exit_hotspot import ExitHotspot
-from game.entities.hotspot import Hotspot
 from game.scene_manager import SceneManager
 from game.scenes.adventure_scene import AdventureScene
 from game.settings import (
@@ -54,14 +52,23 @@ class GameApp:
             pygame.quit()
 
     def _handle_events(self) -> None:
-        """Handle global events and forward others to the scene."""
+        """Handle window events and forward input to the active scene."""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.is_running = False
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.is_running = False
-            else:
-                self.scene_manager.handle_event(event)
+                continue
+
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                current_scene = self.scene_manager.current_scene
+
+                if isinstance(current_scene, AdventureScene) and current_scene.dialogue.is_active:
+                    self.scene_manager.handle_event(event)
+                else:
+                    self.is_running = False
+
+                continue
+
+            self.scene_manager.handle_event(event)
 
     def _draw(self) -> None:
         """Draw the active scene and debug information."""
