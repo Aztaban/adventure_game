@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.0 - 2026-07-05
+
+### Added
+
+- Added reusable NPC entities.
+- Added dialogue state and progression system.
+- Added a reusable dialogue box UI with wrapped text.
+- Added mouse, Space, and Enter controls for advancing dialogue.
+- Added Escape handling for closing active dialogue.
+- Added the Retired Witch and Mushroom Guard placeholder NPCs.
+- Added automated tests for dialogue progression and validation.
+
+### Changed
+
+- Updated adventure scenes to support NPC interactions.
+- Prevented scene interactions while dialogue is active.
+
 ## 0.3.0 - 2026-07-05
 
 ### Added
