@@ -10,6 +10,7 @@ from game.scenes.adventure_scene import AdventureScene
 from game.scenes.base_scene import BaseScene
 from game.settings import WINDOW_HEIGHT, WINDOW_WIDTH
 from game.systems.inventory import Inventory
+from game.systems.item_use import ItemUseInteraction
 
 
 def create_demo_scenes(
@@ -54,6 +55,14 @@ def create_demo_scenes(
                 rect=pygame.Rect(450, 300, 180, 100),
                 label="Old Well",
                 inspect_text=("The well whispers something about unpaid rent."),
+                item_use=ItemUseInteraction(
+                    required_item_id="empty_cup",
+                    success_text=("You lower the Empty Cup into the well. The well reluctantly provides water."),
+                    failure_text=("The well refuses that item with unnecessary confidence."),
+                    completed_text=("The well has already contributed enough for one day."),
+                    consume_item=False,
+                ),
+                completed_inspect_text=("The well is now pretending it cannot hear you."),
             ),
         ],
         item_hotspots=[
@@ -72,7 +81,19 @@ def create_demo_scenes(
                     "The floating broom is merely a gardening tool.",
                     "Please stop looking at the glowing vegetables.",
                 ),
-            )
+                item_use=ItemUseInteraction(
+                    required_item_id="moon_herb",
+                    success_text=("The witch accepts the Moon Herb. Her retirement appears temporarily suspended."),
+                    failure_text=("The witch examines the item and hands it back."),
+                    completed_text=("The witch already has the Moon Herb."),
+                    consume_item=True,
+                ),
+                completed_dialogue_lines=(
+                    "Fine. The Moon Herb is exactly what I needed.",
+                    "This does not mean I have returned to professional witchcraft.",
+                    "It is merely an aggressively magical hobby.",
+                ),
+            ),
         ],
         inventory=inventory,
     )

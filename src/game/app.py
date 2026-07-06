@@ -55,7 +55,9 @@ class GameApp:
                 self.is_running = False
                 continue
 
-            if self.scene_manager.handle_event(event):
+            event_consumed = self.scene_manager.handle_event(event)
+
+            if event_consumed:
                 continue
 
             if is_cancel(event):

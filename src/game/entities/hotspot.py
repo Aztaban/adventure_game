@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import pygame
 
+from game.systems.item_use import ItemUseInteraction
 from game.theme import (
     BORDER_DEFAULT,
     HOTSPOT_BACKGROUND,
@@ -14,11 +15,21 @@ from game.theme import (
 
 @dataclass
 class Hotspot:
-    """Clickable scene object that can be inspected."""
+    """Clickable scene object that can be inspected or used."""
 
     rect: pygame.Rect
     label: str
     inspect_text: str
+    item_use: ItemUseInteraction | None = None
+    completed_inspect_text: str | None = None
+
+    @property
+    def current_inspect_text(self) -> str:
+        """Return inspection text matching the current interaction state."""
+        if self.item_use is not None and self.item_use.is_completed and self.completed_inspect_text is not None:
+            return self.completed_inspect_text
+
+        return self.inspect_text
 
     def contains_point(self, position: tuple[int, int]) -> bool:
         """Return True when a point is inside the hotspot."""

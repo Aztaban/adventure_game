@@ -13,8 +13,10 @@ from game.input.bindings import (
 )
 from game.scene_event_result import SceneEventResult
 from game.scenes.base_scene import BaseScene
+from game.settings import WINDOW_WIDTH
 from game.systems.dialogue import Dialogue
 from game.systems.inventory import Inventory
+from game.systems.item_use import ItemUseInteraction
 from game.theme import (
     BORDER_DEFAULT,
     PANEL_BACKGROUND,
@@ -27,7 +29,7 @@ from game.ui.inventory_bar import InventoryBar
 
 
 class AdventureScene(BaseScene):
-    """Adventure scene with exits, hotspots, NPCs, and dialogue."""
+    """Adventure scene with exits, hotspots, NPCs, items and dialogue."""
 
     def __init__(
         self,
@@ -56,24 +58,48 @@ class AdventureScene(BaseScene):
 
         self.dialogue = Dialogue()
         self.dialogue_box = DialogueBox()
-        self.inventory_bar = InventoryBar()
+        self.inventory_bar = InventoryBar(WINDOW_WIDTH)
 
         self.title_font = pygame.font.Font(None, 52)
         self.body_font = pygame.font.Font(None, 30)
 
     def handle_event(self, event: pygame.event.Event) -> SceneEventResult:
-        """Handle dialogue, NPC, exit, item and hotspot interactions."""
+        """Handle scene interactions."""
         if self.dialogue.is_active:
             return self._handle_dialogue_event(event)
+
+        if is_cancel(event):
+            if self.inventory.selected_item is not None:
+                self.inventory.clear_selection()
+                self.interaction_text = "Item selection cleared."
+
+                return SceneEventResult(consumed=True)
+            return SceneEventResult()
 
         if not is_primary_action(event):
             return SceneEventResult()
 
+        inventory_item = self.inventory_bar.item_at_position(event.pos, self.inventory.items)
+
+        if inventory_item is not None:
+            is_selected = self.inventory.toggle_selection(inventory_item.item_id)
+
+            if is_selected:
+                self.interaction_text = f"Selected {inventory_item.name}."
+            else:
+                self.interaction_text = f"Deselected {inventory_item.name}."
+
+            return SceneEventResult(consumed=True)
+
         npc = self._find_npc(event.pos)
 
         if npc is not None:
+            if self.inventory.selected_item is not None:
+                self._attempt_item_use(npc.item_use)
+                return SceneEventResult(consumed=True)
+
             self.active_speaker_name = npc.name
-            self.dialogue.start(npc.dialogue_lines)
+            self.dialogue.start(npc.current_dialogue_lines)
             self.interaction_text = None
 
             return SceneEventResult(consumed=True)
@@ -94,7 +120,11 @@ class AdventureScene(BaseScene):
         hotspot = self._find_hotspot(event.pos)
 
         if hotspot is not None:
-            self.interaction_text = hotspot.inspect_text
+            if self.inventory.selected_item is not None:
+                self._attempt_item_use(hotspot.item_use)
+            else:
+                self.interaction_text = hotspot.current_inspect_text
+
             return SceneEventResult(consumed=True)
 
         return SceneEventResult()
@@ -135,7 +165,7 @@ class AdventureScene(BaseScene):
             )
 
         for item_hotspot in self.item_hotspots:
-            item_hotspot.draw(surface, self.body_font, is_hovered=item_hotspot is hovered_npc)
+            item_hotspot.draw(surface, self.body_font, is_hovered=item_hotspot is hovered_item)
 
         for npc in self.npcs:
             npc.draw(
@@ -155,7 +185,11 @@ class AdventureScene(BaseScene):
         )
         self._draw_interaction_text(surface)
 
-        self.inventory_bar.draw(surface, self.inventory.items)
+        self.inventory_bar.draw(
+            surface=surface,
+            items=self.inventory.items,
+            selected_item=self.inventory.selected_item,
+        )
 
         current_line = self.dialogue.current_line
 
@@ -165,6 +199,28 @@ class AdventureScene(BaseScene):
                 speaker_name=self.active_speaker_name,
                 text=current_line,
             )
+
+    def _attempt_item_use(self, interaction: ItemUseInteraction | None) -> None:
+        """Use the selected inventory item on an interaction target."""
+        selected_item = self.inventory.selected_item
+
+        if selected_item is None:
+            return
+
+        if interaction is None:
+            self.interaction_text = f"{selected_item.name} does not seem usefull here."
+            return
+
+        result = interaction.attempt(selected_item.item_id)
+        self.interaction_text = result.message
+
+        if not result.success:
+            return
+
+        if result.consume_item:
+            self.inventory.remove(selected_item.item_id)
+        else:
+            self.inventory.clear_selection()
 
     def _collect_item(self, item_hotspot: ItemHotspot) -> None:
         """Add a scene item to inventory and remove it from the scene."""
@@ -201,13 +257,20 @@ class AdventureScene(BaseScene):
     ) -> None:
         """Draw information for the currently hovered entity."""
         hover_text: str | None = None
+        selected_item = self.inventory.selected_item
 
         if hovered_npc is not None:
-            hover_text = f"Talk to: {hovered_npc.name}"
+            if selected_item is not None:
+                hover_text = f"Use {selected_item.name} on {hovered_npc.name}"
+            else:
+                hover_text = f"Talk to: {hovered_npc.name}"
         elif hovered_item is not None:
             hover_text = f"Pick up: {hovered_item.item.name}"
         elif hovered_hotspot is not None:
-            hover_text = f"Inspect: {hovered_hotspot.label}"
+            if selected_item is not None:
+                hover_text = f"Use {selected_item.name} on {hovered_hotspot.label}"
+            else:
+                hover_text = f"Inspect: {hovered_hotspot.label}"
 
         if hover_text is None:
             return
@@ -220,7 +283,7 @@ class AdventureScene(BaseScene):
         surface.blit(hover_surface, (40, 150))
 
     def _draw_interaction_text(self, surface: pygame.Surface) -> None:
-        """Draw the most recent hotspot inspection result."""
+        """Draw the most recent interaction result."""
         if self.interaction_text is None or self.dialogue.is_active:
             return
 

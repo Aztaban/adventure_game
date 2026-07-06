@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import pygame
 
+from game.systems.item_use import ItemUseInteraction
 from game.theme import (
     NPC_BACKGROUND,
     NPC_BACKGROUND_HOVERED,
@@ -19,6 +20,16 @@ class NPC:
     rect: pygame.Rect
     name: str
     dialogue_lines: tuple[str, ...]
+    item_use: ItemUseInteraction | None = None
+    completed_dialogue_lines: tuple[str, ...] = ()
+
+    @property
+    def current_dialogue_lines(self) -> tuple[str, ...]:
+        """Return dialogue matching the NPC's current state."""
+        if self.item_use is not None and self.item_use.is_completed and self.completed_dialogue_lines:
+            return self.completed_dialogue_lines
+
+        return self.dialogue_lines
 
     def contains_point(self, position: tuple[int, int]) -> bool:
         """Return whether a position is inside the NPC area."""

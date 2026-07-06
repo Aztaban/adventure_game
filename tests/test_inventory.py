@@ -15,6 +15,7 @@ def test_inventory_starts_empty() -> None:
 
     assert len(inventory) == 0
     assert inventory.items == ()
+    assert inventory.selected_item is None
 
 
 def test_inventory_adds_item() -> None:
@@ -24,7 +25,6 @@ def test_inventory_adds_item() -> None:
     was_added = inventory.add(item)
 
     assert was_added
-    assert len(inventory) == 1
     assert inventory.contains("test_item")
     assert inventory.items == (item,)
 
@@ -41,16 +41,50 @@ def test_inventory_rejects_duplicate_item() -> None:
     assert len(inventory) == 1
 
 
-def test_inventory_removes_item() -> None:
+def test_inventory_selects_item() -> None:
     inventory = Inventory()
     item = create_test_item()
     inventory.add(item)
 
-    removed_item = inventory.remove("test_item")
+    was_selected = inventory.select("test_item")
+
+    assert was_selected
+    assert inventory.selected_item is item
+
+
+def test_inventory_rejects_unknown_selection() -> None:
+    inventory = Inventory()
+
+    was_selected = inventory.select("missing")
+
+    assert not was_selected
+    assert inventory.selected_item is None
+
+
+def test_inventory_toggles_selection() -> None:
+    inventory = Inventory()
+    item = create_test_item()
+    inventory.add(item)
+
+    first_result = inventory.toggle_selection("test_item")
+    second_result = inventory.toggle_selection("test_item")
+
+    assert first_result
+    assert not second_result
+    assert inventory.selected_item is None
+
+
+def test_removing_selected_item_clears_selection() -> None:
+    inventory = Inventory()
+    item = create_test_item()
+    inventory.add(item)
+    inventory.select(item.item_id)
+
+    removed_item = inventory.remove(item.item_id)
 
     assert removed_item is item
-    assert not inventory.contains("test_item")
-    assert len(inventory) == 0
+    assert inventory.selected_item is None
+    assert not inventory.contains(item.item_id)
 
 
 def test_inventory_returns_none_for_missing_item() -> None:
