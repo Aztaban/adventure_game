@@ -3,7 +3,23 @@
 ## 0.6.1 - 2026-07-06
 
 ### Added
-- TODO: describe changes.
+
+- Added shared `GameState` for inventory and progression flags.
+- Added centralized item ID constants and item factory functions.
+- Added separate content modules for Village Square and Forest Path.
+- Added a reusable wrapped interaction message box.
+- Added behavioral tests for scene cancellation and item interactions.
+- Added tests for shared game-state flags.
+
+### Changed
+
+- Refactored scene creation into individual scene modules.
+- Refactored `AdventureScene` event handling into focused helper methods.
+- Updated scenes to receive shared game state instead of inventory directly.
+- Moved shared visual values into the theme module.
+- Limited the settings module to application-level configuration.
+- Updated exit hotspot rendering to use shared theme values.
+- Replaced the debug text setting with the shared secondary text color.
 
 ## 0.6.0 - 2026-07-06
 
