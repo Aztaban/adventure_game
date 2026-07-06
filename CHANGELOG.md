@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1 - 2026-07-06
+
+### Added
+- TODO: describe changes.
+
 ## 0.6.0 - 2026-07-06
 
 ### Added
