@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.6.0 - 2026-07-06
+
+### Added
+
+- Added inventory item selection and deselection.
+- Added highlighted selected-item state in the inventory UI.
+- Added reusable required-item interaction rules.
+- Added support for using inventory items on hotspots and NPCs.
+- Added success, failure, and completed interaction messages.
+- Added optional item consumption after successful interactions.
+- Added state-dependent hotspot inspection text.
+- Added state-dependent NPC dialogue.
+- Added automated tests for inventory selection.
+- Added automated tests for required-item interactions.
+
+### Changed
+
+- Updated the Old Well to react to the Empty Cup.
+- Updated the Retired Witch to require the Moon Herb.
+- Updated Escape handling to clear selected inventory items before quitting.
+
 ## 0.5.0 - 2026-07-06
 
 ### Added
