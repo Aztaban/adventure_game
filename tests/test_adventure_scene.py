@@ -5,10 +5,8 @@ from game.entities.item import Item
 from game.entities.npc import NPC
 from game.game_state import GameState
 from game.scenes.adventure_scene import AdventureScene
-from game.settings import WINDOW_WIDTH
 from game.systems.item_use import ItemUseInteraction
 from game.systems.recipe import Recipe, RecipeBook
-from game.ui.inventory_bar import InventoryBar
 
 pygame.font.init()
 
@@ -43,6 +41,16 @@ def create_item(
     )
 
 
+def get_inventory_row_position(
+    scene: AdventureScene,
+    row_index: int,
+) -> tuple[int, int]:
+    """Return the center position of an inventory item row."""
+    rows = scene.inventory_bar.item_rows(scene.game_state.inventory.items)
+
+    return rows[row_index][1].center
+
+
 def test_escape_clears_selected_inventory_item() -> None:
     game_state = GameState()
     item = create_item("selected_item")
@@ -66,6 +74,7 @@ def test_escape_clears_selected_inventory_item() -> None:
 def test_escape_is_not_consumed_when_nothing_is_active() -> None:
     game_state = GameState()
     scene = create_test_scene(game_state)
+
     event = pygame.event.Event(
         pygame.KEYDOWN,
         key=pygame.K_ESCAPE,
@@ -81,7 +90,10 @@ def test_escape_closes_active_dialogue() -> None:
     npc = NPC(
         rect=pygame.Rect(100, 100, 120, 120),
         name="Test NPC",
-        dialogue_lines=("First line.", "Second line."),
+        dialogue_lines=(
+            "First line.",
+            "Second line.",
+        ),
     )
     scene = create_test_scene(
         game_state,
@@ -108,6 +120,7 @@ def test_escape_closes_active_dialogue() -> None:
 def test_wrong_item_does_not_complete_hotspot_interaction() -> None:
     game_state = GameState()
     wrong_item = create_item("wrong_item")
+
     interaction = ItemUseInteraction(
         required_item_id="correct_item",
         success_text="Success.",
@@ -145,6 +158,7 @@ def test_wrong_item_does_not_complete_hotspot_interaction() -> None:
 def test_correct_item_completes_hotspot_interaction() -> None:
     game_state = GameState()
     correct_item = create_item("correct_item")
+
     interaction = ItemUseInteraction(
         required_item_id="correct_item",
         success_text="Success.",
@@ -182,6 +196,7 @@ def test_correct_item_completes_hotspot_interaction() -> None:
 def test_consumed_item_is_removed_after_success() -> None:
     game_state = GameState()
     correct_item = create_item("correct_item")
+
     interaction = ItemUseInteraction(
         required_item_id="correct_item",
         success_text="Success.",
@@ -216,20 +231,19 @@ def test_consumed_item_is_removed_after_success() -> None:
     assert game_state.inventory.selected_item is None
 
 
-def get_second_inventory_row_position() -> tuple[int, int]:
-    """Return a position inside the second inventory row."""
-    panel_left = WINDOW_WIDTH - InventoryBar.PANEL_WIDTH - InventoryBar.PANEL_MARGIN
-
-    return (
-        panel_left + InventoryBar.INNER_PADDING + 5,
-        InventoryBar.PANEL_MARGIN + InventoryBar.ITEM_START_OFFSET + InventoryBar.ROW_HEIGHT + 5,
-    )
-
-
 def test_inventory_items_combine_into_recipe_result() -> None:
-    first_item = create_item("first", "First Item")
-    second_item = create_item("second", "Second Item")
-    result_item = create_item("result", "Result Item")
+    first_item = create_item(
+        "first",
+        "First Item",
+    )
+    second_item = create_item(
+        "second",
+        "Second Item",
+    )
+    result_item = create_item(
+        "result",
+        "Result Item",
+    )
 
     recipe_book = RecipeBook(
         [
@@ -241,7 +255,9 @@ def test_inventory_items_combine_into_recipe_result() -> None:
             )
         ]
     )
-    game_state = GameState(recipe_book=recipe_book)
+    game_state = GameState(
+        recipe_book=recipe_book,
+    )
 
     game_state.inventory.add(first_item)
     game_state.inventory.add(second_item)
@@ -252,7 +268,7 @@ def test_inventory_items_combine_into_recipe_result() -> None:
     event = pygame.event.Event(
         pygame.MOUSEBUTTONDOWN,
         button=1,
-        pos=get_second_inventory_row_position(),
+        pos=get_inventory_row_position(scene, 1),
     )
 
     result = scene.handle_event(event)
@@ -266,8 +282,15 @@ def test_inventory_items_combine_into_recipe_result() -> None:
 
 
 def test_invalid_combination_keeps_both_items() -> None:
-    first_item = create_item("first", "First Item")
-    second_item = create_item("second", "Second Item")
+    first_item = create_item(
+        "first",
+        "First Item",
+    )
+    second_item = create_item(
+        "second",
+        "Second Item",
+    )
+
     game_state = GameState()
 
     game_state.inventory.add(first_item)
@@ -279,7 +302,7 @@ def test_invalid_combination_keeps_both_items() -> None:
     event = pygame.event.Event(
         pygame.MOUSEBUTTONDOWN,
         button=1,
-        pos=get_second_inventory_row_position(),
+        pos=get_inventory_row_position(scene, 1),
     )
 
     result = scene.handle_event(event)
