@@ -49,6 +49,7 @@ class InventoryBar:
         )
 
         selected_name = selected_item.name if selected_item is not None else "None"
+
         status_surface = self.status_font.render(f"Selected: {selected_name}", True, TEXT_SECONDARY)
         surface.blit(
             status_surface,
@@ -57,6 +58,10 @@ class InventoryBar:
                 panel_rect.y + 48,
             ),
         )
+
+        instruction = "Click another item to combine" if selected_item is not None else "Click an item to select"
+        instruction_surface = self.status_font.render(instruction, True, TEXT_SECONDARY)
+        surface.blit(instruction_surface, (panel_rect.x + self.INNER_PADDING, panel_rect.y + 70))
 
         item_x = panel_rect.x + self.INNER_PADDING
         item_y = panel_rect.y + self.ITEM_START_OFFSET

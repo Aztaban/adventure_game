@@ -145,7 +145,7 @@ class AdventureScene(BaseScene):
         inventory_item = self.inventory_bar.item_at_position(position, inventory.items)
 
         if inventory_item is not None:
-            return self._toggle_inventory_item(inventory_item)
+            return self._handle_inventory_item_click(inventory_item)
 
         npc = self._find_npc(position)
 
@@ -173,25 +173,51 @@ class AdventureScene(BaseScene):
 
         return SceneEventResult()
 
-    def _toggle_inventory_item(
-        self,
-        item: Item,
-    ) -> SceneEventResult:
-        """Toggle selection of a clicked inventory item."""
+    def _handle_inventory_item_click(self, clicked_item: Item) -> SceneEventResult:
+        """Select, deselect or combine inventory items."""
         inventory = self.game_state.inventory
-        is_selected = inventory.toggle_selection(item.item_id)
+        selected_item = inventory.selected_item
 
-        if is_selected:
-            self.interaction_text = f"Selected {item.name}."
-        else:
-            self.interaction_text = f"Deselected {item.name}."
+        if selected_item is None:
+            inventory.select(clicked_item.item_id)
+            self.interaction_text = f"Selected {clicked_item.name}. Click another item to combine them."
+
+            return SceneEventResult(consumed=True)
+
+        if selected_item.item_id == clicked_item.item_id:
+            inventory.clear_selection()
+            self.interaction_text = f"Deselected {clicked_item.name}"
+
+            return SceneEventResult(consumed=True)
+
+        self._combine_inventory_items(
+            first_item=selected_item,
+            second_item=clicked_item,
+        )
 
         return SceneEventResult(consumed=True)
 
-    def _interact_with_npc(
-        self,
-        npc: NPC,
-    ) -> SceneEventResult:
+    def _combine_inventory_items(self, first_item: Item, second_item: Item) -> None:
+        """Attempt to combine two inventory items."""
+        inventory = self.game_state.inventory
+        recipe = self.game_state.recipe_book.find(first_item.item_id, second_item.item_id)
+
+        if recipe is None:
+            self.interaction_text = f"{first_item.name} and {second_item.name} do not combine."
+            return
+
+        if inventory.contains(recipe.result_item.item_id):
+            inventory.clear_selection()
+            self.interaction_text = f"You already have {recipe.result_item.name}."
+            return
+
+        inventory.remove(first_item.item_id)
+        inventory.remove(second_item.item_id)
+        inventory.add(recipe.result_item)
+
+        self.interaction_text = recipe.success_text
+
+    def _interact_with_npc(self, npc: NPC) -> SceneEventResult:
         """Talk to an NPC or use the selected item on them."""
         inventory = self.game_state.inventory
 
@@ -205,10 +231,7 @@ class AdventureScene(BaseScene):
 
         return SceneEventResult(consumed=True)
 
-    def _interact_with_hotspot(
-        self,
-        hotspot: Hotspot,
-    ) -> SceneEventResult:
+    def _interact_with_hotspot(self, hotspot: Hotspot) -> SceneEventResult:
         """Inspect a hotspot or use the selected item on it."""
         inventory = self.game_state.inventory
 
@@ -350,11 +373,7 @@ class AdventureScene(BaseScene):
         if hover_text is None:
             return
 
-        hover_surface = self.body_font.render(
-            hover_text,
-            True,
-            TEXT_HIGHLIGHT,
-        )
+        hover_surface = self.body_font.render(hover_text, True, TEXT_HIGHLIGHT)
         surface.blit(hover_surface, (40, 150))
 
     def _find_hotspot(self, position: tuple[int, int]) -> Hotspot | None:
@@ -373,10 +392,7 @@ class AdventureScene(BaseScene):
 
         return None
 
-    def _find_npc(
-        self,
-        position: tuple[int, int],
-    ) -> NPC | None:
+    def _find_npc(self, position: tuple[int, int]) -> NPC | None:
         """Return the NPC at a position."""
         for npc in self.npcs:
             if npc.contains_point(position):

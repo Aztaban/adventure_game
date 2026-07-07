@@ -5,7 +5,10 @@ from game.entities.item import Item
 from game.entities.npc import NPC
 from game.game_state import GameState
 from game.scenes.adventure_scene import AdventureScene
+from game.settings import WINDOW_WIDTH
 from game.systems.item_use import ItemUseInteraction
+from game.systems.recipe import Recipe, RecipeBook
+from game.ui.inventory_bar import InventoryBar
 
 pygame.font.init()
 
@@ -211,3 +214,78 @@ def test_consumed_item_is_removed_after_success() -> None:
     assert interaction.is_completed
     assert not game_state.inventory.contains(correct_item.item_id)
     assert game_state.inventory.selected_item is None
+
+
+def get_second_inventory_row_position() -> tuple[int, int]:
+    """Return a position inside the second inventory row."""
+    panel_left = WINDOW_WIDTH - InventoryBar.PANEL_WIDTH - InventoryBar.PANEL_MARGIN
+
+    return (
+        panel_left + InventoryBar.INNER_PADDING + 5,
+        InventoryBar.PANEL_MARGIN + InventoryBar.ITEM_START_OFFSET + InventoryBar.ROW_HEIGHT + 5,
+    )
+
+
+def test_inventory_items_combine_into_recipe_result() -> None:
+    first_item = create_item("first", "First Item")
+    second_item = create_item("second", "Second Item")
+    result_item = create_item("result", "Result Item")
+
+    recipe_book = RecipeBook(
+        [
+            Recipe(
+                first_item_id=first_item.item_id,
+                second_item_id=second_item.item_id,
+                result_item=result_item,
+                success_text="Combination succeeded.",
+            )
+        ]
+    )
+    game_state = GameState(recipe_book=recipe_book)
+
+    game_state.inventory.add(first_item)
+    game_state.inventory.add(second_item)
+    game_state.inventory.select(first_item.item_id)
+
+    scene = create_test_scene(game_state)
+
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        button=1,
+        pos=get_second_inventory_row_position(),
+    )
+
+    result = scene.handle_event(event)
+
+    assert result.consumed
+    assert not game_state.inventory.contains(first_item.item_id)
+    assert not game_state.inventory.contains(second_item.item_id)
+    assert game_state.inventory.contains(result_item.item_id)
+    assert game_state.inventory.selected_item is None
+    assert scene.interaction_text == "Combination succeeded."
+
+
+def test_invalid_combination_keeps_both_items() -> None:
+    first_item = create_item("first", "First Item")
+    second_item = create_item("second", "Second Item")
+    game_state = GameState()
+
+    game_state.inventory.add(first_item)
+    game_state.inventory.add(second_item)
+    game_state.inventory.select(first_item.item_id)
+
+    scene = create_test_scene(game_state)
+
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        button=1,
+        pos=get_second_inventory_row_position(),
+    )
+
+    result = scene.handle_event(event)
+
+    assert result.consumed
+    assert game_state.inventory.contains(first_item.item_id)
+    assert game_state.inventory.contains(second_item.item_id)
+    assert game_state.inventory.selected_item is first_item
+    assert scene.interaction_text == ("First Item and Second Item do not combine.")

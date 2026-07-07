@@ -192,6 +192,15 @@ Before quest item, obstacle blocks.
 After correct quest, obstacle unlocks.
 ```
 
+## Milestone v0.8 - refactor
+
+- Interaction system
+- Quest and world state
+- JSON content
+- AdventureScene size
+- Tests
+
+
 ## Milestone v0.9 — First complete demo
 
 Goal:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import pygame
 
 from game.content.demo_world import create_demo_scenes
+from game.content.recipes import create_demo_recipe_book
 from game.content.scene_ids import STARTING_SCENE_ID
 from game.game_state import GameState
 from game.input.bindings import is_cancel
@@ -29,7 +30,7 @@ class GameApp:
         self.is_running = True
         self.debug_font = pygame.font.Font(None, 26)
 
-        self.game_state = GameState()
+        self.game_state = GameState(recipe_book=create_demo_recipe_book())
 
         self.scene_manager = SceneManager(
             scenes=create_demo_scenes(self.game_state),
