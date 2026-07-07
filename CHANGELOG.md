@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.8.0 - 2026-07-07
+
+### Added
+
+- Added centralized quest and progression flag identifiers.
+- Added progression flags to successful item-use interactions.
+- Added flag-dependent NPC dialogue.
+- Added flag-dependent hotspot inspection text.
+- Added locked exits with required progression flags.
+- Added optional completion flags for successful exits.
+- Added the locked Ancient Tower entrance.
+- Added the Ancient Tower interior scene.
+- Added the demo completion progression flag.
+- Added automated tests for locked exits and flag-reactive content.
+
+### Changed
+
+- Updated the Retired Witch to require Glowing Tea.
+- Updated the witch interaction to unlock the Ancient Tower.
+- Updated Village Square and Forest Path content to react to quest progress.
+- Updated exit rendering to visually distinguish locked exits.
+
 ## 0.7.0 - 2026-07-07
 
 ### Added
