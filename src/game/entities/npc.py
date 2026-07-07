@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import pygame
@@ -15,17 +16,21 @@ from game.theme import (
 
 @dataclass
 class NPC:
-    """Clickable non-player character with dialogue."""
+    """Clickable NPC with dialogue and item interactions."""
 
     rect: pygame.Rect
     name: str
     dialogue_lines: tuple[str, ...]
     item_use: ItemUseInteraction | None = None
     completed_dialogue_lines: tuple[str, ...] = ()
+    dialogue_flag: str | None = None
+    flagged_dialogue_lines: tuple[str, ...] = ()
 
-    @property
-    def current_dialogue_lines(self) -> tuple[str, ...]:
-        """Return dialogue matching the NPC's current state."""
+    def dialogue_for(self, has_flag: Callable[[str], bool]) -> tuple[str, ...]:
+        """Return dialogue matching current progression flags."""
+        if self.dialogue_flag is not None and self.flagged_dialogue_lines and has_flag(self.dialogue_flag):
+            return self.flagged_dialogue_lines
+
         if self.item_use is not None and self.item_use.is_completed and self.completed_dialogue_lines:
             return self.completed_dialogue_lines
 

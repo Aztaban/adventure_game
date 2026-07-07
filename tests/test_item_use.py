@@ -51,3 +51,24 @@ def test_completed_interaction_cannot_run_again() -> None:
 
     assert not result.success
     assert result.message == "This is already complete."
+
+
+def test_successful_item_use_returns_progression_flags() -> None:
+    interaction = ItemUseInteraction(
+        required_item_id="correct_item",
+        success_text="That worked.",
+        failure_text="That did not work.",
+        completed_text="Already complete.",
+        flags_to_set=(
+            "first_flag",
+            "second_flag",
+        ),
+    )
+
+    result = interaction.attempt("correct_item")
+
+    assert result.success
+    assert result.flags_to_set == (
+        "first_flag",
+        "second_flag",
+    )

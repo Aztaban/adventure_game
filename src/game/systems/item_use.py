@@ -10,6 +10,7 @@ class ItemUseResult:
     success: bool
     message: str
     consume_item: bool = False
+    flags_to_set: tuple[str, ...] = ()
 
 
 @dataclass
@@ -21,6 +22,7 @@ class ItemUseInteraction:
     failure_text: str
     completed_text: str
     consume_item: bool = False
+    flags_to_set: tuple[str, ...] = ()
 
     is_completed: bool = field(default=False, init=False)
 
@@ -40,4 +42,9 @@ class ItemUseInteraction:
 
         self.is_completed = True
 
-        return ItemUseResult(success=True, message=self.success_text, consume_item=self.consume_item)
+        return ItemUseResult(
+            success=True,
+            message=self.success_text,
+            consume_item=self.consume_item,
+            flags_to_set=self.flags_to_set,
+        )

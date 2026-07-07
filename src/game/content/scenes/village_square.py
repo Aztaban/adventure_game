@@ -1,6 +1,10 @@
 import pygame
 
-from game.content.item_ids import EMPTY_CUP, MOON_HERB
+from game.content.flag_ids import (
+    TOWER_UNLOCKED,
+    WITCH_RECEIVED_TEA,
+)
+from game.content.item_ids import EMPTY_CUP, GLOWING_TEA
 from game.content.items import create_empty_cup
 from game.content.scene_ids import FOREST_PATH
 from game.entities.exit_hotspot import ExitHotspot
@@ -38,6 +42,8 @@ def create_village_square(
                 rect=pygame.Rect(120, 250, 240, 120),
                 label="Notice Board",
                 inspect_text=("The notice says: Beware the forest. Also, bake sale Friday."),
+                inspect_flag=TOWER_UNLOCKED,
+                flagged_inspect_text=("A new message has appeared: The old tower path is open again."),
             ),
             Hotspot(
                 rect=pygame.Rect(450, 300, 180, 100),
@@ -66,20 +72,25 @@ def create_village_square(
                 name="Retired Witch",
                 dialogue_lines=(
                     "I am retired. Completely retired.",
-                    "The floating broom is merely a gardening tool.",
-                    "Please stop looking at the glowing vegetables.",
+                    "Still, a cup of Glowing Tea might improve my mood.",
+                    "The tower remains sealed until then.",
                 ),
                 item_use=ItemUseInteraction(
-                    required_item_id=MOON_HERB,
-                    success_text=("The witch accepts the Moon Herb. Her retirement appears temporarily suspended."),
-                    failure_text=("The witch examines the item and hands it back."),
-                    completed_text=("The witch already has the Moon Herb."),
+                    required_item_id=GLOWING_TEA,
+                    success_text=("The witch drinks the Glowing Tea. Somewhere in the forest, an ancient lock opens."),
+                    failure_text=("The witch examines the item and hands it back. That is definitely not Glowing Tea."),
+                    completed_text=("The witch has already finished the tea."),
                     consume_item=True,
+                    flags_to_set=(
+                        WITCH_RECEIVED_TEA,
+                        TOWER_UNLOCKED,
+                    ),
                 ),
-                completed_dialogue_lines=(
-                    "Fine. The Moon Herb is exactly what I needed.",
-                    ("This does not mean I have returned to professional witchcraft."),
-                    "It is merely an aggressively magical hobby.",
+                dialogue_flag=WITCH_RECEIVED_TEA,
+                flagged_dialogue_lines=(
+                    "That tea was alarmingly effective.",
+                    "The tower gate should now recognize you.",
+                    "Try not to awaken anything with too many eyes.",
                 ),
             )
         ],

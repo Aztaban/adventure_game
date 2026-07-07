@@ -40,3 +40,43 @@ Changelog for v0.7.0
 - Updated inventory clicks to combine a selected item with another item.
 - Removed recipe ingredients after successful combinations.
 - Added the recipe result item to inventory after successful combinations.
+
+## v0.8.0
+Expected game flow once manual testing is possible:
+
+1. Pick up Empty Cup.
+2. Pick up Moon Herb.
+3. Combine them into Glowing Tea.
+4. Visit Forest Path before helping the witch.
+5. Tower Gate is locked.
+6. Give Glowing Tea to Retired Witch.
+7. tower_unlocked flag is set.
+8. Witch dialogue changes.
+9. Notice Board and forest characters react.
+10. Tower Gate becomes usable.
+11. Enter Tower.
+12. demo_completed flag is set.
+13. Inspect Ancient Pedestal.
+14. Demo completion text appears.
+Changelog for v0.8.0
+## 0.8.0 - YYYY-MM-DD
+
+### Added
+
+- Added centralized quest and progression flag identifiers.
+- Added progression flags to successful item-use interactions.
+- Added flag-dependent NPC dialogue.
+- Added flag-dependent hotspot inspection text.
+- Added locked exits with required progression flags.
+- Added optional completion flags for successful exits.
+- Added the locked Ancient Tower entrance.
+- Added the Ancient Tower interior scene.
+- Added the demo completion progression flag.
+- Added automated tests for locked exits and flag-reactive content.
+
+### Changed
+
+- Updated the Retired Witch to require Glowing Tea.
+- Updated the witch interaction to unlock the Ancient Tower.
+- Updated Village Square and Forest Path content to react to quest progress.
+- Updated exit rendering to visually distinguish locked exits.

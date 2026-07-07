@@ -155,16 +155,12 @@ class AdventureScene(BaseScene):
         exit_hotspot = self._find_exit_hotspot(position)
 
         if exit_hotspot is not None:
-            return SceneEventResult(
-                consumed=True,
-                target_scene_id=exit_hotspot.target_scene_id,
-            )
+            return self._interact_with_exit(exit_hotspot)
 
         item_hotspot = self._find_item_hotspot(position)
 
         if item_hotspot is not None:
-            self._collect_item(item_hotspot)
-            return SceneEventResult(consumed=True)
+            return self._interact_with_exit(exit_hotspot)
 
         hotspot = self._find_hotspot(position)
 
@@ -226,10 +222,24 @@ class AdventureScene(BaseScene):
             return SceneEventResult(consumed=True)
 
         self.active_speaker_name = npc.name
-        self.dialogue.start(npc.current_dialogue_lines)
+        self.dialogue.start(npc.dialogue_for(self.game_state.has_flag))
         self.interaction_text = None
 
         return SceneEventResult(consumed=True)
+
+    def _interact_with_exit(self, exit_hotspot: ExitHotspot) -> SceneEventResult:
+        """Use an exit or display its locked message."""
+        required_flag = exit_hotspot.required_flag
+
+        if required_flag is not None and not self.game_state.has_flag(required_flag):
+            self.interaction_text = exit_hotspot.locked_text
+
+            return SceneEventResult(consumed=True)
+
+        if exit_hotspot.completion_flag is not None:
+            self.game_state.set_flag(exit_hotspot.completion_flag)
+
+        return SceneEventResult(consumed=True, target_scene_id=exit_hotspot.target_scene_id)
 
     def _interact_with_hotspot(self, hotspot: Hotspot) -> SceneEventResult:
         """Inspect a hotspot or use the selected item on it."""
@@ -238,7 +248,7 @@ class AdventureScene(BaseScene):
         if inventory.selected_item is not None:
             self._attempt_item_use(hotspot.item_use)
         else:
-            self.interaction_text = hotspot.current_inspect_text
+            self.interaction_text = hotspot.inspect_text_for(self.game_state.has_flag)
 
         return SceneEventResult(consumed=True)
 
@@ -259,6 +269,9 @@ class AdventureScene(BaseScene):
 
         if not result.success:
             return
+
+        for flag in result.flags_to_set:
+            self.game_state.set_flag(flag)
 
         if result.consume_item:
             inventory.remove(selected_item.item_id)
@@ -341,7 +354,11 @@ class AdventureScene(BaseScene):
             )
 
         for exit_hotspot in self.exits:
-            exit_hotspot.draw(surface, self.body_font)
+            required_flag = exit_hotspot.required_flag
+
+            is_locked = required_flag is not None and not self.game_state.has_flag(required_flag)
+
+            exit_hotspot.draw(surface, self.body_font, is_locked=is_locked)
 
     def _draw_hover_text(
         self,
