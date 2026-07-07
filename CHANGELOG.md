@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.7.0 - 2026-07-07
+
+### Added
+
+- Added an order-independent item recipe system.
+- Added shared recipe storage to game state.
+- Added inventory item combination interactions.
+- Added the Glowing Tea inventory item.
+- Added a recipe combining Empty Cup and Moon Herb.
+- Added success and failure messages for item combinations.
+- Added automated tests for recipes and inventory combinations.
+
+### Changed
+
+- Updated the InventoryBar to explain item selection and combination.
+- Updated inventory clicks to combine a selected item with another item.
+- Removed recipe ingredients after successful combinations.
+- Added the recipe result item to inventory after successful combinations.
+
 ## 0.6.1 - 2026-07-06
 
 ### Added
