@@ -29,7 +29,7 @@ from game.ui.message_box import MessageBox
 
 
 class AdventureScene(BaseScene):
-    """Adventure scene with exits, hotspots, NPCs, items and dialogue."""
+    """Adventure scene with exits, hotspots, NPCs, items, and dialogue."""
 
     def __init__(
         self,
@@ -63,7 +63,10 @@ class AdventureScene(BaseScene):
         self.title_font = pygame.font.Font(None, 52)
         self.body_font = pygame.font.Font(None, 30)
 
-    def handle_event(self, event: pygame.event.Event) -> SceneEventResult:
+    def handle_event(
+        self,
+        event: pygame.event.Event,
+    ) -> SceneEventResult:
         """Handle scene input."""
         if self.dialogue.is_active:
             return self._handle_dialogue_event(event)
@@ -112,7 +115,10 @@ class AdventureScene(BaseScene):
             selected_item=inventory.selected_item,
         )
 
-        if self.interaction_text is not None and not self.dialogue.is_active:
+        if (
+            self.interaction_text is not None
+            and not self.dialogue.is_active
+        ):
             self.message_box.draw(
                 surface,
                 self.interaction_text,
@@ -128,7 +134,7 @@ class AdventureScene(BaseScene):
             )
 
     def _handle_cancel(self) -> SceneEventResult:
-        """Clear selected inventory items before global cancel handling."""
+        """Clear item selection before global cancel handling."""
         inventory = self.game_state.inventory
 
         if inventory.selected_item is None:
@@ -139,13 +145,22 @@ class AdventureScene(BaseScene):
 
         return SceneEventResult(consumed=True)
 
-    def _handle_primary_action(self, position: tuple[int, int]) -> SceneEventResult:
-        """Handle a primary click based on the target at the position."""
+    def _handle_primary_action(
+        self,
+        position: tuple[int, int],
+    ) -> SceneEventResult:
+        """Handle a primary click based on its target."""
         inventory = self.game_state.inventory
-        inventory_item = self.inventory_bar.item_at_position(position, inventory.items)
+
+        inventory_item = self.inventory_bar.item_at_position(
+            position,
+            inventory.items,
+        )
 
         if inventory_item is not None:
-            return self._handle_inventory_item_click(inventory_item)
+            return self._handle_inventory_item_click(
+                inventory_item
+            )
 
         npc = self._find_npc(position)
 
@@ -160,7 +175,9 @@ class AdventureScene(BaseScene):
         item_hotspot = self._find_item_hotspot(position)
 
         if item_hotspot is not None:
-            return self._interact_with_exit(exit_hotspot)
+            self._collect_item(item_hotspot)
+
+            return SceneEventResult(consumed=True)
 
         hotspot = self._find_hotspot(position)
 
@@ -169,20 +186,30 @@ class AdventureScene(BaseScene):
 
         return SceneEventResult()
 
-    def _handle_inventory_item_click(self, clicked_item: Item) -> SceneEventResult:
-        """Select, deselect or combine inventory items."""
+    def _handle_inventory_item_click(
+        self,
+        clicked_item: Item,
+    ) -> SceneEventResult:
+        """Select, deselect, or combine inventory items."""
         inventory = self.game_state.inventory
         selected_item = inventory.selected_item
 
         if selected_item is None:
             inventory.select(clicked_item.item_id)
-            self.interaction_text = f"Selected {clicked_item.name}. Click another item to combine them."
+
+            self.interaction_text = (
+                f"Selected {clicked_item.name}. "
+                "Click another item to combine them."
+            )
 
             return SceneEventResult(consumed=True)
 
         if selected_item.item_id == clicked_item.item_id:
             inventory.clear_selection()
-            self.interaction_text = f"Deselected {clicked_item.name}"
+
+            self.interaction_text = (
+                f"Deselected {clicked_item.name}."
+            )
 
             return SceneEventResult(consumed=True)
 
@@ -193,18 +220,32 @@ class AdventureScene(BaseScene):
 
         return SceneEventResult(consumed=True)
 
-    def _combine_inventory_items(self, first_item: Item, second_item: Item) -> None:
+    def _combine_inventory_items(
+        self,
+        first_item: Item,
+        second_item: Item,
+    ) -> None:
         """Attempt to combine two inventory items."""
         inventory = self.game_state.inventory
-        recipe = self.game_state.recipe_book.find(first_item.item_id, second_item.item_id)
+
+        recipe = self.game_state.recipe_book.find(
+            first_item.item_id,
+            second_item.item_id,
+        )
 
         if recipe is None:
-            self.interaction_text = f"{first_item.name} and {second_item.name} do not combine."
+            self.interaction_text = (
+                f"{first_item.name} and {second_item.name} "
+                "do not combine."
+            )
             return
 
         if inventory.contains(recipe.result_item.item_id):
             inventory.clear_selection()
-            self.interaction_text = f"You already have {recipe.result_item.name}."
+
+            self.interaction_text = (
+                f"You already have {recipe.result_item.name}."
+            )
             return
 
         inventory.remove(first_item.item_id)
@@ -213,47 +254,73 @@ class AdventureScene(BaseScene):
 
         self.interaction_text = recipe.success_text
 
-    def _interact_with_npc(self, npc: NPC) -> SceneEventResult:
+    def _interact_with_npc(
+        self,
+        npc: NPC,
+    ) -> SceneEventResult:
         """Talk to an NPC or use the selected item on them."""
         inventory = self.game_state.inventory
 
         if inventory.selected_item is not None:
             self._attempt_item_use(npc.item_use)
+
             return SceneEventResult(consumed=True)
 
         self.active_speaker_name = npc.name
-        self.dialogue.start(npc.dialogue_for(self.game_state.has_flag))
+
+        self.dialogue.start(
+            npc.dialogue_for(self.game_state.has_flag)
+        )
         self.interaction_text = None
 
         return SceneEventResult(consumed=True)
 
-    def _interact_with_exit(self, exit_hotspot: ExitHotspot) -> SceneEventResult:
+    def _interact_with_exit(
+        self,
+        exit_hotspot: ExitHotspot,
+    ) -> SceneEventResult:
         """Use an exit or display its locked message."""
         required_flag = exit_hotspot.required_flag
 
-        if required_flag is not None and not self.game_state.has_flag(required_flag):
+        if (
+            required_flag is not None
+            and not self.game_state.has_flag(required_flag)
+        ):
             self.interaction_text = exit_hotspot.locked_text
 
             return SceneEventResult(consumed=True)
 
         if exit_hotspot.completion_flag is not None:
-            self.game_state.set_flag(exit_hotspot.completion_flag)
+            self.game_state.set_flag(
+                exit_hotspot.completion_flag
+            )
 
-        return SceneEventResult(consumed=True, target_scene_id=exit_hotspot.target_scene_id)
+        return SceneEventResult(
+            consumed=True,
+            target_scene_id=exit_hotspot.target_scene_id,
+        )
 
-    def _interact_with_hotspot(self, hotspot: Hotspot) -> SceneEventResult:
+    def _interact_with_hotspot(
+        self,
+        hotspot: Hotspot,
+    ) -> SceneEventResult:
         """Inspect a hotspot or use the selected item on it."""
         inventory = self.game_state.inventory
 
         if inventory.selected_item is not None:
             self._attempt_item_use(hotspot.item_use)
         else:
-            self.interaction_text = hotspot.inspect_text_for(self.game_state.has_flag)
+            self.interaction_text = hotspot.inspect_text_for(
+                self.game_state.has_flag
+            )
 
         return SceneEventResult(consumed=True)
 
-    def _attempt_item_use(self, interaction: ItemUseInteraction | None) -> None:
-        """Use the selected inventory item on an interaction target."""
+    def _attempt_item_use(
+        self,
+        interaction: ItemUseInteraction | None,
+    ) -> None:
+        """Use the selected inventory item on a target."""
         inventory = self.game_state.inventory
         selected_item = inventory.selected_item
 
@@ -261,7 +328,9 @@ class AdventureScene(BaseScene):
             return
 
         if interaction is None:
-            self.interaction_text = f"{selected_item.name} does not seem usefull here."
+            self.interaction_text = (
+                f"{selected_item.name} does not seem useful here."
+            )
             return
 
         result = interaction.attempt(selected_item.item_id)
@@ -278,7 +347,10 @@ class AdventureScene(BaseScene):
         else:
             inventory.clear_selection()
 
-    def _collect_item(self, item_hotspot: ItemHotspot) -> None:
+    def _collect_item(
+        self,
+        item_hotspot: ItemHotspot,
+    ) -> None:
         """Add a scene item to inventory and remove it from the scene."""
         inventory = self.game_state.inventory
         was_added = inventory.add(item_hotspot.item)
@@ -288,7 +360,9 @@ class AdventureScene(BaseScene):
         if was_added:
             self.interaction_text = item_hotspot.pickup_text
         else:
-            self.interaction_text = f"You already have {item_hotspot.item.name}."
+            self.interaction_text = (
+                f"You already have {item_hotspot.item.name}."
+            )
 
     def _handle_dialogue_event(
         self,
@@ -297,10 +371,12 @@ class AdventureScene(BaseScene):
         """Advance or close the active dialogue."""
         if is_primary_action(event) or is_dialogue_advance(event):
             self.dialogue.advance()
+
             return SceneEventResult(consumed=True)
 
         if is_cancel(event):
             self.dialogue.close()
+
             return SceneEventResult(consumed=True)
 
         return SceneEventResult()
@@ -356,9 +432,16 @@ class AdventureScene(BaseScene):
         for exit_hotspot in self.exits:
             required_flag = exit_hotspot.required_flag
 
-            is_locked = required_flag is not None and not self.game_state.has_flag(required_flag)
+            is_locked = (
+                required_flag is not None
+                and not self.game_state.has_flag(required_flag)
+            )
 
-            exit_hotspot.draw(surface, self.body_font, is_locked=is_locked)
+            exit_hotspot.draw(
+                surface,
+                self.body_font,
+                is_locked=is_locked,
+            )
 
     def _draw_hover_text(
         self,
@@ -376,24 +459,44 @@ class AdventureScene(BaseScene):
 
         if hovered_npc is not None:
             if selected_item is not None:
-                hover_text = f"Use {selected_item.name} on {hovered_npc.name}"
+                hover_text = (
+                    f"Use {selected_item.name} on "
+                    f"{hovered_npc.name}"
+                )
             else:
                 hover_text = f"Talk to: {hovered_npc.name}"
+
         elif hovered_item is not None:
-            hover_text = f"Pick up: {hovered_item.item.name}"
+            hover_text = (
+                f"Pick up: {hovered_item.item.name}"
+            )
+
         elif hovered_hotspot is not None:
             if selected_item is not None:
-                hover_text = f"Use {selected_item.name} on {hovered_hotspot.label}"
+                hover_text = (
+                    f"Use {selected_item.name} on "
+                    f"{hovered_hotspot.label}"
+                )
             else:
-                hover_text = f"Inspect: {hovered_hotspot.label}"
+                hover_text = (
+                    f"Inspect: {hovered_hotspot.label}"
+                )
 
         if hover_text is None:
             return
 
-        hover_surface = self.body_font.render(hover_text, True, TEXT_HIGHLIGHT)
+        hover_surface = self.body_font.render(
+            hover_text,
+            True,
+            TEXT_HIGHLIGHT,
+        )
+
         surface.blit(hover_surface, (40, 150))
 
-    def _find_hotspot(self, position: tuple[int, int]) -> Hotspot | None:
+    def _find_hotspot(
+        self,
+        position: tuple[int, int],
+    ) -> Hotspot | None:
         """Return the hotspot at a position."""
         for hotspot in self.hotspots:
             if hotspot.contains_point(position):
@@ -401,7 +504,10 @@ class AdventureScene(BaseScene):
 
         return None
 
-    def _find_item_hotspot(self, position: tuple[int, int]) -> ItemHotspot | None:
+    def _find_item_hotspot(
+        self,
+        position: tuple[int, int],
+    ) -> ItemHotspot | None:
         """Return the collectible item at a position."""
         for item_hotspot in self.item_hotspots:
             if item_hotspot.contains_point(position):
@@ -409,7 +515,10 @@ class AdventureScene(BaseScene):
 
         return None
 
-    def _find_npc(self, position: tuple[int, int]) -> NPC | None:
+    def _find_npc(
+        self,
+        position: tuple[int, int],
+    ) -> NPC | None:
         """Return the NPC at a position."""
         for npc in self.npcs:
             if npc.contains_point(position):
@@ -417,7 +526,10 @@ class AdventureScene(BaseScene):
 
         return None
 
-    def _find_exit_hotspot(self, position: tuple[int, int]) -> ExitHotspot | None:
+    def _find_exit_hotspot(
+        self,
+        position: tuple[int, int],
+    ) -> ExitHotspot | None:
         """Return the exit hotspot at a position."""
         for exit_hotspot in self.exits:
             if exit_hotspot.contains_point(position):
