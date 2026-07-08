@@ -32,6 +32,7 @@ def create_glowing_tea() -> Item:
         description=("A luminous herbal drink that is probably safe enough."),
     )
 
+
 def create_demo_items() -> tuple[Item, ...]:
     """Create the complete item catalog used by the demo."""
     return (

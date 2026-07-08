@@ -32,9 +32,7 @@ def create_valid_demo_content() -> tuple[
     GameState,
 ]:
     """Create the real demo content used by validation tests."""
-    game_state = GameState(
-        recipe_book=create_demo_recipe_book(),
-    )
+    game_state = GameState(recipe_book=create_demo_recipe_book())
     scenes = create_demo_scenes(game_state)
 
     return scenes, game_state
@@ -103,10 +101,7 @@ def test_unknown_exit_target_fails_clearly() -> None:
 
     with pytest.raises(
         ContentValidationError,
-        match=(
-            "Scene 'forest_path' exit 'To Village' targets "
-            "unknown scene ID 'missing_scene'"
-        ),
+        match=("Scene 'forest_path' exit 'To Village' targets unknown scene ID 'missing_scene'"),
     ):
         validate_demo_content(scenes, game_state)
 
@@ -121,10 +116,7 @@ def test_duplicate_item_id_fails_clearly() -> None:
         validate_content(
             scene_entries=scenes.items(),
             starting_scene_id=STARTING_SCENE_ID,
-            items=(
-                *create_demo_items(),
-                create_empty_cup(),
-            ),
+            items=(*create_demo_items(), create_empty_cup()),
             recipes=game_state.recipe_book.recipes,
         )
 
@@ -140,10 +132,7 @@ def test_unknown_pickup_item_fails_clearly() -> None:
 
     with pytest.raises(
         ContentValidationError,
-        match=(
-            "Scene 'village_square' pickup 'Missing Pickup' references "
-            "unknown item ID 'missing_pickup_item'"
-        ),
+        match=("Scene 'village_square' pickup 'Missing Pickup' references unknown item ID 'missing_pickup_item'"),
     ):
         validate_demo_content(scenes, game_state)
 
@@ -203,22 +192,13 @@ def test_unknown_recipe_result_fails_clearly() -> None:
 def test_unknown_required_item_fails_clearly() -> None:
     scenes, game_state = create_valid_demo_content()
     village = scenes[VILLAGE_SQUARE]
-    old_well = next(
-        hotspot
-        for hotspot in village.hotspots
-        if hotspot.label == "Old Well"
-    )
-
+    old_well = next(hotspot for hotspot in village.hotspots if hotspot.label == "Old Well")
     assert old_well.item_use is not None
-
     old_well.item_use.required_item_id = "missing_required_item"
 
     with pytest.raises(
         ContentValidationError,
-        match=(
-            "Scene 'village_square' hotspot 'Old Well' requires "
-            "unknown item ID 'missing_required_item'"
-        ),
+        match=("Scene 'village_square' hotspot 'Old Well' requires unknown item ID 'missing_required_item'"),
     ):
         validate_demo_content(scenes, game_state)
 
@@ -228,10 +208,7 @@ def test_duplicate_stable_id_fails_clearly() -> None:
 
     with pytest.raises(
         ContentValidationError,
-        match=(
-            "Duplicate stable ID 'shared_id' used by "
-            "'Village Square pickup' and 'Forest Path interaction'"
-        ),
+        match=("Duplicate stable ID 'shared_id' used by 'Village Square pickup' and 'Forest Path interaction'"),
     ):
         validate_demo_content(
             scenes,
@@ -247,3 +224,20 @@ def test_duplicate_stable_id_fails_clearly() -> None:
                 ),
             ),
         )
+
+
+def test_duplicate_pickup_id_fails_clearly() -> None:
+    scenes, game_state = create_valid_demo_content()
+    village_pickup = scenes[VILLAGE_SQUARE].item_hotspots[0]
+    forest_pickup = scenes[FOREST_PATH].item_hotspots[0]
+    forest_pickup.pickup_id = village_pickup.pickup_id
+
+    with pytest.raises(
+        ContentValidationError,
+        match=(
+            "Duplicate stable ID 'pickup.village.empty_cup' used by "
+            "'Scene 'village_square' pickup 'Empty Cup'' and "
+            "'Scene 'forest_path' pickup 'Moon Herb''"
+        ),
+    ):
+        validate_demo_content(scenes, game_state)

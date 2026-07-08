@@ -115,10 +115,7 @@ class AdventureScene(BaseScene):
             selected_item=inventory.selected_item,
         )
 
-        if (
-            self.interaction_text is not None
-            and not self.dialogue.is_active
-        ):
+        if self.interaction_text is not None and not self.dialogue.is_active:
             self.message_box.draw(
                 surface,
                 self.interaction_text,
@@ -158,9 +155,7 @@ class AdventureScene(BaseScene):
         )
 
         if inventory_item is not None:
-            return self._handle_inventory_item_click(
-                inventory_item
-            )
+            return self._handle_inventory_item_click(inventory_item)
 
         npc = self._find_npc(position)
 
@@ -197,19 +192,14 @@ class AdventureScene(BaseScene):
         if selected_item is None:
             inventory.select(clicked_item.item_id)
 
-            self.interaction_text = (
-                f"Selected {clicked_item.name}. "
-                "Click another item to combine them."
-            )
+            self.interaction_text = f"Selected {clicked_item.name}. Click another item to combine them."
 
             return SceneEventResult(consumed=True)
 
         if selected_item.item_id == clicked_item.item_id:
             inventory.clear_selection()
 
-            self.interaction_text = (
-                f"Deselected {clicked_item.name}."
-            )
+            self.interaction_text = f"Deselected {clicked_item.name}."
 
             return SceneEventResult(consumed=True)
 
@@ -234,18 +224,13 @@ class AdventureScene(BaseScene):
         )
 
         if recipe is None:
-            self.interaction_text = (
-                f"{first_item.name} and {second_item.name} "
-                "do not combine."
-            )
+            self.interaction_text = f"{first_item.name} and {second_item.name} do not combine."
             return
 
         if inventory.contains(recipe.result_item.item_id):
             inventory.clear_selection()
 
-            self.interaction_text = (
-                f"You already have {recipe.result_item.name}."
-            )
+            self.interaction_text = f"You already have {recipe.result_item.name}."
             return
 
         inventory.remove(first_item.item_id)
@@ -269,7 +254,10 @@ class AdventureScene(BaseScene):
         self.active_speaker_name = npc.name
 
         self.dialogue.start(
-            npc.dialogue_for(self.game_state.has_flag)
+            npc.dialogue_for(
+                self.game_state.has_flag,
+                self.game_state.has_completed_interaction,
+            )
         )
         self.interaction_text = None
 
@@ -282,18 +270,13 @@ class AdventureScene(BaseScene):
         """Use an exit or display its locked message."""
         required_flag = exit_hotspot.required_flag
 
-        if (
-            required_flag is not None
-            and not self.game_state.has_flag(required_flag)
-        ):
+        if required_flag is not None and not self.game_state.has_flag(required_flag):
             self.interaction_text = exit_hotspot.locked_text
 
             return SceneEventResult(consumed=True)
 
         if exit_hotspot.completion_flag is not None:
-            self.game_state.set_flag(
-                exit_hotspot.completion_flag
-            )
+            self.game_state.set_flag(exit_hotspot.completion_flag)
 
         return SceneEventResult(
             consumed=True,
@@ -311,7 +294,8 @@ class AdventureScene(BaseScene):
             self._attempt_item_use(hotspot.item_use)
         else:
             self.interaction_text = hotspot.inspect_text_for(
-                self.game_state.has_flag
+                self.game_state.has_flag,
+                self.game_state.has_completed_interaction,
             )
 
         return SceneEventResult(consumed=True)
@@ -328,12 +312,17 @@ class AdventureScene(BaseScene):
             return
 
         if interaction is None:
-            self.interaction_text = (
-                f"{selected_item.name} does not seem useful here."
-            )
+            self.interaction_text = f"{selected_item.name} does not seem useful here."
             return
 
-        result = interaction.attempt(selected_item.item_id)
+        is_completed = interaction.has_been_completed(
+            self.game_state.has_flag,
+            self.game_state.has_completed_interaction,
+        )
+        result = interaction.attempt(
+            selected_item.item_id,
+            is_completed=is_completed,
+        )
         self.interaction_text = result.message
 
         if not result.success:
@@ -341,6 +330,9 @@ class AdventureScene(BaseScene):
 
         for flag in result.flags_to_set:
             self.game_state.set_flag(flag)
+
+        if interaction.interaction_id is not None:
+            self.game_state.complete_interaction(interaction.interaction_id)
 
         if result.consume_item:
             inventory.remove(selected_item.item_id)
@@ -351,18 +343,16 @@ class AdventureScene(BaseScene):
         self,
         item_hotspot: ItemHotspot,
     ) -> None:
-        """Add a scene item to inventory and remove it from the scene."""
+        """Add a scene item and record its pickup as collected."""
         inventory = self.game_state.inventory
         was_added = inventory.add(item_hotspot.item)
 
-        self.item_hotspots.remove(item_hotspot)
+        self.game_state.collect_pickup(item_hotspot.pickup_id)
 
         if was_added:
             self.interaction_text = item_hotspot.pickup_text
         else:
-            self.interaction_text = (
-                f"You already have {item_hotspot.item.name}."
-            )
+            self.interaction_text = f"You already have {item_hotspot.item.name}."
 
     def _handle_dialogue_event(
         self,
@@ -416,6 +406,9 @@ class AdventureScene(BaseScene):
             )
 
         for item_hotspot in self.item_hotspots:
+            if self.game_state.has_collected_pickup(item_hotspot.pickup_id):
+                continue
+
             item_hotspot.draw(
                 surface,
                 self.body_font,
@@ -432,10 +425,7 @@ class AdventureScene(BaseScene):
         for exit_hotspot in self.exits:
             required_flag = exit_hotspot.required_flag
 
-            is_locked = (
-                required_flag is not None
-                and not self.game_state.has_flag(required_flag)
-            )
+            is_locked = required_flag is not None and not self.game_state.has_flag(required_flag)
 
             exit_hotspot.draw(
                 surface,
@@ -459,28 +449,18 @@ class AdventureScene(BaseScene):
 
         if hovered_npc is not None:
             if selected_item is not None:
-                hover_text = (
-                    f"Use {selected_item.name} on "
-                    f"{hovered_npc.name}"
-                )
+                hover_text = f"Use {selected_item.name} on {hovered_npc.name}"
             else:
                 hover_text = f"Talk to: {hovered_npc.name}"
 
         elif hovered_item is not None:
-            hover_text = (
-                f"Pick up: {hovered_item.item.name}"
-            )
+            hover_text = f"Pick up: {hovered_item.item.name}"
 
         elif hovered_hotspot is not None:
             if selected_item is not None:
-                hover_text = (
-                    f"Use {selected_item.name} on "
-                    f"{hovered_hotspot.label}"
-                )
+                hover_text = f"Use {selected_item.name} on {hovered_hotspot.label}"
             else:
-                hover_text = (
-                    f"Inspect: {hovered_hotspot.label}"
-                )
+                hover_text = f"Inspect: {hovered_hotspot.label}"
 
         if hover_text is None:
             return
@@ -510,6 +490,9 @@ class AdventureScene(BaseScene):
     ) -> ItemHotspot | None:
         """Return the collectible item at a position."""
         for item_hotspot in self.item_hotspots:
+            if self.game_state.has_collected_pickup(item_hotspot.pickup_id):
+                continue
+
             if item_hotspot.contains_point(position):
                 return item_hotspot
 

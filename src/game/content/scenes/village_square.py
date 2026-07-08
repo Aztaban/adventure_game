@@ -4,8 +4,10 @@ from game.content.flag_ids import (
     TOWER_UNLOCKED,
     WITCH_RECEIVED_TEA,
 )
+from game.content.interaction_ids import OLD_WELL_INTERACTION
 from game.content.item_ids import EMPTY_CUP, GLOWING_TEA
 from game.content.items import create_empty_cup
+from game.content.pickup_ids import EMPTY_CUP_PICKUP
 from game.content.scene_ids import FOREST_PATH
 from game.entities.exit_hotspot import ExitHotspot
 from game.entities.hotspot import Hotspot
@@ -55,12 +57,14 @@ def create_village_square(
                     failure_text=("The well refuses that item with unnecessary confidence."),
                     completed_text=("The well has already contributed enough for one day."),
                     consume_item=False,
+                    interaction_id=OLD_WELL_INTERACTION,
                 ),
                 completed_inspect_text=("The well is now pretending it cannot hear you."),
             ),
         ],
         item_hotspots=[
             ItemHotspot(
+                pickup_id=EMPTY_CUP_PICKUP,
                 rect=pygame.Rect(390, 460, 180, 80),
                 item=create_empty_cup(),
                 pickup_text=("You pick up the Empty Cup. It smells faintly of adventure."),
@@ -85,6 +89,7 @@ def create_village_square(
                         WITCH_RECEIVED_TEA,
                         TOWER_UNLOCKED,
                     ),
+                    completion_flag=WITCH_RECEIVED_TEA,
                 ),
                 dialogue_flag=WITCH_RECEIVED_TEA,
                 flagged_dialogue_lines=(

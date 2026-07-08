@@ -139,6 +139,7 @@ def test_wrong_item_does_not_complete_hotspot_interaction() -> None:
         success_text="Success.",
         failure_text="Failure.",
         completed_text="Already complete.",
+        interaction_id="interaction.test",
     )
     hotspot = Hotspot(
         rect=pygame.Rect(100, 100, 120, 120),
@@ -163,7 +164,7 @@ def test_wrong_item_does_not_complete_hotspot_interaction() -> None:
     result = scene.handle_event(event)
 
     assert result.consumed
-    assert not interaction.is_completed
+    assert not game_state.has_completed_interaction("interaction.test")
     assert game_state.inventory.contains(wrong_item.item_id)
     assert game_state.inventory.selected_item is wrong_item
     assert scene.interaction_text == "Failure."
@@ -178,6 +179,7 @@ def test_correct_item_completes_hotspot_interaction() -> None:
         success_text="Success.",
         failure_text="Failure.",
         completed_text="Already complete.",
+        interaction_id="interaction.test",
     )
     hotspot = Hotspot(
         rect=pygame.Rect(100, 100, 120, 120),
@@ -202,7 +204,7 @@ def test_correct_item_completes_hotspot_interaction() -> None:
     result = scene.handle_event(event)
 
     assert result.consumed
-    assert interaction.is_completed
+    assert game_state.has_completed_interaction("interaction.test")
     assert game_state.inventory.contains(correct_item.item_id)
     assert game_state.inventory.selected_item is None
     assert scene.interaction_text == "Success."
@@ -217,6 +219,7 @@ def test_consumed_item_is_removed_after_success() -> None:
         success_text="Success.",
         failure_text="Failure.",
         completed_text="Already complete.",
+        interaction_id="interaction.test",
         consume_item=True,
     )
     hotspot = Hotspot(
@@ -241,7 +244,7 @@ def test_consumed_item_is_removed_after_success() -> None:
 
     scene.handle_event(event)
 
-    assert interaction.is_completed
+    assert game_state.has_completed_interaction("interaction.test")
     assert not game_state.inventory.contains(correct_item.item_id)
     assert game_state.inventory.selected_item is None
 
@@ -329,10 +332,11 @@ def test_invalid_combination_keeps_both_items() -> None:
     assert scene.interaction_text == ("First Item and Second Item do not combine.")
 
 
-def test_pickup_adds_item_and_removes_scene_hotspot() -> None:
+def test_pickup_adds_item_and_records_collected_state() -> None:
     game_state = GameState()
     item = create_item("pickup", "Pickup Item")
     pickup = ItemHotspot(
+        pickup_id="pickup.test",
         rect=pygame.Rect(100, 100, 120, 80),
         item=item,
         pickup_text="Item collected.",
@@ -346,7 +350,8 @@ def test_pickup_adds_item_and_removes_scene_hotspot() -> None:
 
     assert result.consumed
     assert game_state.inventory.contains(item.item_id)
-    assert pickup not in scene.item_hotspots
+    assert pickup in scene.item_hotspots
+    assert game_state.has_collected_pickup(pickup.pickup_id)
     assert scene.interaction_text == "Item collected."
 
 
@@ -354,6 +359,7 @@ def test_collected_pickup_cannot_be_collected_repeatedly() -> None:
     game_state = GameState()
     item = create_item("pickup", "Pickup Item")
     pickup = ItemHotspot(
+        pickup_id="pickup.test",
         rect=pygame.Rect(100, 100, 120, 80),
         item=item,
         pickup_text="Item collected.",
@@ -370,14 +376,16 @@ def test_collected_pickup_cannot_be_collected_repeatedly() -> None:
     assert first_result.consumed
     assert not second_result.consumed
     assert len(game_state.inventory) == 1
-    assert scene.item_hotspots == []
+    assert scene.item_hotspots == [pickup]
+    assert game_state.has_collected_pickup(pickup.pickup_id)
 
 
-def test_duplicate_pickup_keeps_existing_item_and_removes_scene_pickup() -> None:
+def test_duplicate_pickup_keeps_existing_item_and_records_pickup() -> None:
     game_state = GameState()
     existing_item = create_item("duplicate", "Existing Item")
     duplicate_item = create_item("duplicate", "Duplicate Item")
     pickup = ItemHotspot(
+        pickup_id="pickup.test",
         rect=pygame.Rect(100, 100, 120, 80),
         item=duplicate_item,
         pickup_text="Item collected.",
@@ -392,7 +400,8 @@ def test_duplicate_pickup_keeps_existing_item_and_removes_scene_pickup() -> None
 
     assert result.consumed
     assert game_state.inventory.items == (existing_item,)
-    assert pickup not in scene.item_hotspots
+    assert pickup in scene.item_hotspots
+    assert game_state.has_collected_pickup(pickup.pickup_id)
     assert scene.interaction_text == "You already have Duplicate Item."
 
 
@@ -404,6 +413,7 @@ def test_wrong_item_does_not_complete_npc_interaction() -> None:
         success_text="Success.",
         failure_text="Failure.",
         completed_text="Already complete.",
+        interaction_id="interaction.test",
         consume_item=True,
     )
     npc = NPC(
@@ -419,7 +429,7 @@ def test_wrong_item_does_not_complete_npc_interaction() -> None:
     result = scene.handle_event(create_primary_click(npc.rect.center))
 
     assert result.consumed
-    assert not interaction.is_completed
+    assert not game_state.has_completed_interaction("interaction.test")
     assert game_state.inventory.contains(wrong_item.item_id)
     assert game_state.inventory.selected_item is wrong_item
     assert not scene.dialogue.is_active
@@ -434,6 +444,7 @@ def test_correct_item_completes_npc_interaction_without_consuming_item() -> None
         success_text="Success.",
         failure_text="Failure.",
         completed_text="Already complete.",
+        interaction_id="interaction.test",
         consume_item=False,
     )
     npc = NPC(
@@ -449,7 +460,7 @@ def test_correct_item_completes_npc_interaction_without_consuming_item() -> None
     result = scene.handle_event(create_primary_click(npc.rect.center))
 
     assert result.consumed
-    assert interaction.is_completed
+    assert game_state.has_completed_interaction("interaction.test")
     assert game_state.inventory.contains(correct_item.item_id)
     assert game_state.inventory.selected_item is None
     assert scene.interaction_text == "Success."
@@ -463,6 +474,7 @@ def test_completed_hotspot_interaction_returns_completed_inspection_text() -> No
         success_text="Success.",
         failure_text="Failure.",
         completed_text="Already complete.",
+        interaction_id="interaction.test",
     )
     hotspot = Hotspot(
         rect=pygame.Rect(100, 100, 120, 120),
@@ -479,7 +491,7 @@ def test_completed_hotspot_interaction_returns_completed_inspection_text() -> No
     result = scene.handle_event(create_primary_click(hotspot.rect.center))
 
     assert result.consumed
-    assert interaction.is_completed
+    assert game_state.has_completed_interaction("interaction.test")
     assert scene.interaction_text == "Completed inspection."
 
 
@@ -491,6 +503,7 @@ def test_completed_npc_interaction_returns_completed_dialogue() -> None:
         success_text="Success.",
         failure_text="Failure.",
         completed_text="Already complete.",
+        interaction_id="interaction.test",
     )
     npc = NPC(
         rect=pygame.Rect(100, 100, 120, 120),
@@ -507,7 +520,7 @@ def test_completed_npc_interaction_returns_completed_dialogue() -> None:
     result = scene.handle_event(create_primary_click(npc.rect.center))
 
     assert result.consumed
-    assert interaction.is_completed
+    assert game_state.has_completed_interaction("interaction.test")
     assert scene.dialogue.current_line == "Completed dialogue."
     assert scene.active_speaker_name == npc.name
 
@@ -606,6 +619,7 @@ def test_dialogue_click_does_not_trigger_object_beneath_cursor() -> None:
     )
     item = create_item("pickup", "Pickup Item")
     pickup = ItemHotspot(
+        pickup_id="pickup.test",
         rect=pygame.Rect(300, 300, 120, 80),
         item=item,
         pickup_text="Item collected.",

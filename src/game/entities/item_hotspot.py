@@ -18,6 +18,7 @@ from game.theme import (
 class ItemHotspot:
     """A collectible item placed inside a scene."""
 
+    pickup_id: str
     rect: pygame.Rect
     item: Item
     pickup_text: str
@@ -26,16 +27,35 @@ class ItemHotspot:
         """Return whether a position is inside the item area."""
         return self.rect.collidepoint(position)
 
-    def draw(self, surface: pygame.Surface, font: pygame.font.Font, is_hovered: bool) -> None:
+    def draw(
+        self,
+        surface: pygame.Surface,
+        font: pygame.font.Font,
+        is_hovered: bool,
+    ) -> None:
         """Draw a placeholder representation of the item."""
         background_color = ITEM_BACKGROUND_HOVERED if is_hovered else ITEM_BACKGROUND
         border_color = TEXT_HIGHLIGHT if is_hovered else BORDER_DEFAULT
 
-        pygame.draw.rect(surface, background_color, self.rect, border_radius=6)
-        pygame.draw.rect(surface, border_color, self.rect, width=2, border_radius=6)
+        pygame.draw.rect(
+            surface,
+            background_color,
+            self.rect,
+            border_radius=6,
+        )
+        pygame.draw.rect(
+            surface,
+            border_color,
+            self.rect,
+            width=2,
+            border_radius=6,
+        )
 
-        label_surface = font.render(self.item.name, True, TEXT_PRIMARY)
-
+        label_surface = font.render(
+            self.item.name,
+            True,
+            TEXT_PRIMARY,
+        )
         label_rect = label_surface.get_rect(center=self.rect.center)
 
         surface.blit(label_surface, label_rect)

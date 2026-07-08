@@ -5,6 +5,7 @@ from game.content.flag_ids import (
     TOWER_UNLOCKED,
 )
 from game.content.items import create_moon_herb
+from game.content.pickup_ids import MOON_HERB_PICKUP
 from game.content.scene_ids import (
     TOWER_INTERIOR,
     VILLAGE_SQUARE,
@@ -48,10 +49,7 @@ def create_forest_path(
                 label="Enter Tower",
                 required_flag=TOWER_UNLOCKED,
                 locked_label="Tower Gate (Locked)",
-                locked_text=(
-                    "The tower gate refuses to move. "
-                    "A faint magical symbol resembles a teacup."
-                ),
+                locked_text=("The tower gate refuses to move. A faint magical symbol resembles a teacup."),
                 completion_flag=DEMO_COMPLETED,
             ),
         ],
@@ -59,24 +57,17 @@ def create_forest_path(
             Hotspot(
                 rect=pygame.Rect(500, 260, 240, 120),
                 label="Suspicious Stump",
-                inspect_text=(
-                    "The stump looks back at you. "
-                    "You decide not to mention it."
-                ),
+                inspect_text=("The stump looks back at you. You decide not to mention it."),
                 inspect_flag=TOWER_UNLOCKED,
-                flagged_inspect_text=(
-                    "The stump nods toward the now-open tower gate."
-                ),
+                flagged_inspect_text=("The stump nods toward the now-open tower gate."),
             )
         ],
         item_hotspots=[
             ItemHotspot(
+                pickup_id=MOON_HERB_PICKUP,
                 rect=pygame.Rect(850, 350, 180, 100),
                 item=create_moon_herb(),
-                pickup_text=(
-                    "You carefully collect the Moon Herb. "
-                    "It seems pleased with itself."
-                ),
+                pickup_text=("You carefully collect the Moon Herb. It seems pleased with itself."),
             )
         ],
         npcs=[

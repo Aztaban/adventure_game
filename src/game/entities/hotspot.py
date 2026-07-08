@@ -27,28 +27,26 @@ class Hotspot:
     inspect_flag: str | None = None
     flagged_inspect_text: str | None = None
 
-    @property
-    def current_inspect_text(self) -> str:
-        """Return inspection text matching item-use state."""
+    def inspect_text_for(
+        self,
+        has_flag: Callable[[str], bool],
+        has_completed_interaction: Callable[[str], bool],
+    ) -> str:
+        """Return inspection text matching persistent world state."""
+        if self.inspect_flag is not None and self.flagged_inspect_text is not None and has_flag(self.inspect_flag):
+            return self.flagged_inspect_text
+
         if (
             self.item_use is not None
-            and self.item_use.is_completed
             and self.completed_inspect_text is not None
+            and self.item_use.has_been_completed(
+                has_flag,
+                has_completed_interaction,
+            )
         ):
             return self.completed_inspect_text
 
         return self.inspect_text
-
-    def inspect_text_for(self, has_flag: Callable[[str], bool]) -> str:
-        """Return inspection text matching the current game flags."""
-        if (
-            self.inspect_flag is not None
-            and self.flagged_inspect_text is not None
-            and has_flag(self.inspect_flag)
-        ):
-            return self.flagged_inspect_text
-
-        return self.current_inspect_text
 
     def contains_point(self, position: tuple[int, int]) -> bool:
         """Return True when a point is inside the hotspot."""
@@ -65,9 +63,18 @@ class Hotspot:
         border_color = TEXT_HIGHLIGHT if is_hovered else BORDER_DEFAULT
 
         pygame.draw.rect(surface, fill_color, self.rect)
-        pygame.draw.rect(surface, border_color, self.rect, width=2)
+        pygame.draw.rect(
+            surface,
+            border_color,
+            self.rect,
+            width=2,
+        )
 
-        label_surface = font.render(self.label, True, TEXT_PRIMARY)
+        label_surface = font.render(
+            self.label,
+            True,
+            TEXT_PRIMARY,
+        )
         label_rect = label_surface.get_rect(center=self.rect.center)
 
         surface.blit(label_surface, label_rect)

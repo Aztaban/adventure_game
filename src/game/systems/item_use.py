@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from collections.abc import Callable
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -23,12 +24,43 @@ class ItemUseInteraction:
     completed_text: str
     consume_item: bool = False
     flags_to_set: tuple[str, ...] = ()
+    interaction_id: str | None = None
+    completion_flag: str | None = None
 
-    is_completed: bool = field(default=False, init=False)
+    def __post_init__(self) -> None:
+        has_interaction_id = self.interaction_id is not None
+        has_completion_flag = self.completion_flag is not None
 
-    def attempt(self, item_id: str) -> ItemUseResult:
-        """Attempt to use an item on this interaction target."""
-        if self.is_completed:
+        if has_interaction_id == has_completion_flag:
+            raise ValueError(
+                "Item-use interaction requires exactly one completion identifier: interaction_id or completion_flag."
+            )
+
+        if self.completion_flag is not None and self.completion_flag not in self.flags_to_set:
+            raise ValueError("completion_flag must also be present in flags_to_set.")
+
+    def has_been_completed(
+        self,
+        has_flag: Callable[[str], bool],
+        has_completed_interaction: Callable[[str], bool],
+    ) -> bool:
+        """Return whether persistent world state marks this complete."""
+        if self.completion_flag is not None:
+            return has_flag(self.completion_flag)
+
+        if self.interaction_id is None:
+            return False
+
+        return has_completed_interaction(self.interaction_id)
+
+    def attempt(
+        self,
+        item_id: str,
+        *,
+        is_completed: bool = False,
+    ) -> ItemUseResult:
+        """Return the outcome without mutating persistent state."""
+        if is_completed:
             return ItemUseResult(
                 success=False,
                 message=self.completed_text,
@@ -39,8 +71,6 @@ class ItemUseInteraction:
                 success=False,
                 message=self.failure_text,
             )
-
-        self.is_completed = True
 
         return ItemUseResult(
             success=True,

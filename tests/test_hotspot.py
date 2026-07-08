@@ -28,6 +28,19 @@ def create_item_use() -> ItemUseInteraction:
         success_text="That worked.",
         failure_text="That did not work.",
         completed_text="This is already complete.",
+        interaction_id="interaction.test",
+    )
+
+
+def inspect_text(
+    hotspot: Hotspot,
+    *,
+    active_flag: str | None = None,
+    interaction_completed: bool = False,
+) -> str:
+    return hotspot.inspect_text_for(
+        lambda flag: flag == active_flag,
+        lambda _: interaction_completed,
     )
 
 
@@ -46,23 +59,20 @@ def test_hotspot_rejects_point_outside_rectangle() -> None:
 def test_default_hotspot_returns_inspect_text() -> None:
     hotspot = create_hotspot()
 
-    assert (
-        hotspot.inspect_text_for(lambda _: False)
-        == "A mysterious test object."
-    )
+    assert inspect_text(hotspot) == "A mysterious test object."
 
 
 def test_completed_interaction_returns_completed_text() -> None:
-    item_use = create_item_use()
-    item_use.attempt("correct_item")
-
     hotspot = create_hotspot(
-        item_use=item_use,
+        item_use=create_item_use(),
         completed_inspect_text="The interaction is complete.",
     )
 
     assert (
-        hotspot.inspect_text_for(lambda _: False)
+        inspect_text(
+            hotspot,
+            interaction_completed=True,
+        )
         == "The interaction is complete."
     )
 
@@ -74,55 +84,52 @@ def test_active_matching_flag_returns_flagged_inspect_text() -> None:
     )
 
     assert (
-        hotspot.inspect_text_for(
-            lambda flag: flag == "world_changed",
+        inspect_text(
+            hotspot,
+            active_flag="world_changed",
         )
         == "The world has changed this object."
     )
 
 
 def test_inactive_flag_falls_back_to_completed_text() -> None:
-    item_use = create_item_use()
-    item_use.attempt("correct_item")
-
     hotspot = create_hotspot(
-        item_use=item_use,
+        item_use=create_item_use(),
         completed_inspect_text="The interaction is complete.",
         inspect_flag="world_changed",
         flagged_inspect_text="The world has changed this object.",
     )
 
     assert (
-        hotspot.inspect_text_for(lambda _: False)
+        inspect_text(
+            hotspot,
+            interaction_completed=True,
+        )
         == "The interaction is complete."
     )
 
 
 def test_inspection_text_priority_is_flag_then_completed_then_default() -> None:
-    item_use = create_item_use()
-
     hotspot = create_hotspot(
-        item_use=item_use,
+        item_use=create_item_use(),
         completed_inspect_text="The interaction is complete.",
         inspect_flag="world_changed",
         flagged_inspect_text="The world has changed this object.",
     )
 
+    assert inspect_text(hotspot) == "A mysterious test object."
     assert (
-        hotspot.inspect_text_for(lambda _: False)
-        == "A mysterious test object."
-    )
-
-    item_use.attempt("correct_item")
-
-    assert (
-        hotspot.inspect_text_for(lambda _: False)
+        inspect_text(
+            hotspot,
+            interaction_completed=True,
+        )
         == "The interaction is complete."
     )
-
     assert (
-        hotspot.inspect_text_for(
-            lambda flag: flag == "world_changed",
+        inspect_text(
+            hotspot,
+            active_flag="world_changed",
+            interaction_completed=True,
         )
         == "The world has changed this object."
     )

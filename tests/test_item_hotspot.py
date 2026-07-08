@@ -12,6 +12,7 @@ def create_item_hotspot() -> ItemHotspot:
     )
 
     return ItemHotspot(
+        pickup_id="pickup.test",
         rect=pygame.Rect(100, 100, 200, 100),
         item=item,
         pickup_text="You picked up the test item.",

@@ -7,6 +7,7 @@ from game.content.flag_ids import (
     WITCH_RECEIVED_TEA,
 )
 from game.content.item_ids import EMPTY_CUP, GLOWING_TEA, MOON_HERB
+from game.content.pickup_ids import EMPTY_CUP_PICKUP
 from game.content.recipes import create_demo_recipe_book
 from game.content.scene_ids import (
     FOREST_PATH,
@@ -94,7 +95,7 @@ def test_complete_demo_flow_uses_real_content() -> None:
     click(manager, empty_cup_pickup.rect.center)
 
     assert game_state.inventory.contains(EMPTY_CUP)
-    assert empty_cup_pickup not in village.item_hotspots
+    assert game_state.has_collected_pickup(EMPTY_CUP_PICKUP)
 
     forest_exit = find_exit(village, FOREST_PATH)
     click(manager, forest_exit.rect.center)
@@ -128,7 +129,7 @@ def test_complete_demo_flow_uses_real_content() -> None:
     assert manager.current_scene_id == VILLAGE_SQUARE
 
     village = current_adventure_scene(manager)
-    assert all(pickup.item.item_id != EMPTY_CUP for pickup in village.item_hotspots)
+    assert game_state.has_collected_pickup(EMPTY_CUP_PICKUP)
 
     click(manager, inventory_item_position(village, GLOWING_TEA))
     witch = find_npc(village, "Retired Witch")

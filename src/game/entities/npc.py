@@ -26,12 +26,23 @@ class NPC:
     dialogue_flag: str | None = None
     flagged_dialogue_lines: tuple[str, ...] = ()
 
-    def dialogue_for(self, has_flag: Callable[[str], bool]) -> tuple[str, ...]:
-        """Return dialogue matching current progression flags."""
+    def dialogue_for(
+        self,
+        has_flag: Callable[[str], bool],
+        has_completed_interaction: Callable[[str], bool],
+    ) -> tuple[str, ...]:
+        """Return dialogue matching persistent world state."""
         if self.dialogue_flag is not None and self.flagged_dialogue_lines and has_flag(self.dialogue_flag):
             return self.flagged_dialogue_lines
 
-        if self.item_use is not None and self.item_use.is_completed and self.completed_dialogue_lines:
+        if (
+            self.item_use is not None
+            and self.completed_dialogue_lines
+            and self.item_use.has_been_completed(
+                has_flag,
+                has_completed_interaction,
+            )
+        ):
             return self.completed_dialogue_lines
 
         return self.dialogue_lines
@@ -51,9 +62,18 @@ class NPC:
         border_color = TEXT_HIGHLIGHT if is_hovered else TEXT_PRIMARY
 
         pygame.draw.rect(surface, background_color, self.rect)
-        pygame.draw.rect(surface, border_color, self.rect, width=2)
+        pygame.draw.rect(
+            surface,
+            border_color,
+            self.rect,
+            width=2,
+        )
 
-        label_surface = font.render(self.name, True, TEXT_PRIMARY)
+        label_surface = font.render(
+            self.name,
+            True,
+            TEXT_PRIMARY,
+        )
         label_rect = label_surface.get_rect(center=self.rect.center)
 
         surface.blit(label_surface, label_rect)
