@@ -44,6 +44,11 @@ class RecipeBook:
         for recipe in recipes:
             self.add(recipe)
 
+    @property
+    def recipes(self) -> tuple[Recipe, ...]:
+        """Return the registered recipes as a read-only tuple."""
+        return tuple(self._recipes.values())
+
     def add(self, recipe: Recipe) -> None:
         """Add a recipe and reject duplicate ingredient pairs."""
         if recipe.key in self._recipes:

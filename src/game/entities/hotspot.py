@@ -32,7 +32,7 @@ class Hotspot:
         """Return inspection text matching item-use state."""
         if (
             self.item_use is not None
-            and self.item_use.is_completed 
+            and self.item_use.is_completed
             and self.completed_inspect_text is not None
         ):
             return self.completed_inspect_text
