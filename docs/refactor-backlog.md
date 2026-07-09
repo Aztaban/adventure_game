@@ -279,7 +279,7 @@ Make `GameState` the authoritative owner of facts that must survive scene change
 - [ ] Record collected pickup IDs in `GameState`.
 - [ ] Hide/ignore collected pickups through state rather than relying only on removing them from a scene list.
 
-Possible API:
+## R081-04 — Centralize persistent world state
 
 ```python
 has_collected_pickup(pickup_id)

@@ -56,6 +56,45 @@ def test_completed_interaction_cannot_run_again() -> None:
     assert result.message == "This is already complete."
 
 
+def test_item_use_definition_has_no_mutable_completion_state() -> None:
+    interaction = create_interaction()
+
+    assert not hasattr(interaction, "is_completed")
+
+
+def test_interaction_id_completion_is_read_from_world_state() -> None:
+    interaction = create_interaction()
+
+    assert not interaction.has_been_completed(
+        lambda _: False,
+        lambda _: False,
+    )
+    assert interaction.has_been_completed(
+        lambda _: False,
+        lambda interaction_id: interaction_id == "interaction.test",
+    )
+
+
+def test_completion_flag_completion_is_read_from_world_state() -> None:
+    interaction = ItemUseInteraction(
+        required_item_id="correct_item",
+        success_text="That worked.",
+        failure_text="That did not work.",
+        completed_text="Already complete.",
+        flags_to_set=("quest_finished",),
+        completion_flag="quest_finished",
+    )
+
+    assert not interaction.has_been_completed(
+        lambda _: False,
+        lambda _: False,
+    )
+    assert interaction.has_been_completed(
+        lambda flag: flag == "quest_finished",
+        lambda _: False,
+    )
+
+
 def test_successful_item_use_returns_progression_flags() -> None:
     interaction = ItemUseInteraction(
         required_item_id="correct_item",

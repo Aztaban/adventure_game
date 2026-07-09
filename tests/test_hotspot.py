@@ -133,3 +133,23 @@ def test_inspection_text_priority_is_flag_then_completed_then_default() -> None:
         )
         == "The world has changed this object."
     )
+
+
+def test_recreated_hotspot_definition_reads_completion_from_world_state() -> None:
+    original_hotspot = create_hotspot(
+        item_use=create_item_use(),
+        completed_inspect_text="The interaction is complete.",
+    )
+    recreated_hotspot = create_hotspot(
+        item_use=create_item_use(),
+        completed_inspect_text="The interaction is complete.",
+    )
+
+    assert inspect_text(original_hotspot) == "A mysterious test object."
+    assert (
+        inspect_text(
+            recreated_hotspot,
+            interaction_completed=True,
+        )
+        == "The interaction is complete."
+    )

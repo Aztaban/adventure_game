@@ -210,6 +210,38 @@ def test_correct_item_completes_hotspot_interaction() -> None:
     assert scene.interaction_text == "Success."
 
 
+def test_successful_item_use_records_completion_for_future_attempts() -> None:
+    game_state = GameState()
+    correct_item = create_item("correct_item")
+    interaction = ItemUseInteraction(
+        required_item_id="correct_item",
+        success_text="Success.",
+        failure_text="Failure.",
+        completed_text="Already complete.",
+        interaction_id="interaction.test",
+        consume_item=False,
+    )
+    hotspot = Hotspot(
+        rect=pygame.Rect(100, 100, 120, 120),
+        label="Test Hotspot",
+        inspect_text="Inspect text.",
+        item_use=interaction,
+    )
+    game_state.inventory.add(correct_item)
+    game_state.inventory.select(correct_item.item_id)
+    scene = create_test_scene(game_state, hotspots=[hotspot])
+
+    first_result = scene.handle_event(create_primary_click(hotspot.rect.center))
+    game_state.inventory.select(correct_item.item_id)
+    second_result = scene.handle_event(create_primary_click(hotspot.rect.center))
+
+    assert first_result.consumed
+    assert second_result.consumed
+    assert game_state.has_completed_interaction("interaction.test")
+    assert game_state.inventory.contains(correct_item.item_id)
+    assert scene.interaction_text == "Already complete."
+
+
 def test_consumed_item_is_removed_after_success() -> None:
     game_state = GameState()
     correct_item = create_item("correct_item")
