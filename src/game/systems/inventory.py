@@ -31,6 +31,10 @@ class Inventory:
         self._items[item.item_id] = item
         return True
 
+    def get(self, item_id: str) -> Item | None:
+        """Return an inventory item by ID when present."""
+        return self._items.get(item_id)
+
     def remove(self, item_id: str) -> Item | None:
         """Remove and return an item, if it exists."""
         removed_item = self._items.pop(item_id, None)

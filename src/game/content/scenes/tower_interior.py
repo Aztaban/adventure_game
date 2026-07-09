@@ -7,10 +7,12 @@ from game.entities.hotspot import Hotspot
 from game.game_state import GameState
 from game.scenes.adventure_scene import AdventureScene
 from game.settings import WINDOW_HEIGHT
+from game.systems.recipe import RecipeBook
 
 
 def create_tower_interior(
     game_state: GameState,
+    recipe_book: RecipeBook,
 ) -> AdventureScene:
     """Create the final tower scene."""
     return AdventureScene(
@@ -41,4 +43,5 @@ def create_tower_interior(
         item_hotspots=[],
         npcs=[],
         game_state=game_state,
+        recipe_book=recipe_book,
     )

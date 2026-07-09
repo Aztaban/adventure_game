@@ -19,6 +19,7 @@ def create_test_scene(
     hotspots: list[Hotspot] | None = None,
     item_hotspots: list[ItemHotspot] | None = None,
     npcs: list[NPC] | None = None,
+    recipe_book: RecipeBook | None = None,
 ) -> AdventureScene:
     """Create a minimal AdventureScene for behavioral tests."""
     return AdventureScene(
@@ -30,6 +31,7 @@ def create_test_scene(
         item_hotspots=item_hotspots or [],
         npcs=npcs or [],
         game_state=game_state,
+        recipe_book=recipe_book or RecipeBook(),
     )
 
 
@@ -305,15 +307,16 @@ def test_inventory_items_combine_into_recipe_result() -> None:
             )
         ]
     )
-    game_state = GameState(
-        recipe_book=recipe_book,
-    )
+    game_state = GameState()
 
     game_state.inventory.add(first_item)
     game_state.inventory.add(second_item)
     game_state.inventory.select(first_item.item_id)
 
-    scene = create_test_scene(game_state)
+    scene = create_test_scene(
+        game_state,
+        recipe_book=recipe_book,
+    )
 
     event = pygame.event.Event(
         pygame.MOUSEBUTTONDOWN,
@@ -705,12 +708,15 @@ def test_existing_recipe_result_keeps_ingredients_and_clears_selection() -> None
             )
         ]
     )
-    game_state = GameState(recipe_book=recipe_book)
+    game_state = GameState()
     game_state.inventory.add(first_item)
     game_state.inventory.add(second_item)
     game_state.inventory.add(result_item)
     game_state.inventory.select(first_item.item_id)
-    scene = create_test_scene(game_state)
+    scene = create_test_scene(
+        game_state,
+        recipe_book=recipe_book,
+    )
 
     result = scene.handle_event(create_primary_click(get_inventory_row_position(scene, 1)))
 

@@ -17,7 +17,9 @@ from game.scene_event_result import SceneEventResult
 from game.scenes.base_scene import BaseScene
 from game.settings import WINDOW_WIDTH
 from game.systems.dialogue import Dialogue
+from game.systems.item_combination import combine_inventory_items
 from game.systems.item_use import ItemUseInteraction
+from game.systems.recipe import RecipeBook
 from game.theme import (
     TEXT_HIGHLIGHT,
     TEXT_PRIMARY,
@@ -41,6 +43,7 @@ class AdventureScene(BaseScene):
         item_hotspots: list[ItemHotspot],
         npcs: list[NPC],
         game_state: GameState,
+        recipe_book: RecipeBook,
     ) -> None:
         self.name = name
         self.description = description
@@ -52,6 +55,7 @@ class AdventureScene(BaseScene):
         self.npcs = npcs
 
         self.game_state = game_state
+        self.recipe_book = recipe_book
         self.interaction_text: str | None = None
         self.active_speaker_name = ""
 
@@ -216,28 +220,14 @@ class AdventureScene(BaseScene):
         second_item: Item,
     ) -> None:
         """Attempt to combine two inventory items."""
-        inventory = self.game_state.inventory
-
-        recipe = self.game_state.recipe_book.find(
-            first_item.item_id,
-            second_item.item_id,
+        result = combine_inventory_items(
+            inventory=self.game_state.inventory,
+            recipe_book=self.recipe_book,
+            first_item_id=first_item.item_id,
+            second_item_id=second_item.item_id,
         )
 
-        if recipe is None:
-            self.interaction_text = f"{first_item.name} and {second_item.name} do not combine."
-            return
-
-        if inventory.contains(recipe.result_item.item_id):
-            inventory.clear_selection()
-
-            self.interaction_text = f"You already have {recipe.result_item.name}."
-            return
-
-        inventory.remove(first_item.item_id)
-        inventory.remove(second_item.item_id)
-        inventory.add(recipe.result_item)
-
-        self.interaction_text = recipe.success_text
+        self.interaction_text = result.message
 
     def _interact_with_npc(
         self,

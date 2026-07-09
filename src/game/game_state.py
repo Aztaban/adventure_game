@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from game.systems.inventory import Inventory
-from game.systems.recipe import RecipeBook
 
 
 @dataclass
@@ -11,7 +10,6 @@ class GameState:
     """Mutable persistent state shared by every scene in the game."""
 
     inventory: Inventory = field(default_factory=Inventory)
-    recipe_book: RecipeBook = field(default_factory=RecipeBook)
     _flags: set[str] = field(default_factory=set, repr=False)
     _collected_pickup_ids: set[str] = field(
         default_factory=set,

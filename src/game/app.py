@@ -31,9 +31,10 @@ class GameApp:
         self.debug_font = pygame.font.Font(None, 26)
 
         self.game_state = GameState(recipe_book=create_demo_recipe_book())
+        self.recipe_book = create_demo_recipe_book()
 
         self.scene_manager = SceneManager(
-            scenes=create_demo_scenes(self.game_state),
+            scenes=create_demo_scenes(self.game_state, self.recipe_book),
             starting_scene_id=STARTING_SCENE_ID,
         )
 
