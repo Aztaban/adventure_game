@@ -1,6 +1,6 @@
 # Content Plan
 
-Status: current direction after v0.8.1
+Status: current after v0.9 implementation
 
 ## Purpose
 
@@ -24,21 +24,16 @@ Example tone:
 Magic is real, but everyone is tired of filling magical paperwork.
 ```
 
-## Current v0.8.1 implementation note
+## Current v0.9 demo flow
 
-The current playable v0.8.1 flow still unlocks the tower directly when the Retired Witch receives Glowing Tea.
-
-That is acceptable as temporary behavior while architecture is being refactored.
-
-## Chosen v0.9 demo flow
-
-The intended v0.9 flow is key-based:
+The implemented v0.9 flow is key-based and includes filling the cup first:
 
 ```txt
-witch gets tea -> gives rusty key -> key unlocks tower
+empty cup -> old well -> cup of water
+cup of water + moon herb -> glowing tea
+glowing tea -> retired witch -> rusty key
+rusty key -> tower gate -> tower opens
 ```
-
-Do not keep both designs in story docs. The key-based flow is the v0.9 target.
 
 ## First demo premise
 
@@ -57,6 +52,7 @@ Purpose:
 - introduce Retired Witch
 - provide Empty Cup
 - provide village inspectables
+- let the player fill the Empty Cup at the Old Well
 - connect to Forest Path
 
 Current/potential content:
@@ -154,6 +150,20 @@ village_square
 Use:
 
 ```txt
+fill at old_well
+```
+
+### water_cup
+
+Created by:
+
+```txt
+empty_cup -> old_well
+```
+
+Use:
+
+```txt
 combine with moon_herb
 ```
 
@@ -168,7 +178,7 @@ forest_path
 Use:
 
 ```txt
-combine with empty_cup
+combine with water_cup
 ```
 
 ### glowing_tea
@@ -176,7 +186,7 @@ combine with empty_cup
 Created by:
 
 ```txt
-empty_cup + moon_herb
+water_cup + moon_herb
 ```
 
 Use:
@@ -186,8 +196,6 @@ give to retired_witch
 ```
 
 ### rusty_key
-
-Planned for v0.9.
 
 Received from:
 
@@ -208,14 +216,15 @@ unlock tower gate
 2. Gate requires Rusty Key.
 3. Retired Witch has the key but wants Glowing Tea.
 4. Player finds Empty Cup.
-5. Player finds Moon Herb.
-6. Player combines Empty Cup + Moon Herb = Glowing Tea.
-7. Player gives Glowing Tea to Retired Witch.
-8. Witch gives Rusty Key.
-9. Player uses Rusty Key on tower gate.
-10. Gate opens / tower becomes reachable.
-11. Player enters tower.
-12. Demo ends.
+5. Player fills Empty Cup at the Old Well and gets Cup of Water.
+6. Player finds Moon Herb.
+7. Player combines Cup of Water + Moon Herb = Glowing Tea.
+8. Player gives Glowing Tea to Retired Witch.
+9. Witch gives Rusty Key.
+10. Player uses Rusty Key on tower gate.
+11. Gate opens / tower becomes reachable.
+12. Player enters tower.
+13. Demo ends.
 ```
 
 ## Optional inspect text ideas
@@ -236,6 +245,12 @@ A cup. Empty, but emotionally available.
 
 ```txt
 It glows softly, like a plant with unresolved secrets.
+```
+
+### Cup of Water
+
+```txt
+A cup of cold well water. The well claims it was artisanal.
 ```
 
 ### Rusty Key

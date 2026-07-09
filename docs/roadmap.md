@@ -1,6 +1,6 @@
 # Roadmap
 
-Status: current for v0.8.1 planning
+Status: current after v0.9 implementation
 
 ## Development principle
 
@@ -114,7 +114,8 @@ Two inventory items can combine into a new item.
 Delivered:
 
 - order-independent recipe system
-- Empty Cup + Moon Herb = Glowing Tea
+- Empty Cup -> Old Well = Cup of Water
+- Cup of Water + Moon Herb = Glowing Tea
 - inventory-combination operation extracted from `AdventureScene`
 - atomic recipe transaction tests
 
@@ -134,7 +135,7 @@ Delivered:
 - demo completion flag
 - content validation
 
-## Current milestone: v0.8.1 — Refactor and regression hardening
+## Completed milestone: v0.8.1 — Refactor and regression hardening
 
 Goal:
 
@@ -173,7 +174,7 @@ AdventureScene is mostly a Pygame adapter
 misleading empty scaffolding is removed or documented
 ```
 
-## Next milestone: v0.9 — First complete demo
+## Current milestone: v0.9 — First complete demo
 
 Goal:
 
@@ -184,20 +185,23 @@ Playable beginning-to-end mini adventure with the intended key-based tower puzzl
 Chosen v0.9 puzzle flow:
 
 ```txt
-Empty Cup + Moon Herb -> Glowing Tea
+Empty Cup -> Old Well -> Cup of Water
+Cup of Water + Moon Herb -> Glowing Tea
 Glowing Tea -> Retired Witch -> Rusty Key
 Rusty Key -> Tower Gate -> tower opens
 Enter Tower -> demo ending
 ```
 
-Expected features:
+Delivered features:
 
+- add Cup of Water item
 - add Rusty Key item
-- update witch interaction to give Rusty Key instead of unlocking the tower directly
-- update tower gate to require Rusty Key
-- keep or revise `TOWER_UNLOCKED` as the semantic world fact after the key is used
-- update the full demo-flow integration test
-- add ending message/screen if needed
+- update Old Well interaction to turn Empty Cup into Cup of Water
+- update recipe to require Cup of Water + Moon Herb
+- witch interaction gives Rusty Key instead of unlocking the tower directly
+- tower gate requires Rusty Key
+- keep `TOWER_UNLOCKED` as the semantic world fact after the key is used
+- full demo-flow integration test updated
 - keep the demo small and complete
 
 Manual acceptance:
@@ -205,6 +209,7 @@ Manual acceptance:
 ```txt
 Start new game.
 Collect required items.
+Fill Empty Cup with water at the well.
 Make Glowing Tea.
 Give tea to witch.
 Receive Rusty Key.

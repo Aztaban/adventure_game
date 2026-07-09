@@ -114,6 +114,15 @@ def _validate_scene_references(
                     f"'{exit_hotspot.target_scene_id}'."
                 )
 
+            _validate_item_use_requirement(
+                scene_id=scene_id,
+                owner_type="exit",
+                owner_name=exit_hotspot.label,
+                item_use=exit_hotspot.item_use,
+                item_ids=item_ids,
+                errors=errors,
+            )
+
         for pickup in scene.item_hotspots:
             if pickup.item.item_id not in item_ids:
                 errors.append(
@@ -152,11 +161,21 @@ def _validate_item_use_requirement(
     item_ids: set[str],
     errors: list[str],
 ) -> None:
-    if item_use is None or item_use.required_item_id in item_ids:
+    if item_use is None:
+        return
+
+    if item_use.required_item_id not in item_ids:
+        errors.append(
+            f"Scene '{scene_id}' {owner_type} '{owner_name}' "
+            f"requires unknown item ID '{item_use.required_item_id}'."
+        )
+
+    if item_use.result_item is None or item_use.result_item.item_id in item_ids:
         return
 
     errors.append(
-        f"Scene '{scene_id}' {owner_type} '{owner_name}' requires unknown item ID '{item_use.required_item_id}'."
+        f"Scene '{scene_id}' {owner_type} '{owner_name}' "
+        f"creates unknown item ID '{item_use.result_item.item_id}'."
     )
 
 
@@ -191,6 +210,13 @@ def _collect_scene_stable_ids(
                     value=pickup.pickup_id,
                     owner=(f"Scene '{scene_id}' pickup '{pickup.item.name}'"),
                 )
+            )
+
+        for exit_hotspot in scene.exits:
+            _append_interaction_id(
+                stable_ids=stable_ids,
+                item_use=exit_hotspot.item_use,
+                owner=(f"Scene '{scene_id}' exit '{exit_hotspot.label}' interaction"),
             )
 
         for hotspot in scene.hotspots:

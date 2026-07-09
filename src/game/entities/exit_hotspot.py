@@ -4,7 +4,14 @@ from dataclasses import dataclass
 
 import pygame
 
-from game.theme import BORDER_DEFAULT, EXIT_BACKGROUND, EXIT_LOCKED_BACKGROUND, TEXT_HIGHLIGHT, TEXT_PRIMARY
+from game.systems.item_use import ItemUseInteraction
+from game.theme import (
+    BORDER_DEFAULT,
+    EXIT_BACKGROUND,
+    EXIT_LOCKED_BACKGROUND,
+    TEXT_HIGHLIGHT,
+    TEXT_PRIMARY,
+)
 
 
 @dataclass
@@ -18,6 +25,7 @@ class ExitHotspot:
     locked_text: str = "The way is blocked."
     locked_label: str | None = None
     completion_flag: str | None = None
+    item_use: ItemUseInteraction | None = None
 
     def contains_point(self, position: tuple[int, int]) -> bool:
         """Return True when the position is inside the exit."""
@@ -28,7 +36,7 @@ class ExitHotspot:
         surface: pygame.Surface,
         font: pygame.font.Font,
         is_locked: bool = False,
-        is_hovered: bool = False
+        is_hovered: bool = False,
     ) -> None:
         """Draw a visible placeholder exit."""
         background_color = EXIT_LOCKED_BACKGROUND if is_locked else EXIT_BACKGROUND

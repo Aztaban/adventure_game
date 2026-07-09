@@ -237,3 +237,99 @@ def test_service_unlocked_exit_returns_transition_and_sets_completion_flag() -> 
     assert outcome.message is None
     assert outcome.target_scene_id == "next_scene"
     assert game_state.has_flag("left_scene")
+
+
+def test_service_item_use_can_replace_selected_item_with_result_item() -> None:
+    empty_cup = create_item("empty_cup", "Empty Cup")
+    water_cup = create_item("water_cup", "Cup of Water")
+    interaction = ItemUseInteraction(
+        required_item_id=empty_cup.item_id,
+        success_text="The cup is filled.",
+        failure_text="That does not work.",
+        completed_text="Already filled.",
+        consume_item=True,
+        result_item=water_cup,
+        interaction_id="interaction.test.well",
+    )
+    hotspot = Hotspot(
+        rect=pygame.Rect(0, 0, 10, 10),
+        label="Well",
+        inspect_text="A well.",
+        item_use=interaction,
+    )
+    game_state = GameState()
+    service = create_service(game_state)
+    game_state.inventory.add(empty_cup)
+    game_state.inventory.select(empty_cup.item_id)
+
+    outcome = service.interact_with_hotspot(hotspot)
+
+    assert outcome.consumed
+    assert outcome.message == "The cup is filled."
+    assert not game_state.inventory.contains(empty_cup.item_id)
+    assert game_state.inventory.contains(water_cup.item_id)
+    assert game_state.inventory.selected_item is None
+    assert game_state.has_completed_interaction("interaction.test.well")
+
+
+def test_service_item_use_result_already_owned_does_not_consume_selected_item() -> None:
+    empty_cup = create_item("empty_cup", "Empty Cup")
+    water_cup = create_item("water_cup", "Cup of Water")
+    interaction = ItemUseInteraction(
+        required_item_id=empty_cup.item_id,
+        success_text="The cup is filled.",
+        failure_text="That does not work.",
+        completed_text="Already filled.",
+        consume_item=True,
+        result_item=water_cup,
+        interaction_id="interaction.test.well",
+    )
+    game_state = GameState()
+    service = create_service(game_state)
+    game_state.inventory.add(empty_cup)
+    game_state.inventory.add(water_cup)
+    game_state.inventory.select(empty_cup.item_id)
+
+    outcome = service.use_selected_item(interaction)
+
+    assert outcome.consumed
+    assert outcome.message == "You already have Cup of Water."
+    assert game_state.inventory.contains(empty_cup.item_id)
+    assert game_state.inventory.contains(water_cup.item_id)
+    assert game_state.inventory.selected_item is None
+    assert not game_state.has_completed_interaction("interaction.test.well")
+
+
+def test_service_uses_selected_item_on_exit_to_unlock_it() -> None:
+    key = create_item("key", "Key")
+    exit_hotspot = ExitHotspot(
+        rect=pygame.Rect(0, 0, 10, 10),
+        target_scene_id="tower",
+        label="Tower Gate",
+        required_flag="tower_open",
+        locked_text="The gate is locked.",
+        item_use=ItemUseInteraction(
+            required_item_id=key.item_id,
+            success_text="The gate unlocks.",
+            failure_text="That does not fit.",
+            completed_text="The gate is already unlocked.",
+            consume_item=True,
+            flags_to_set=("tower_open",),
+            completion_flag="tower_open",
+        ),
+    )
+    game_state = GameState()
+    service = create_service(game_state)
+    game_state.inventory.add(key)
+    game_state.inventory.select(key.item_id)
+
+    unlock_outcome = service.interact_with_exit(exit_hotspot)
+    enter_outcome = service.interact_with_exit(exit_hotspot)
+
+    assert unlock_outcome.consumed
+    assert unlock_outcome.message == "The gate unlocks."
+    assert unlock_outcome.target_scene_id is None
+    assert not game_state.inventory.contains(key.item_id)
+    assert game_state.has_flag("tower_open")
+    assert enter_outcome.consumed
+    assert enter_outcome.target_scene_id == "tower"

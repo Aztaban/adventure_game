@@ -234,7 +234,7 @@ The first version should use adventure-style item combining, not full crafting.
 Good examples:
 
 ```txt
-cup + moon_herb = glowing_tea
+water_cup + moon_herb = glowing_tea
 stick + string = fishing_rod
 empty_bottle + fairy_dust = glowing_bottle
 ```

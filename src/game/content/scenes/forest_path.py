@@ -4,6 +4,7 @@ from game.content.flag_ids import (
     DEMO_COMPLETED,
     TOWER_UNLOCKED,
 )
+from game.content.item_ids import RUSTY_KEY
 from game.content.items import create_moon_herb
 from game.content.pickup_ids import MOON_HERB_PICKUP
 from game.content.scene_ids import (
@@ -17,6 +18,7 @@ from game.entities.npc import NPC
 from game.game_state import GameState
 from game.scenes.adventure_scene import AdventureScene
 from game.settings import WINDOW_HEIGHT, WINDOW_WIDTH
+from game.systems.item_use import ItemUseInteraction
 from game.systems.recipe import RecipeBook
 
 
@@ -51,17 +53,32 @@ def create_forest_path(
                 label="Enter Tower",
                 required_flag=TOWER_UNLOCKED,
                 locked_label="Tower Gate (Locked)",
-                locked_text=("The tower gate refuses to move. A faint magical symbol resembles a teacup."),
+                locked_text=(
+                    "The tower gate refuses to move. "
+                    "The old lock looks like it needs a key."
+                ),
                 completion_flag=DEMO_COMPLETED,
+                item_use=ItemUseInteraction(
+                    required_item_id=RUSTY_KEY,
+                    success_text=(
+                        "The Rusty Key turns with a dramatic crunch. "
+                        "The tower gate unlocks."
+                    ),
+                    failure_text="That does not fit the tower gate lock.",
+                    completed_text="The tower gate is already unlocked.",
+                    consume_item=True,
+                    flags_to_set=(TOWER_UNLOCKED,),
+                    completion_flag=TOWER_UNLOCKED,
+                ),
             ),
         ],
         hotspots=[
             Hotspot(
                 rect=pygame.Rect(500, 260, 240, 120),
                 label="Suspicious Stump",
-                inspect_text=("The stump looks back at you. You decide not to mention it."),
+                inspect_text="The stump looks back at you. You decide not to mention it.",
                 inspect_flag=TOWER_UNLOCKED,
-                flagged_inspect_text=("The stump nods toward the now-open tower gate."),
+                flagged_inspect_text="The stump nods toward the now-open tower gate.",
             )
         ],
         item_hotspots=[
@@ -69,7 +86,10 @@ def create_forest_path(
                 pickup_id=MOON_HERB_PICKUP,
                 rect=pygame.Rect(850, 350, 180, 100),
                 item=create_moon_herb(),
-                pickup_text=("You carefully collect the Moon Herb. It seems pleased with itself."),
+                pickup_text=(
+                    "You carefully collect the Moon Herb. "
+                    "It seems pleased with itself."
+                ),
             )
         ],
         npcs=[

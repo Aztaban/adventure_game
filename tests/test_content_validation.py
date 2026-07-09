@@ -246,3 +246,45 @@ def test_duplicate_pickup_id_fails_clearly() -> None:
         ),
     ):
         validate_demo_content(scenes, game_state, recipe_book)
+
+
+def test_unknown_item_use_result_fails_clearly() -> None:
+    scenes, game_state, recipe_book = create_valid_demo_content()
+    village = scenes[VILLAGE_SQUARE]
+    witch = next(npc for npc in village.npcs if npc.name == "Retired Witch")
+    assert witch.item_use is not None
+    witch.item_use.result_item = Item(
+        item_id="missing_reward",
+        name="Missing Reward",
+        description="Not part of the item catalog.",
+    )
+
+    with pytest.raises(
+        ContentValidationError,
+        match=(
+            "Scene 'village_square' NPC 'Retired Witch' "
+            "creates unknown item ID 'missing_reward'"
+        ),
+    ):
+        validate_demo_content(scenes, game_state, recipe_book)
+
+
+def test_unknown_exit_item_use_requirement_fails_clearly() -> None:
+    scenes, game_state, recipe_book = create_valid_demo_content()
+    forest = scenes[FOREST_PATH]
+    tower_exit = next(
+        exit_hotspot
+        for exit_hotspot in forest.exits
+        if exit_hotspot.target_scene_id == "tower_interior"
+    )
+    assert tower_exit.item_use is not None
+    tower_exit.item_use.required_item_id = "missing_gate_key"
+
+    with pytest.raises(
+        ContentValidationError,
+        match=(
+            "Scene 'forest_path' exit 'Enter Tower' "
+            "requires unknown item ID 'missing_gate_key'"
+        ),
+    ):
+        validate_demo_content(scenes, game_state, recipe_book)

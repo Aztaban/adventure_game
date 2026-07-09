@@ -97,34 +97,30 @@ Add new test files only when they describe a real boundary.
 
 ## Full demo-flow integration test
 
-`tests/integration/test_demo_flow.py` protects the current v0.8.1 playable path using real demo content.
+`tests/integration/test_demo_flow.py` protects the current v0.9 playable path using real demo content.
 
 It covers:
 
 ```txt
 Village Square
 → collect Empty Cup
+→ fill Empty Cup at Old Well to make Cup of Water
 → Forest Path
 → verify tower is locked
 → collect Moon Herb
-→ combine Empty Cup + Moon Herb into Glowing Tea
+→ combine Cup of Water + Moon Herb into Glowing Tea
 → return to the witch
 → give Glowing Tea to the witch
-→ verify WITCH_RECEIVED_TEA and TOWER_UNLOCKED
+→ receive Rusty Key
+→ verify WITCH_RECEIVED_TEA is set and TOWER_UNLOCKED is not set yet
 → return to Forest Path
+→ use Rusty Key on Tower Gate
+→ verify TOWER_UNLOCKED is set
 → enter tower
 → verify DEMO_COMPLETED
 ```
 
-This test currently reflects the v0.8.1 implementation, where the witch unlocks the tower directly after receiving tea.
-
-The intended v0.9 story flow will add the rusty key step:
-
-```txt
-Glowing Tea -> Retired Witch -> Rusty Key -> Tower Gate -> ending
-```
-
-When that feature is implemented, update the demo-flow integration test at the same time.
+This test reflects the v0.9 implementation: the witch gives a Rusty Key, and the key unlocks the tower gate.
 
 ## v0.8.1 regression checklist
 
@@ -218,16 +214,22 @@ Run after each milestone or meaningful refactor:
 - Talk to Retired Witch.
 - Advance and close dialogue.
 - Collect Empty Cup.
+- Select Empty Cup in InventoryBar.
+- Use Empty Cup on Old Well.
+- Confirm Cup of Water appears and Empty Cup is removed.
 - Travel to Forest Path.
 - Confirm tower is locked before helping the witch.
 - Collect Moon Herb.
-- Select Empty Cup in InventoryBar.
+- Select Cup of Water in InventoryBar.
 - Click Moon Herb to combine.
 - Confirm Glowing Tea appears and ingredients are removed.
 - Return to Village Square.
 - Give Glowing Tea to Retired Witch.
+- Confirm Rusty Key appears and Glowing Tea is removed.
 - Confirm witch dialogue/content changes.
 - Return to Forest Path.
+- Select Rusty Key in InventoryBar.
+- Use Rusty Key on Tower Gate.
 - Confirm tower exit is usable.
 - Enter tower.
 - Confirm ending/progress text appears.

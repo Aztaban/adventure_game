@@ -6,7 +6,13 @@ from game.content.flag_ids import (
     TOWER_UNLOCKED,
     WITCH_RECEIVED_TEA,
 )
-from game.content.item_ids import EMPTY_CUP, GLOWING_TEA, MOON_HERB
+from game.content.item_ids import (
+    EMPTY_CUP,
+    GLOWING_TEA,
+    MOON_HERB,
+    RUSTY_KEY,
+    WATER_CUP,
+)
 from game.content.pickup_ids import EMPTY_CUP_PICKUP
 from game.content.recipes import create_demo_recipe_book
 from game.content.scene_ids import (
@@ -16,6 +22,7 @@ from game.content.scene_ids import (
     VILLAGE_SQUARE,
 )
 from game.entities.exit_hotspot import ExitHotspot
+from game.entities.hotspot import Hotspot
 from game.entities.item_hotspot import ItemHotspot
 from game.entities.npc import NPC
 from game.game_state import GameState
@@ -45,7 +52,14 @@ def current_adventure_scene(manager: SceneManager) -> AdventureScene:
 
 def find_pickup(scene: AdventureScene, item_id: str) -> ItemHotspot:
     """Find a real demo pickup by item ID."""
-    return next(pickup for pickup in scene.item_hotspots if pickup.item.item_id == item_id)
+    return next(
+        pickup for pickup in scene.item_hotspots if pickup.item.item_id == item_id
+    )
+
+
+def find_hotspot(scene: AdventureScene, label: str) -> Hotspot:
+    """Find a real demo hotspot by label."""
+    return next(hotspot for hotspot in scene.hotspots if hotspot.label == label)
 
 
 def find_exit(
@@ -53,7 +67,11 @@ def find_exit(
     target_scene_id: str,
 ) -> ExitHotspot:
     """Find a real demo exit by its destination."""
-    return next(exit_hotspot for exit_hotspot in scene.exits if exit_hotspot.target_scene_id == target_scene_id)
+    return next(
+        exit_hotspot
+        for exit_hotspot in scene.exits
+        if exit_hotspot.target_scene_id == target_scene_id
+    )
 
 
 def find_npc(scene: AdventureScene, name: str) -> NPC:
@@ -68,7 +86,9 @@ def inventory_item_position(
     """Return the clickable inventory position for an item ID."""
     return next(
         row_rect.center
-        for item, row_rect in scene.inventory_bar.layout_for_items(scene.game_state.inventory.items).item_rows
+        for item, row_rect in scene.inventory_bar.layout_for_items(
+            scene.game_state.inventory.items
+        ).item_rows
         if item.item_id == item_id
     )
 
@@ -78,7 +98,7 @@ def click(manager: SceneManager, position: tuple[int, int]) -> None:
     assert manager.handle_event(create_primary_click(position))
 
 
-def test_complete_demo_flow_uses_real_content() -> None:
+def test_complete_key_based_demo_flow_uses_real_content() -> None:
     game_state = GameState()
     recipe_book = create_demo_recipe_book()
     scenes = create_demo_scenes(game_state, recipe_book)
@@ -96,6 +116,14 @@ def test_complete_demo_flow_uses_real_content() -> None:
     assert game_state.inventory.contains(EMPTY_CUP)
     assert game_state.has_collected_pickup(EMPTY_CUP_PICKUP)
 
+    old_well = find_hotspot(village, "Old Well")
+    click(manager, inventory_item_position(village, EMPTY_CUP))
+    click(manager, old_well.rect.center)
+
+    assert not game_state.inventory.contains(EMPTY_CUP)
+    assert game_state.inventory.contains(WATER_CUP)
+    assert game_state.inventory.selected_item is None
+
     forest_exit = find_exit(village, FOREST_PATH)
     click(manager, forest_exit.rect.center)
 
@@ -107,6 +135,7 @@ def test_complete_demo_flow_uses_real_content() -> None:
 
     assert manager.current_scene_id == FOREST_PATH
     assert forest.interaction_text == tower_exit.locked_text
+    assert not game_state.has_flag(TOWER_UNLOCKED)
     assert not game_state.has_flag(DEMO_COMPLETED)
 
     moon_herb_pickup = find_pickup(forest, MOON_HERB)
@@ -114,10 +143,10 @@ def test_complete_demo_flow_uses_real_content() -> None:
 
     assert game_state.inventory.contains(MOON_HERB)
 
-    click(manager, inventory_item_position(forest, EMPTY_CUP))
+    click(manager, inventory_item_position(forest, WATER_CUP))
     click(manager, inventory_item_position(forest, MOON_HERB))
 
-    assert not game_state.inventory.contains(EMPTY_CUP)
+    assert not game_state.inventory.contains(WATER_CUP)
     assert not game_state.inventory.contains(MOON_HERB)
     assert game_state.inventory.contains(GLOWING_TEA)
     assert game_state.inventory.selected_item is None
@@ -135,15 +164,25 @@ def test_complete_demo_flow_uses_real_content() -> None:
     click(manager, witch.rect.center)
 
     assert not game_state.inventory.contains(GLOWING_TEA)
+    assert game_state.inventory.contains(RUSTY_KEY)
     assert game_state.inventory.selected_item is None
     assert game_state.has_flag(WITCH_RECEIVED_TEA)
-    assert game_state.has_flag(TOWER_UNLOCKED)
+    assert not game_state.has_flag(TOWER_UNLOCKED)
 
     forest_exit = find_exit(village, FOREST_PATH)
     click(manager, forest_exit.rect.center)
 
     forest = current_adventure_scene(manager)
     tower_exit = find_exit(forest, TOWER_INTERIOR)
+    click(manager, inventory_item_position(forest, RUSTY_KEY))
+    click(manager, tower_exit.rect.center)
+
+    assert manager.current_scene_id == FOREST_PATH
+    assert not game_state.inventory.contains(RUSTY_KEY)
+    assert game_state.inventory.selected_item is None
+    assert game_state.has_flag(TOWER_UNLOCKED)
+    assert not game_state.has_flag(DEMO_COMPLETED)
+
     click(manager, tower_exit.rect.center)
 
     assert manager.current_scene_id == TOWER_INTERIOR

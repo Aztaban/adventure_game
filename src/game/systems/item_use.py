@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from game.entities.item import Item
+
 
 @dataclass(frozen=True)
 class ItemUseResult:
@@ -12,6 +14,7 @@ class ItemUseResult:
     message: str
     consume_item: bool = False
     flags_to_set: tuple[str, ...] = ()
+    result_item: Item | None = None
 
 
 @dataclass
@@ -24,6 +27,7 @@ class ItemUseInteraction:
     completed_text: str
     consume_item: bool = False
     flags_to_set: tuple[str, ...] = ()
+    result_item: Item | None = None
     interaction_id: str | None = None
     completion_flag: str | None = None
 
@@ -33,7 +37,8 @@ class ItemUseInteraction:
 
         if has_interaction_id == has_completion_flag:
             raise ValueError(
-                "Item-use interaction requires exactly one completion identifier: interaction_id or completion_flag."
+                "Item-use interaction requires exactly one completion "
+                "identifier: interaction_id or completion_flag."
             )
 
         if self.completion_flag is not None and self.completion_flag not in self.flags_to_set:
@@ -77,4 +82,5 @@ class ItemUseInteraction:
             message=self.success_text,
             consume_item=self.consume_item,
             flags_to_set=self.flags_to_set,
+            result_item=self.result_item,
         )

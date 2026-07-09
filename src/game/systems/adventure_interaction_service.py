@@ -25,7 +25,7 @@ class AdventureInteractionOutcome:
 
 
 class AdventureInteractionService:
-    """Handle adnveture gameplay transactions without pygame presentation code."""
+    """Handle adventure gameplay transactions without Pygame presentation code."""
 
     def __init__(
         self,
@@ -53,7 +53,7 @@ class AdventureInteractionService:
         self,
         clicked_item: Item,
     ) -> AdventureInteractionOutcome:
-        """Select, deselect or combine an inventory item."""
+        """Select, deselect, or combine an inventory item."""
         inventory = self.game_state.inventory
         selected_item = inventory.selected_item
 
@@ -62,7 +62,7 @@ class AdventureInteractionService:
 
             return AdventureInteractionOutcome(
                 consumed=True,
-                message=f"Selected {clicked_item.name}. Click another item to combine them."
+                message=f"Selected {clicked_item.name}. Click another item to combine them.",
             )
 
         if selected_item.item_id == clicked_item.item_id:
@@ -70,7 +70,7 @@ class AdventureInteractionService:
 
             return AdventureInteractionOutcome(
                 consumed=True,
-                message=f"Deselected {clicked_item.name}."
+                message=f"Deselected {clicked_item.name}.",
             )
 
         result = combine_inventory_items(
@@ -108,7 +108,10 @@ class AdventureInteractionService:
             message=message,
         )
 
-    def interact_with_npc(self, npc: NPC) -> AdventureInteractionOutcome:
+    def interact_with_npc(
+        self,
+        npc: NPC,
+    ) -> AdventureInteractionOutcome:
         """Talk to an NPC or use the selected inventory item on them."""
         if self.game_state.inventory.selected_item is not None:
             return self.use_selected_item(npc.item_use)
@@ -122,7 +125,10 @@ class AdventureInteractionService:
             ),
         )
 
-    def interact_with_hotspot(self, hotspot: Hotspot) -> AdventureInteractionOutcome:
+    def interact_with_hotspot(
+        self,
+        hotspot: Hotspot,
+    ) -> AdventureInteractionOutcome:
         """Inspect a hotspot or use the selected inventory item on it."""
         if self.game_state.inventory.selected_item is not None:
             return self.use_selected_item(hotspot.item_use)
@@ -131,12 +137,21 @@ class AdventureInteractionService:
             consumed=True,
             message=hotspot.inspect_text_for(
                 self.game_state.has_flag,
-                self.game_state.has_completed_interaction
+                self.game_state.has_completed_interaction,
             ),
         )
 
-    def interact_with_exit(self, exit_hotspot: ExitHotspot) -> AdventureInteractionOutcome:
-        """use an exit or return its locked message."""
+    def interact_with_exit(
+        self,
+        exit_hotspot: ExitHotspot,
+    ) -> AdventureInteractionOutcome:
+        """Use an exit, unlock it with an item, or return its locked message."""
+        if (
+            self.game_state.inventory.selected_item is not None
+            and exit_hotspot.item_use is not None
+        ):
+            return self.use_selected_item(exit_hotspot.item_use)
+
         required_flag = exit_hotspot.required_flag
 
         if required_flag is not None and not self.game_state.has_flag(required_flag):
@@ -167,7 +182,7 @@ class AdventureInteractionService:
         if interaction is None:
             return AdventureInteractionOutcome(
                 consumed=True,
-                message=f"{selected_item.name} does not seem useful here."
+                message=f"{selected_item.name} does not seem useful here.",
             )
 
         is_completed = interaction.has_been_completed(
@@ -185,6 +200,17 @@ class AdventureInteractionService:
                 message=result.message,
             )
 
+        if (
+            result.result_item is not None
+            and inventory.contains(result.result_item.item_id)
+        ):
+            inventory.clear_selection()
+
+            return AdventureInteractionOutcome(
+                consumed=True,
+                message=f"You already have {result.result_item.name}.",
+            )
+
         for flag in result.flags_to_set:
             self.game_state.set_flag(flag)
 
@@ -195,6 +221,9 @@ class AdventureInteractionService:
             inventory.remove(selected_item.item_id)
         else:
             inventory.clear_selection()
+
+        if result.result_item is not None:
+            inventory.add(result.result_item)
 
         return AdventureInteractionOutcome(
             consumed=True,

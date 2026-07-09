@@ -1,7 +1,7 @@
 import pygame
 
 from game.content.interaction_ids import OLD_WELL_INTERACTION
-from game.content.item_ids import EMPTY_CUP
+from game.content.item_ids import EMPTY_CUP, WATER_CUP
 from game.content.pickup_ids import EMPTY_CUP_PICKUP
 from game.content.recipes import create_demo_recipe_book
 from game.content.scenes.village_square import create_village_square
@@ -62,6 +62,8 @@ def test_completed_interaction_survives_scene_reconstruction() -> None:
     first_scene.handle_event(create_primary_click(old_well.rect.center))
 
     assert game_state.has_completed_interaction(OLD_WELL_INTERACTION)
+    assert not game_state.inventory.contains(EMPTY_CUP)
+    assert game_state.inventory.contains(WATER_CUP)
 
     recreated_scene = create_village_square(game_state, recipe_book)
     recreated_well = find_hotspot(recreated_scene, "Old Well")

@@ -1,6 +1,6 @@
 # MVP
 
-Status: current direction after v0.8.1
+Status: current after v0.9 implementation
 
 ## MVP goal
 
@@ -26,17 +26,16 @@ unlock progress
 finish demo
 ```
 
-## Current v0.8.1 versus v0.9 MVP
+## Current v0.9 MVP
 
-v0.8.1 proves the technical loop and currently lets the witch unlock the tower directly after receiving Glowing Tea.
-
-v0.9 should complete the intended story loop:
+v0.9 completes the first intended story loop:
 
 ```txt
-witch gets tea -> gives rusty key -> key unlocks tower
+empty cup -> old well -> cup of water
+cup of water + moon herb -> glowing tea
+glowing tea -> retired witch -> rusty key
+rusty key -> tower gate -> finish demo
 ```
-
-Do not implement that new content during documentation cleanup.
 
 ## MVP scope
 
@@ -49,7 +48,7 @@ Do not implement that new content during documentation cleanup.
 - Scene transitions through exits
 - At least 2 NPCs
 - Basic dialogue box
-- At least 4 story-relevant items by v0.9
+- At least 5 story-relevant items by v0.9
 - Basic inventory
 - Select/use item
 - Combine at least 2 items into 1 new item
@@ -109,6 +108,7 @@ mushroom_guard
 ```txt
 empty_cup
 moon_herb
+water_cup
 glowing_tea
 rusty_key
 ```
@@ -116,7 +116,8 @@ rusty_key
 ### Puzzle
 
 ```txt
-empty_cup + moon_herb = glowing_tea
+empty_cup -> old_well = water_cup
+water_cup + moon_herb = glowing_tea
 glowing_tea -> retired_witch = rusty_key
 rusty_key -> tower_gate = unlock tower
 enter tower = finish demo

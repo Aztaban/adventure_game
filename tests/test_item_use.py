@@ -1,5 +1,6 @@
 import pytest
 
+from game.entities.item import Item
 from game.systems.item_use import ItemUseInteraction
 
 
@@ -142,3 +143,28 @@ def test_completion_flag_must_be_set_by_success() -> None:
             completed_text="Already complete.",
             completion_flag="quest_finished",
         )
+
+
+def test_successful_item_use_can_return_result_item() -> None:
+    result_item = create_interaction_result_item()
+    interaction = ItemUseInteraction(
+        required_item_id="correct_item",
+        success_text="That worked.",
+        failure_text="That did not work.",
+        completed_text="Already complete.",
+        result_item=result_item,
+        interaction_id="interaction.test.result",
+    )
+
+    result = interaction.attempt("correct_item")
+
+    assert result.success
+    assert result.result_item is result_item
+
+
+def create_interaction_result_item() -> Item:
+    return Item(
+        item_id="result_item",
+        name="Result Item",
+        description="Created by item use.",
+    )
