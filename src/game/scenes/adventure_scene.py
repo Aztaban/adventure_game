@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+from enum import Enum
+
 import pygame
 
 from game.entities.exit_hotspot import ExitHotspot
@@ -29,6 +32,23 @@ from game.theme import (
 from game.ui.dialogue_box import DialogueBox
 from game.ui.inventory_bar import InventoryBar
 from game.ui.message_box import MessageBox
+
+
+class WorldTargetKind(Enum):
+    """Kinds of clickable world targets in scene priority order."""
+
+    NPC = "npc"
+    EXIT = "exit"
+    ITEM_PICKUP = "item_pickup"
+    HOTSPOT = "HOTSPOT"
+
+
+@dataclass(frozen=True)
+class WorldTarget:
+    """Tagged world target resolved from a scene position."""
+
+    kind: WorldTargetKind
+    entity: NPC | ExitHotspot | ItemHotspot | Hotspot
 
 
 class AdventureScene(BaseScene):
@@ -159,29 +179,41 @@ class AdventureScene(BaseScene):
                 self.interaction_service.select_or_combine_inventory_item(inventory_item)
             )
 
-        npc = self._find_npc(position)
+        target = self._resolve_world_target(position)
 
-        if npc is not None:
-            return self._apply_interaction_outcome(self.interaction_service.interact_with_npc(npc))
+        if target is None:
+            return SceneEventResult()
 
-        exit_hotspot = self._find_exit_hotspot(position)
+        return self._interact_with_world_target(target)
 
-        if exit_hotspot is not None:
-            return self._apply_interaction_outcome(self.interaction_service.interact_with_exit(exit_hotspot))
+    def _interact_with_world_target(self, target: WorldTarget) -> SceneEventResult:
+        """Run the interaction matching a resolved world target."""
+        if target.kind is WorldTargetKind.NPC:
+            assert isinstance(target.entity, NPC)
 
-        item_hotspot = self._find_item_hotspot(position)
+            return self._apply_interaction_outcome(
+                self.interaction_service.interact_with_npc(target.entity)
+            )
 
-        if item_hotspot is not None:
-            return self._apply_interaction_outcome(self.interaction_service.collect_item(item_hotspot))
+        if target.kind is WorldTargetKind.EXIT:
+            assert isinstance(target.entity, ExitHotspot)
 
-        hotspot = self._find_hotspot(position)
+            return self._apply_interaction_outcome(
+                self.interaction_service.interact_with_exit(target.entity)
+            )
 
-        if hotspot is not None:
-            return self._apply_interaction_outcome(self.interaction_service.interact_with_hotspot(hotspot))
+        if target.kind is WorldTargetKind.ITEM_PICKUP:
+            assert isinstance(target.entity, ItemHotspot)
 
-        return SceneEventResult()
+            return self._apply_interaction_outcome(
+                self.interaction_service.collect_item(target.entity)
+            )
 
+        assert isinstance(target.entity, Hotspot)
 
+        return self._apply_interaction_outcome(
+            self.interaction_service.interact_with_hotspot(target.entity)
+        )
 
     def _apply_interaction_outcome(
         self,
@@ -239,16 +271,18 @@ class AdventureScene(BaseScene):
     def _draw_scene_entities(
         self,
         surface: pygame.Surface,
-        hovered_hotspot: Hotspot | None,
-        hovered_item: ItemHotspot | None,
-        hovered_npc: NPC | None,
+        hovered_target: WorldTarget | None,
     ) -> None:
         """Draw scene hotspots, items, NPCs, and exits."""
         for hotspot in self.hotspots:
             hotspot.draw(
                 surface,
                 self.body_font,
-                is_hovered=hotspot is hovered_hotspot,
+                is_hovered=self._is_hovered_target(
+                    hovered_target,
+                    WorldTargetKind.HOTSPOT,
+                    hotspot,
+                ),
             )
 
         for item_hotspot in self.item_hotspots:
@@ -258,14 +292,22 @@ class AdventureScene(BaseScene):
             item_hotspot.draw(
                 surface,
                 self.body_font,
-                is_hovered=item_hotspot is hovered_item,
+                is_hovered=self._is_hovered_target(
+                    hovered_target,
+                    WorldTargetKind.ITEM_PICKUP,
+                    item_hotspot,
+                ),
             )
 
         for npc in self.npcs:
             npc.draw(
                 surface,
                 self.body_font,
-                is_hovered=npc is hovered_npc,
+                is_hovered=self._is_hovered_target(
+                    hovered_target,
+                    WorldTargetKind.NPC,
+                    npc,
+                ),
             )
 
         for exit_hotspot in self.exits:
@@ -277,36 +319,23 @@ class AdventureScene(BaseScene):
                 surface,
                 self.body_font,
                 is_locked=is_locked,
+                is_hovered=self._is_hovered_target(
+                    hovered_target,
+                    WorldTargetKind.EXIT,
+                    exit_hotspot,
+                ),
             )
 
     def _draw_hover_text(
         self,
         surface: pygame.Surface,
-        hovered_npc: NPC | None,
-        hovered_item: ItemHotspot | None,
-        hovered_hotspot: Hotspot | None,
+        hovered_target: WorldTarget | None,
     ) -> None:
         """Draw information for the currently hovered entity."""
         if self.dialogue.is_active:
             return
 
-        hover_text: str | None = None
-        selected_item = self.game_state.inventory.selected_item
-
-        if hovered_npc is not None:
-            if selected_item is not None:
-                hover_text = f"Use {selected_item.name} on {hovered_npc.name}"
-            else:
-                hover_text = f"Talk to: {hovered_npc.name}"
-
-        elif hovered_item is not None:
-            hover_text = f"Pick up: {hovered_item.item.name}"
-
-        elif hovered_hotspot is not None:
-            if selected_item is not None:
-                hover_text = f"Use {selected_item.name} on {hovered_hotspot.label}"
-            else:
-                hover_text = f"Inspect: {hovered_hotspot.label}"
+        hover_text = self._hover_text_for_target(hovered_target)
 
         if hover_text is None:
             return
@@ -319,49 +348,89 @@ class AdventureScene(BaseScene):
 
         surface.blit(hover_surface, (40, 150))
 
-    def _find_hotspot(
+    def _hover_text_for_target(
+        self,
+        target: WorldTarget | None,
+    ) -> str | None:
+        """Return hover text for a resolved world target."""
+        if target is None:
+            return
+
+        selected_item = self.game_state.inventory.selected_item
+
+        if target.kind is WorldTargetKind.NPC:
+            assert isinstance(target.entity, NPC)
+
+            if selected_item is not None:
+                return f"Use {selected_item.name} on {target.entity.name}"
+
+            return f"Talk to: {target.entity.name}"
+
+        if target.kind is WorldTargetKind.EXIT:
+            assert isinstance(target.entity, ExitHotspot)
+
+            return f"Go to: {self._display_label_for_exit(target.entity)}"
+
+        if target.kind is WorldTargetKind.ITEM_PICKUP:
+            assert isinstance(target.entity, ItemHotspot)
+
+            return f"Pick up: {target.entity.item.name}"
+
+        assert isinstance(target.entity, Hotspot)
+
+        if selected_item is not None:
+            return f"Use {selected_item.name} on {target.entity.label}"
+
+        return f"Inspect: {target.entity.label}"
+
+    def _display_label_for_exit(
+        self,
+        exit_hotspot: ExitHotspot,
+    ) -> str:
+        """Return the exit label matching current locked state."""
+        required_flag = exit_hotspot.required_flag
+        is_locked = required_flag is not None and not self.game_state.has_flag(required_flag)
+
+        if is_locked and exit_hotspot.locked_label is not None:
+            return exit_hotspot.locked_label
+
+        return exit_hotspot.label
+
+    def _resolve_world_target(
         self,
         position: tuple[int, int],
-    ) -> Hotspot | None:
-        """Return the hotspot at a position."""
-        for hotspot in self.hotspots:
-            if hotspot.contains_point(position):
-                return hotspot
+    ) -> WorldTarget | None:
+        """Return the highest-priority world target at a position."""
+        for npc in self.npcs:
+            if npc.contains_point(position):
+                return WorldTarget(WorldTargetKind.NPC, npc)
 
-        return None
+        for exit_hotspot in self.exits:
+            if exit_hotspot.contains_point(position):
+                return WorldTarget(WorldTargetKind.EXIT, exit_hotspot)
 
-    def _find_item_hotspot(
-        self,
-        position: tuple[int, int],
-    ) -> ItemHotspot | None:
-        """Return the collectible item at a position."""
         for item_hotspot in self.item_hotspots:
             if self.game_state.has_collected_pickup(item_hotspot.pickup_id):
                 continue
 
             if item_hotspot.contains_point(position):
-                return item_hotspot
+                return WorldTarget(WorldTargetKind.ITEM_PICKUP, item_hotspot)
+
+        for hotspot in self.hotspots:
+            if hotspot.contains_point(position):
+                return WorldTarget(WorldTargetKind.HOTSPOT, hotspot)
 
         return None
 
-    def _find_npc(
+    def _is_hovered_target(
         self,
-        position: tuple[int, int],
-    ) -> NPC | None:
-        """Return the NPC at a position."""
-        for npc in self.npcs:
-            if npc.contains_point(position):
-                return npc
-
-        return None
-
-    def _find_exit_hotspot(
-        self,
-        position: tuple[int, int],
-    ) -> ExitHotspot | None:
-        """Return the exit hotspot at a position."""
-        for exit_hotspot in self.exits:
-            if exit_hotspot.contains_point(position):
-                return exit_hotspot
-
-        return None
+        hovered_target: WorldTarget | None,
+        target_kind: WorldTargetKind,
+        entity: NPC | ExitHotspot | ItemHotspot | Hotspot,
+    ) -> bool:
+        """Return whether an entity matches the resolved hovered target."""
+        return (
+            hovered_target is not None
+            and hovered_target.kind is target_kind
+            and hovered_target.entity is entity
+        )

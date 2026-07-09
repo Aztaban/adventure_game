@@ -6,7 +6,7 @@ from game.entities.item import Item
 from game.entities.item_hotspot import ItemHotspot
 from game.entities.npc import NPC
 from game.game_state import GameState
-from game.scenes.adventure_scene import AdventureScene
+from game.scenes.adventure_scene import AdventureScene, WorldTargetKind
 from game.systems.item_use import ItemUseInteraction
 from game.systems.recipe import Recipe, RecipeBook
 
@@ -728,3 +728,170 @@ def test_existing_recipe_result_keeps_ingredients_and_clears_selection() -> None
     )
     assert game_state.inventory.selected_item is None
     assert scene.interaction_text == "You already have Result Item."
+
+
+def test_world_target_resolver_resolves_every_target_kind() -> None:
+    game_state = GameState()
+    npc = NPC(
+        rect=pygame.Rect(100, 100, 80, 80),
+        name="Target NPC",
+        dialogue_lines=("Hello.",),
+    )
+    exit_hotspot = ExitHotspot(
+        rect=pygame.Rect(200, 100, 80, 80),
+        target_scene_id="next_scene",
+        label="Target Exit",
+    )
+    item_hotspot = ItemHotspot(
+        pickup_id="pickup.target",
+        rect=pygame.Rect(300, 100, 80, 80),
+        item=create_item("target_item", "Target Item"),
+        pickup_text="Collected.",
+    )
+    hotspot = Hotspot(
+        rect=pygame.Rect(400, 100, 80, 80),
+        label="Target Hotspot",
+        inspect_text="Inspect text.",
+    )
+    scene = create_test_scene(
+        game_state,
+        exits=[exit_hotspot],
+        hotspots=[hotspot],
+        item_hotspots=[item_hotspot],
+        npcs=[npc],
+    )
+
+    assert scene._resolve_world_target(npc.rect.center).kind is WorldTargetKind.NPC
+    assert scene._resolve_world_target(exit_hotspot.rect.center).kind is WorldTargetKind.EXIT
+    assert scene._resolve_world_target(item_hotspot.rect.center).kind is WorldTargetKind.ITEM_PICKUP
+    assert scene._resolve_world_target(hotspot.rect.center).kind is WorldTargetKind.HOTSPOT
+
+
+def test_world_target_resolver_returns_none_for_empty_space() -> None:
+    scene = create_test_scene(GameState())
+
+    assert scene._resolve_world_target((10, 10)) is None
+
+
+def test_world_target_resolver_uses_documented_priority_for_overlaps() -> None:
+    game_state = GameState()
+    rect = pygame.Rect(100, 100, 120, 120)
+    npc = NPC(
+        rect=rect.copy(),
+        name="Priority NPC",
+        dialogue_lines=("Hello.",),
+    )
+    exit_hotspot = ExitHotspot(
+        rect=rect.copy(),
+        target_scene_id="next_scene",
+        label="Priority Exit",
+    )
+    item_hotspot = ItemHotspot(
+        pickup_id="pickup.priority",
+        rect=rect.copy(),
+        item=create_item("priority_item", "Priority Item"),
+        pickup_text="Collected.",
+    )
+    hotspot = Hotspot(
+        rect=rect.copy(),
+        label="Priority Hotspot",
+        inspect_text="Inspect text.",
+    )
+    scene = create_test_scene(
+        game_state,
+        exits=[exit_hotspot],
+        hotspots=[hotspot],
+        item_hotspots=[item_hotspot],
+        npcs=[npc],
+    )
+
+    target = scene._resolve_world_target(rect.center)
+    assert target is not None
+    assert target.kind is WorldTargetKind.NPC
+    assert target.entity is npc
+
+    scene.npcs.clear()
+    target = scene._resolve_world_target(rect.center)
+    assert target is not None
+    assert target.kind is WorldTargetKind.EXIT
+    assert target.entity is exit_hotspot
+
+    scene.exits.clear()
+    target = scene._resolve_world_target(rect.center)
+    assert target is not None
+    assert target.kind is WorldTargetKind.ITEM_PICKUP
+    assert target.entity is item_hotspot
+
+    scene.item_hotspots.clear()
+    target = scene._resolve_world_target(rect.center)
+    assert target is not None
+    assert target.kind is WorldTargetKind.HOTSPOT
+    assert target.entity is hotspot
+
+
+def test_world_target_resolver_ignores_collected_pickups() -> None:
+    game_state = GameState()
+    item_hotspot = ItemHotspot(
+        pickup_id="pickup.collected",
+        rect=pygame.Rect(100, 100, 120, 120),
+        item=create_item("collected_item", "Collected Item"),
+        pickup_text="Collected.",
+    )
+    game_state.collect_pickup(item_hotspot.pickup_id)
+    scene = create_test_scene(
+        game_state,
+        item_hotspots=[item_hotspot],
+    )
+
+    assert scene._resolve_world_target(item_hotspot.rect.center) is None
+
+
+def test_click_and_hover_use_same_world_target_priority() -> None:
+    game_state = GameState()
+    rect = pygame.Rect(100, 100, 120, 120)
+    exit_hotspot = ExitHotspot(
+        rect=rect.copy(),
+        target_scene_id="next_scene",
+        label="Priority Exit",
+    )
+    hotspot = Hotspot(
+        rect=rect.copy(),
+        label="Lower Priority Hotspot",
+        inspect_text="Inspect text.",
+    )
+    scene = create_test_scene(
+        game_state,
+        exits=[exit_hotspot],
+        hotspots=[hotspot],
+    )
+
+    target = scene._resolve_world_target(rect.center)
+    result = scene.handle_event(create_primary_click(rect.center))
+
+    assert target is not None
+    assert target.kind is WorldTargetKind.EXIT
+    assert scene._hover_text_for_target(target) == "Go to: Priority Exit"
+    assert result.consumed
+    assert result.target_scene_id == "next_scene"
+    assert scene.interaction_text is None
+
+
+def test_exit_hover_text_uses_locked_label_when_exit_is_locked() -> None:
+    game_state = GameState()
+    exit_hotspot = ExitHotspot(
+        rect=pygame.Rect(100, 100, 120, 120),
+        target_scene_id="next_scene",
+        label="Tower Gate",
+        required_flag="tower_open",
+        locked_label="Tower Gate (Locked)",
+    )
+    scene = create_test_scene(
+        game_state,
+        exits=[exit_hotspot],
+    )
+
+    target = scene._resolve_world_target(exit_hotspot.rect.center)
+
+    assert target is not None
+    assert target.kind is WorldTargetKind.EXIT
+    assert scene._hover_text_for_target(target) == "Go to: Tower Gate (Locked)"

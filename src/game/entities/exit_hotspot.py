@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import pygame
 
-from game.theme import BORDER_DEFAULT, EXIT_BACKGROUND, EXIT_LOCKED_BACKGROUND, TEXT_PRIMARY
+from game.theme import BORDER_DEFAULT, EXIT_BACKGROUND, EXIT_LOCKED_BACKGROUND, TEXT_HIGHLIGHT, TEXT_PRIMARY
 
 
 @dataclass
@@ -23,17 +23,23 @@ class ExitHotspot:
         """Return True when the position is inside the exit."""
         return self.rect.collidepoint(position)
 
-    def draw(self, surface: pygame.Surface, font: pygame.font.Font, is_locked: bool = False) -> None:
+    def draw(
+        self,
+        surface: pygame.Surface,
+        font: pygame.font.Font,
+        is_locked: bool = False,
+        is_hovered: bool = False
+    ) -> None:
         """Draw a visible placeholder exit."""
         background_color = EXIT_LOCKED_BACKGROUND if is_locked else EXIT_BACKGROUND
-
+        border_color = TEXT_HIGHLIGHT if is_hovered else BORDER_DEFAULT
         displayed_label = self.label
 
         if is_locked and self.locked_label is not None:
             displayed_label = self.locked_label
 
         pygame.draw.rect(surface, background_color, self.rect)
-        pygame.draw.rect(surface, BORDER_DEFAULT, self.rect, width=2)
+        pygame.draw.rect(surface, border_color, self.rect, width=2)
 
         label_surface = font.render(displayed_label, True, TEXT_PRIMARY)
         label_rect = label_surface.get_rect(center=self.rect.center)
