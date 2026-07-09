@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.9.0 - 2026-07-09
+
+### Added
+
+- Added the Cup of Water item.
+- Added the Rusty Key item.
+- Added item-use result items so interactions can transform or reward inventory items.
+- Added key-based tower gate unlocking.
+- Added validation for item-use result items and exit item-use requirements.
+- Added tests for the complete key-based demo flow.
+
+### Changed
+
+- Updated the Old Well to turn Empty Cup into Cup of Water.
+- Updated the Glowing Tea recipe to combine Cup of Water with Moon Herb.
+- Updated the Retired Witch to give Rusty Key instead of unlocking the tower directly.
+- Updated the Tower Gate to require Rusty Key before setting `TOWER_UNLOCKED`.
+- Updated documentation to describe the implemented v0.9 puzzle flow.
+
 ## 0.8.1 - 2026-07-09
 
 ### Added
