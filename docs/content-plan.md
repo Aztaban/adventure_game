@@ -1,12 +1,12 @@
 # Content Plan
 
-Status: draft
+Status: current direction after v0.8.1
 
 ## Purpose
 
 This document tracks story, world, NPCs, scenes, items, and puzzles.
 
-It can change often. Keep game content separate from engine architecture.
+Keep game content decisions separate from engine architecture. Do not implement new story content in documentation-only refactors.
 
 ## Tone rules
 
@@ -24,11 +24,27 @@ Example tone:
 Magic is real, but everyone is tired of filling magical paperwork.
 ```
 
-## First demo idea
+## Current v0.8.1 implementation note
+
+The current playable v0.8.1 flow still unlocks the tower directly when the Retired Witch receives Glowing Tea.
+
+That is acceptable as temporary behavior while architecture is being refactored.
+
+## Chosen v0.9 demo flow
+
+The intended v0.9 flow is key-based:
+
+```txt
+witch gets tea -> gives rusty key -> key unlocks tower
+```
+
+Do not keep both designs in story docs. The key-based flow is the v0.9 target.
+
+## First demo premise
 
 The player wants to enter a cursed tower.
 
-To enter, the player must solve a small chain of adventure puzzles.
+The tower gate is locked. The Retired Witch has an old key, but she wants Glowing Tea before she helps.
 
 ## First demo scenes
 
@@ -38,46 +54,50 @@ Purpose:
 
 - starting scene
 - introduce tone
-- first NPC
-- first item
+- introduce Retired Witch
+- provide Empty Cup
+- provide village inspectables
+- connect to Forest Path
 
-Possible hotspots:
+Current/potential content:
 
-- retired witch
-- empty cup
-- notice board
-- exit to forest
-- exit to tower entrance
+- Retired Witch
+- Empty Cup pickup
+- Notice Board
+- Old Well
+- exit to Forest Path
 
 ### Scene 2: Forest Path
 
 Purpose:
 
-- find puzzle item
-- meet strange NPC
-- create mystery
+- provide Moon Herb
+- introduce Mushroom Guard
+- show locked tower access
+- connect back to Village Square
 
-Possible hotspots:
+Current/potential content:
 
-- moon herb
-- mushroom guard
-- suspicious stump
-- exit to village
-- exit to tower entrance
+- Moon Herb pickup
+- Mushroom Guard
+- Suspicious Stump
+- exit to Village Square
+- locked tower gate/exit
 
-### Scene 3: Tower Entrance
+### Scene 3: Tower Interior / Tower Entrance
 
 Purpose:
 
-- locked obstacle
+- final destination for first demo
 - ending condition
+- short payoff scene
 
-Possible hotspots:
+Current/potential content:
 
-- tower door
-- dramatic magical lock
-- weird rune stone
-- exit to village/forest
+- Ancient Pedestal
+- completion text after entering
+
+The exact name can be cleaned up during v0.9. Use one consistent in-game name once the final flow is implemented.
 
 ## First demo NPCs
 
@@ -86,8 +106,8 @@ Possible hotspots:
 Role:
 
 - gives funny dialogue
-- wants glowing tea
-- gives rusty key after receiving glowing tea
+- wants Glowing Tea
+- gives Rusty Key after receiving Glowing Tea in v0.9
 
 Personality:
 
@@ -107,7 +127,7 @@ Role:
 
 - worldbuilding
 - optional joke/dialogue
-- maybe blocks forest path in later version
+- reacts after progress changes
 
 Personality:
 
@@ -167,6 +187,8 @@ give to retired_witch
 
 ### rusty_key
 
+Planned for v0.9.
+
 Received from:
 
 ```txt
@@ -176,30 +198,32 @@ retired_witch after giving glowing_tea
 Use:
 
 ```txt
-unlock tower door
+unlock tower gate
 ```
 
-## First demo puzzle chain
+## First demo puzzle chain for v0.9
 
 ```txt
-1. Player sees locked tower door.
-2. Door requires key.
-3. Witch has key but wants glowing tea.
-4. Player finds empty cup.
-5. Player finds moon herb.
-6. Player combines empty cup + moon herb = glowing tea.
-7. Player gives glowing tea to witch.
-8. Witch gives rusty key.
-9. Player uses rusty key on tower door.
-10. Demo ends.
+1. Player sees the locked tower gate.
+2. Gate requires Rusty Key.
+3. Retired Witch has the key but wants Glowing Tea.
+4. Player finds Empty Cup.
+5. Player finds Moon Herb.
+6. Player combines Empty Cup + Moon Herb = Glowing Tea.
+7. Player gives Glowing Tea to Retired Witch.
+8. Witch gives Rusty Key.
+9. Player uses Rusty Key on tower gate.
+10. Gate opens / tower becomes reachable.
+11. Player enters tower.
+12. Demo ends.
 ```
 
 ## Optional inspect text ideas
 
-### Tower Door
+### Tower Gate
 
 ```txt
-The door is covered in runes that look ancient, expensive, and slightly judgmental.
+The gate is covered in runes that look ancient, expensive, and slightly judgmental.
 ```
 
 ### Empty Cup

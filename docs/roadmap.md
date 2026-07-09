@@ -1,14 +1,16 @@
 # Roadmap
 
-Status: draft
+Status: current for v0.8.1 planning
 
 ## Development principle
 
-Each milestone should be small and manually testable.
+Each milestone should be small, testable, and playable.
 
-Do not skip ahead.
+Do not implement future systems before the current gameplay need exists.
 
-## Milestone v0.1 — Window and game loop
+## Completed milestones
+
+### Milestone v0.1 — Window and game loop
 
 Goal:
 
@@ -16,23 +18,14 @@ Goal:
 Open a game window and run a stable loop.
 ```
 
-Features:
+Delivered:
 
-- create project structure
-- open Pygame window
-- handle quit/ESC
-- draw simple background
-- show FPS/title if useful
+- Pygame window
+- stable loop
+- quit and ESC handling
+- simple drawing baseline
 
-Manual test:
-
-```txt
-Run game.
-Window opens.
-ESC or close button exits cleanly.
-```
-
-## Milestone v0.2 — Scene system
+### Milestone v0.2 — Scene system
 
 Goal:
 
@@ -40,23 +33,14 @@ Goal:
 Display one scene and allow switching to another scene.
 ```
 
-Features:
+Delivered:
 
-- scene manager
-- scene class/data
-- two placeholder scenes
-- clickable exit hotspot
-- scene transition
+- `SceneManager`
+- base scene interface
+- placeholder adventure scenes
+- exit-driven scene transitions
 
-Manual test:
-
-```txt
-Click exit.
-Scene changes.
-No crash.
-```
-
-## Milestone v0.3 — Hotspots
+### Milestone v0.3 — Hotspots
 
 Goal:
 
@@ -64,44 +48,30 @@ Goal:
 Clickable objects can show interaction text.
 ```
 
-Features:
+Delivered:
 
-- hotspot rectangles
-- mouse hover/click detection
-- inspect text
-- simple interaction result
+- inspectable hotspots
+- hover detection
+- click messages
+- hotspot tests
 
-Manual test:
-
-```txt
-Click object.
-Text appears.
-```
-
-## Milestone v0.4 — Dialogue box and NPCs
+### Milestone v0.4 — Dialogue box and NPCs
 
 Goal:
 
 ```txt
-NPC can display dialogue.
+NPCs can display dialogue.
 ```
 
-Features:
+Delivered:
 
-- NPC hotspot
+- NPC entities
+- dialogue state system
 - dialogue box UI
-- advance dialogue with click/key
-- close dialogue
+- click, Space, and Enter advancement
+- scene input consumption while dialogue is active
 
-Manual test:
-
-```txt
-Click NPC.
-Dialogue appears.
-Advance and close it.
-```
-
-## Milestone v0.5 — Inventory
+### Milestone v0.5 — Inventory
 
 Goal:
 
@@ -109,46 +79,31 @@ Goal:
 Player can pick up items and see inventory.
 ```
 
-Features:
+Delivered:
 
-- item hotspot
-- inventory data structure
-- inventory UI text/list
-- remove item from scene after pickup
+- immutable item definitions
+- item pickups
+- player inventory
+- inventory UI renamed to `InventoryBar`
+- pickup persistence behavior now owned by `GameState`
 
-Manual test:
-
-```txt
-Click item.
-Item appears in inventory.
-Item disappears from scene.
-```
-
-## Milestone v0.6 — Use item on hotspot/NPC
+### Milestone v0.6 — Use item on hotspot/NPC
 
 Goal:
 
 ```txt
-Selected inventory item can be used on object/NPC.
+Selected inventory item can be used on an object or NPC.
 ```
 
-Features:
+Delivered:
 
-- select item
-- use selected item on hotspot
-- success/failure message
-- required item logic
+- item selection and deselection
+- item-use rules
+- success/failure/completed outcomes
+- optional item consumption
+- state-dependent NPC/hotspot content
 
-Manual test:
-
-```txt
-Use wrong item.
-Get failure text.
-Use correct item.
-Progress changes.
-```
-
-## Milestone v0.7 — Item combining
+### Milestone v0.7 — Item combining
 
 Goal:
 
@@ -156,21 +111,14 @@ Goal:
 Two inventory items can combine into a new item.
 ```
 
-Features:
+Delivered:
 
-- simple recipe system
-- combine command/action
-- remove input items
-- add result item
+- order-independent recipe system
+- Empty Cup + Moon Herb = Glowing Tea
+- inventory-combination operation extracted from `AdventureScene`
+- atomic recipe transaction tests
 
-Manual test:
-
-```txt
-Combine empty_cup + moon_herb.
-Inventory now contains glowing_tea.
-```
-
-## Milestone v0.8 — Quest flags
+### Milestone v0.8 — Quest flags
 
 Goal:
 
@@ -178,53 +126,116 @@ Goal:
 Game can track progress through flags.
 ```
 
-Features:
+Delivered:
 
-- flag storage
-- dialogue/hotspots react to flags
-- obstacle unlock state
+- progression flags
+- flag-reactive NPC dialogue and hotspot text
+- locked tower exit
 - demo completion flag
+- content validation
 
-Manual test:
-
-```txt
-Before quest item, obstacle blocks.
-After correct quest, obstacle unlocks.
-```
-
-## Milestone v0.8 - refactor
-
-- Interaction system
-- Quest and world state
-- JSON content
-- AdventureScene size
-- Tests
-
-
-## Milestone v0.9 — First complete demo
+## Current milestone: v0.8.1 — Refactor and regression hardening
 
 Goal:
 
 ```txt
-Playable beginning-to-end mini adventure.
+Protect current behavior and separate runtime state, rules, and presentation before adding the final demo content.
 ```
 
-Features:
+Scope:
 
-- 3 scenes
-- 2 NPCs
-- 4 items
-- 1 item combination
-- 1 obstacle
-- ending screen/message
+- hotspot inspection regression fix
+- behavior and integration coverage
+- Python content validation
+- persistent world state in `GameState`
+- stateless item-use definitions
+- recipe execution extracted from `AdventureScene`
+- `AdventureInteractionService`
+- unified target resolution for click and hover
+- shared UI helpers for text wrapping and inventory layout
+- documentation/scaffolding cleanup
 
-Manual test:
+Not in scope:
+
+- JSON content loading
+- save/load
+- new v0.9 puzzle content
+- event bus
+- quest engine
+- UI framework
+
+Done when:
+
+```txt
+make check passes
+current v0.8 behavior is protected
+AdventureScene is mostly a Pygame adapter
+misleading empty scaffolding is removed or documented
+```
+
+## Next milestone: v0.9 — First complete demo
+
+Goal:
+
+```txt
+Playable beginning-to-end mini adventure with the intended key-based tower puzzle.
+```
+
+Chosen v0.9 puzzle flow:
+
+```txt
+Empty Cup + Moon Herb -> Glowing Tea
+Glowing Tea -> Retired Witch -> Rusty Key
+Rusty Key -> Tower Gate -> tower opens
+Enter Tower -> demo ending
+```
+
+Expected features:
+
+- add Rusty Key item
+- update witch interaction to give Rusty Key instead of unlocking the tower directly
+- update tower gate to require Rusty Key
+- keep or revise `TOWER_UNLOCKED` as the semantic world fact after the key is used
+- update the full demo-flow integration test
+- add ending message/screen if needed
+- keep the demo small and complete
+
+Manual acceptance:
 
 ```txt
 Start new game.
-Complete full quest.
+Collect required items.
+Make Glowing Tea.
+Give tea to witch.
+Receive Rusty Key.
+Use Rusty Key on tower gate.
+Enter tower.
 Reach ending.
 ```
+
+## Milestone v0.9.1 — Post-demo refactor
+
+Goal:
+
+```txt
+Clean up architecture after the complete demo proves the gameplay shape.
+```
+
+Possible scope:
+
+- revisit content definitions after the key-based flow is real
+- decide whether item definitions should move to data files first
+- consider lightweight scene/content definition objects
+- improve save/load readiness
+- review whether flags and interaction IDs need naming cleanup
+- review any `AdventureScene` responsibilities that remain too large
+- improve manual-test docs for the complete demo
+
+Not automatic:
+
+- JSON should still only be added if it reduces real content pain
+- no generic quest engine unless multiple quests need it
+- no UI framework unless UI complexity increases
 
 ## Milestone v0.10 — Polish pass
 
@@ -237,16 +248,16 @@ Make the prototype nicer to play.
 Possible features:
 
 - better placeholder art
-- hover labels
-- simple menu
+- improved hover labels
+- simple title/menu screen
 - improved dialogue UI
 - basic sound effects
 - better scene layout
-- README instructions
+- README play instructions
 
 ## Future milestones
 
-Only after MVP:
+Only after the MVP/demo is complete:
 
 ```txt
 v0.11 save/load

@@ -1,6 +1,6 @@
 # MVP
 
-Status: draft
+Status: current direction after v0.8.1
 
 ## MVP goal
 
@@ -10,7 +10,7 @@ The MVP should not be a full RPG.
 
 ## One-sentence MVP
 
-The player can explore a few scenes, talk to an NPC, collect and combine items, use the result to solve an obstacle, and finish the demo.
+The player can explore a few scenes, talk to NPCs, collect and combine items, use the result to solve an obstacle, and finish the demo.
 
 ## MVP core loop
 
@@ -26,6 +26,18 @@ unlock progress
 finish demo
 ```
 
+## Current v0.8.1 versus v0.9 MVP
+
+v0.8.1 proves the technical loop and currently lets the witch unlock the tower directly after receiving Glowing Tea.
+
+v0.9 should complete the intended story loop:
+
+```txt
+witch gets tea -> gives rusty key -> key unlocks tower
+```
+
+Do not implement that new content during documentation cleanup.
+
 ## MVP scope
 
 ### Required
@@ -37,7 +49,7 @@ finish demo
 - Scene transitions through exits
 - At least 2 NPCs
 - Basic dialogue box
-- At least 4 items
+- At least 4 story-relevant items by v0.9
 - Basic inventory
 - Select/use item
 - Combine at least 2 items into 1 new item
@@ -71,16 +83,19 @@ Do not implement these in MVP:
 - advanced animation
 - pathfinding
 - real asset pipeline
+- JSON content loader unless Python content becomes painful enough to justify it
 
-## MVP demo example
+## MVP demo example for v0.9
 
 ### Scenes
 
 ```txt
 village_square
 forest_path
-tower_entrance
+tower_interior or tower_entrance
 ```
+
+Use one consistent final scene name during v0.9 cleanup.
 
 ### NPCs
 
@@ -103,7 +118,8 @@ rusty_key
 ```txt
 empty_cup + moon_herb = glowing_tea
 glowing_tea -> retired_witch = rusty_key
-rusty_key -> tower_door = unlock ending
+rusty_key -> tower_gate = unlock tower
+enter tower = finish demo
 ```
 
 ## MVP acceptance criteria
@@ -119,3 +135,4 @@ The MVP is done when:
 - the player can use an item on an NPC or obstacle
 - the game can track quest progress
 - the player can finish the demo
+- the full demo-flow integration test protects the intended v0.9 path

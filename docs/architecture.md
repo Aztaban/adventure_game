@@ -1,257 +1,347 @@
 # Architecture
 
-Status: draft
+Status: current for v0.8.1
 
 ## Goal
 
-Create a simple Python/Pygame architecture that supports a small adventure game without becoming a huge engine.
-
-The code should be easy to understand and easy for an AI agent to modify step by step.
-
-## Proposed project structure
+Keep the game architecture small enough to understand while separating three things that should not own each other's work:
 
 ```txt
-.
-├── README.md
-├── AGENTS.md
-├── CLAUDE.md
-├── requirements.txt
-├── src/
-│   ├── main.py
-│   ├── game/
-│   │   ├── app.py
-│   │   ├── settings.py
-│   │   ├── scene_manager.py
-│   │   ├── scenes/
-│   │   │   ├── base_scene.py
-│   │   │   └── adventure_scene.py
-│   │   ├── entities/
-│   │   │   ├── hotspot.py
-│   │   │   ├── npc.py
-│   │   │   └── item.py
-│   │   ├── systems/
-│   │   │   ├── inventory.py
-│   │   │   ├── dialogue.py
-│   │   │   ├── quests.py
-│   │   │   └── recipes.py
-│   │   ├── ui/
-│   │   │   ├── dialogue_box.py
-│   │   │   └── inventory_bar.py
-│   │   └── assets.py
-│   └── data/
-│       ├── scenes/
-│       ├── dialogue/
-│       ├── items.json
-│       └── recipes.json
-├── assets/
-│   ├── images/
-│   ├── audio/
-│   └── fonts/
-└── tests/
+Pygame presentation  -> event handling, drawing, UI state
+Gameplay rules       -> interactions, item use, recipes, exits
+Persistent state     -> inventory, flags, collected pickups, completions
 ```
 
-This structure can be simplified during early milestones if needed.
+The project is still a prototype. Avoid large engine patterns unless the game actually needs them.
 
-## Main modules
+## Current project structure
+
+```txt
+src/
+├── main.py
+└── game/
+    ├── app.py
+    ├── game_state.py
+    ├── scene_event_result.py
+    ├── scene_manager.py
+    ├── settings.py
+    ├── theme.py
+    ├── content/
+    │   ├── demo_world.py
+    │   ├── flag_ids.py
+    │   ├── interaction_ids.py
+    │   ├── item_ids.py
+    │   ├── items.py
+    │   ├── pickup_ids.py
+    │   ├── recipes.py
+    │   ├── scene_ids.py
+    │   ├── validation.py
+    │   └── scenes/
+    │       ├── village_square.py
+    │       ├── forest_path.py
+    │       └── tower_interior.py
+    ├── entities/
+    │   ├── exit_hotspot.py
+    │   ├── hotspot.py
+    │   ├── item.py
+    │   ├── item_hotspot.py
+    │   └── npc.py
+    ├── input/
+    │   └── bindings.py
+    ├── scenes/
+    │   ├── base_scene.py
+    │   └── adventure_scene.py
+    ├── systems/
+    │   ├── adventure_interaction_service.py
+    │   ├── dialogue.py
+    │   ├── inventory.py
+    │   ├── item_combination.py
+    │   ├── item_use.py
+    │   └── recipe.py
+    └── ui/
+        ├── dialogue_box.py
+        ├── inventory_bar.py
+        ├── message_box.py
+        └── text.py
+```
+
+There is no JSON content loader in v0.8.1. Demo content is still Python-created and validated at startup.
+
+## Application layer
 
 ### `main.py`
 
 Responsibilities:
 
-- start the app
-- keep file small
-- avoid game logic here
+- create and run `GameApp`
+- stay small
+- contain no gameplay rules
 
 ### `game/app.py`
 
 Responsibilities:
 
 - initialize Pygame
-- create window
-- run main loop
-- handle global events
-- update current scene
-- draw current scene
+- create the window and clock
+- create shared `GameState`
+- create static recipe rules
+- create and validate demo scenes
+- own the main loop
+- delegate scene events, updates, and drawing
+- handle global quit behavior
+
+`GameApp` composes the application. It should not implement item-use, recipe, or quest logic.
+
+## Scene layer
 
 ### `game/scene_manager.py`
 
 Responsibilities:
 
-- hold current scene
-- switch scenes
-- pass shared game state between scenes
+- own scene instances
+- remember the current scene ID
+- route events, updates, and drawing to the active scene
+- perform scene transitions requested by scene results
 
-### `game/scenes/`
+### `game/scenes/base_scene.py`
 
-Responsibilities:
-
-- represent locations/screens
-- contain hotspots/NPCs/items
-- handle scene-specific interactions
-
-### `game/entities/hotspot.py`
-
-Responsibilities:
-
-- rectangle/clickable area
-- name/description
-- interaction callback or action id
-
-### `game/systems/inventory.py`
-
-Responsibilities:
-
-- store items
-- add/remove/check item
-- select active item
-- combine items
-
-### `game/systems/dialogue.py`
-
-Responsibilities:
-
-- store current dialogue
-- advance dialogue
-- close dialogue
-- later support choices
-
-### `game/systems/quests.py`
-
-Responsibilities:
-
-- track flags
-- check/set flags
-- expose simple state to scenes/dialogue
-
-### `game/systems/recipes.py`
-
-Responsibilities:
-
-- define item combinations
-- combine two item ids into result item id
-
-### `game/ui/`
-
-Responsibilities:
-
-- draw dialogue box
-- draw inventory
-- draw hover text
-- draw ending screen later
-
-## Game state
-
-Shared game state should include:
+Defines the common scene interface:
 
 ```txt
-current_scene
-inventory
-quest_flags
-selected_item
-active_dialogue
+handle_event(event) -> SceneEventResult
+update(delta_time)
+draw(surface)
 ```
 
-Possible class:
+### `game/scenes/adventure_scene.py`
+
+`AdventureScene` is now mostly a Pygame adapter and presentation coordinator.
+
+Responsibilities:
+
+- receive Pygame events
+- check inventory UI before world targets
+- resolve clicked or hovered world targets
+- call `AdventureInteractionService`
+- apply returned messages, dialogue, and target scene IDs
+- own transient scene presentation state
+- draw scene header, entities, hover text, inventory, messages, and dialogue
+
+It should not directly:
+
+- add or remove recipe ingredients
+- apply item-use flags
+- decide item consumption
+- mark interactions complete
+- decide whether a pickup was already collected
+
+Those belong to `AdventureInteractionService` and `GameState`.
+
+## World target resolution
+
+World target resolution lives in `AdventureScene` because it depends on scene-local rectangles and Pygame mouse positions.
+
+Inventory remains a separate UI-first check:
+
+```txt
+inventory UI > world target
+```
+
+World targets share one priority for both click and hover:
+
+```txt
+NPC > exit > item pickup > hotspot
+```
+
+The resolver returns a tagged target so clicking and hovering cannot disagree about the selected world entity.
+
+Collected pickups are ignored by consulting `GameState`.
+
+## Persistent runtime state
+
+### `game/game_state.py`
+
+`GameState` is the authoritative owner of persistent facts that must survive scene changes or scene reconstruction.
+
+Current responsibilities:
 
 ```txt
 GameState
 ├── inventory
-├── flags
-├── selected_item
-└── completed
+├── progression flags
+├── collected pickup IDs
+└── completed interaction IDs
 ```
 
-## Scene design
-
-First scenes can be hardcoded Python objects.
-
-Later scenes can be data-driven through JSON.
-
-Example scene concept:
+Examples:
 
 ```txt
-Scene
-├── id
-├── name
-├── background
-├── hotspots
-├── exits
-└── npcs
+flag: tower_unlocked
+pickup: pickup.village.empty_cup
+interaction: interaction.village.old_well
 ```
 
-## Hotspot interaction model
+Transient presentation state does not belong in `GameState`.
 
-A hotspot click can produce actions:
+Do not store these in `GameState`:
+
+- hover target
+- current message box text
+- open dialogue page/index
+- Pygame fonts
+- Pygame surfaces
+- layout rectangles
+
+## Static content and rules
+
+Static content/rules are separate from runtime player/world state.
+
+Examples:
 
 ```txt
-show_text
-start_dialogue
-pickup_item
-change_scene
-use_required_item
-set_flag
-finish_demo
+content IDs
+item definitions
+scene definitions/factories
+recipe definitions
+item-use definitions
+validation rules
 ```
 
-Do not build a complex scripting system in MVP.
+### `game/content/`
+
+Responsibilities:
+
+- define stable scene/item/flag/pickup/interaction IDs
+- create demo items
+- create demo recipe book
+- create demo scene objects
+- validate content references before gameplay starts
+
+IDs are stable strings. Keep user-facing names separate from stable IDs.
+
+### `game/content/validation.py`
+
+The validator catches broken Python-created content references early.
+
+It checks things like:
+
+- starting scene exists
+- scene IDs are unique
+- exits target known scenes
+- item IDs are unique
+- pickups reference known items
+- recipes reference known items
+- item-use requirements reference known items
+- pickup and interaction stable IDs are unique
+
+This validator will still be useful if content later moves to JSON. The input shape may change later, but the purpose remains the same.
+
+### `game/systems/recipe.py`
+
+Defines static recipe objects and `RecipeBook` lookup.
+
+Recipes are static rules. They are not stored inside `GameState`.
+
+### `game/systems/item_combination.py`
+
+Owns the inventory-combination transaction.
+
+Responsibilities:
+
+- receive two item IDs
+- look up the recipe
+- validate the full transaction before mutation
+- avoid partial mutation
+- remove ingredients
+- add the result
+- return a small result object with success/message/result item
+
+`AdventureScene` should not perform the recipe mutation directly.
+
+## Interaction service
+
+### `game/systems/adventure_interaction_service.py`
+
+`AdventureInteractionService` owns gameplay transactions that happen after a target has been resolved.
+
+Responsibilities:
+
+- inventory selection and deselection
+- item combination through `item_combination.py`
+- item collection
+- hotspot inspection
+- NPC dialogue outcome selection
+- using selected items on NPCs and hotspots
+- item consumption
+- completion and flag updates
+- locked/unlocked exit evaluation
+- returning requested target scene IDs
+
+It returns `AdventureInteractionOutcome`:
+
+```txt
+consumed
+message
+speaker_name
+dialogue_lines
+target_scene_id
+```
+
+The service must not draw, create fonts, import UI widgets, or change `SceneManager` directly.
+
+## Entities
+
+Entities are lightweight scene content objects with rectangle hit testing and placeholder drawing.
+
+Current entities:
+
+- `NPC`
+- `Hotspot`
+- `ItemHotspot`
+- `ExitHotspot`
+- `Item`
+
+Some entities contain static interaction definitions, but runtime completion is stored in `GameState`.
+
+## UI
+
+Current UI widgets:
+
+- `InventoryBar`
+- `DialogueBox`
+- `MessageBox`
+
+`game/ui/text.py` contains shared text wrapping.
+
+`InventoryBar` calculates one layout result used by both drawing and hit testing.
+
+The current design is fixed-window and intentionally simple. Do not add a generic layout engine, widget inheritance framework, scrolling, or responsive UI yet.
 
 ## Data-driven content
 
-Recommended later, not required in v0.1.
+Deferred.
 
-Possible data files:
+There is no active `src/data` content pipeline in v0.8.1. JSON loading should wait until the Python content shape is stable enough to justify schemas, parsing, validation, and useful error messages.
 
-```txt
-src/data/items.json
-src/data/recipes.json
-src/data/dialogue/retired_witch.json
-src/data/scenes/village_square.json
-```
+Recommended future order:
 
-## Rendering approach
+1. Keep Python content while v0.9 completes the demo.
+2. Introduce clear content definition objects if needed.
+3. Move item definitions to data files first.
+4. Move recipes next.
+5. Move scenes/dialogue only after their schema is stable.
 
-MVP:
+## Design constraints
 
-- draw colored backgrounds
-- draw rectangles for hotspots/NPCs/items
-- draw text labels
-- draw inventory as text or simple boxes
+Do not add these for the current prototype:
 
-Later:
+- event bus
+- command hierarchy
+- entity-component system
+- generic quest engine
+- JSON loader
+- save/load
+- complex crafting system
+- UI framework
 
-- load background images
-- load sprites
-- animate player/NPCs
-- add 2.5D depth sorting
-
-## 2D to 3D note
-
-The first prototype should not attempt to be directly convertible to 3D.
-
-Reusable later:
-
-- story
-- item definitions
-- quest flags
-- dialogue
-- recipes
-- general game rules
-
-Likely rewritten for 3D:
-
-- rendering
-- movement
-- collision
-- camera
-- map format
-- asset pipeline
-
-## Dependency policy
-
-Initial dependency:
-
-```txt
-pygame
-```
-
-Do not add other libraries unless there is a clear reason.
+Add them only when the game has a concrete need.

@@ -1,382 +1,249 @@
 # Testing Plan
 
-Project: Funny mysterious fantasy adventure game  
-Initial test approach: simple pytest + manual gameplay testing
+Status: current for v0.8.1
 
-## 1. Purpose
+## Purpose
 
-This document defines how the project should be tested during development.
+The goal is to protect gameplay behavior while keeping tests simple enough to maintain during fast prototype refactors.
 
-The goal is not to build a heavy custom test framework at the beginning. The goal is to keep testing simple, useful, and easy to run while the game grows step by step.
+The project uses pytest for automated tests and manual checks for game feel, visuals, and full-window behavior.
 
-## 2. Testing philosophy
+## How to run checks
 
-The project has two different kinds of behavior:
-
-```txt
-game logic      -> good for automated pytest tests
-game feel / UI  -> better for manual testing
-```
-
-Automated tests should focus on pure logic that can be tested without opening a Pygame window.
-
-Manual tests should be used for gameplay, visuals, mouse interaction, scene layout, and overall feeling.
-
-## 3. Current test setup
-
-Recommended initial structure:
-
-```txt
-tests/
-├── __init__.py
-└── test_placeholder.py
-```
-
-Initial placeholder test:
-
-```python
-def test_placeholder() -> None:
-    assert True
-```
-
-This test does not test game logic yet. It only confirms that pytest is installed and that the test command works.
-
-## 4. How to run tests
-
-Using Makefile:
+Use the Makefile:
 
 ```bash
-make test
+make check
 ```
 
-Direct command:
+This runs:
+
+```bash
+python -m ruff check src tests
+python -m pytest
+```
+
+Run tests directly when debugging:
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m pytest
 ```
 
-Expected output at the beginning:
+Run one focused test file:
 
-```txt
-1 passed
+```bash
+PYTHONPATH=src .venv/bin/python -m pytest tests/test_inventory.py
 ```
 
-## 5. What should be automated
+## Test boundaries
 
-Use pytest for systems that are mostly independent of rendering.
+Automated tests should focus on observable behavior and state changes.
 
-Good candidates:
+Good automated-test targets:
 
-```txt
-inventory
-recipes / item combining
-quest flags
-dialogue state
-scene transition rules
-save/load data later
-```
+- inventory behavior
+- game state flags, collected pickups, and completed interactions
+- recipe lookup and item-combination transactions
+- item-use success/failure/completion behavior
+- content validation
+- scene manager transitions
+- dialogue state
+- interaction service outcomes
+- target resolution priority
+- UI helper geometry and text wrapping
+- complete demo-flow integration
 
-## 6. What should be tested manually
+Manual testing should cover:
 
-Use manual testing for Pygame/gameplay behavior.
+- window opens and closes correctly
+- hover/click feel
+- readability of dialogue and message boxes
+- object positions and spacing
+- whether the flow feels understandable
+- visual regressions
+- long text readability
 
-Manual testing is better for:
+Do not over-test exact pixels unless the layout rule is important for behavior.
 
-```txt
-window opens correctly
-ESC / close button exits cleanly
-mouse clicks work
-hotspot hover/click feels correct
-dialogue box is readable
-inventory UI is visible
-scene transitions feel correct
-placeholder objects are positioned reasonably
-game can be completed from start to ending
-```
-
-## 7. Milestone testing checklist
-
-### v0.1 — Window and game loop
-
-Manual test:
-
-```txt
-- Run the game.
-- Window opens.
-- Background is drawn.
-- ESC exits cleanly.
-- Close button exits cleanly.
-- No crash in terminal.
-```
-
-Automated test:
-
-```txt
-- Placeholder test only.
-```
-
-### v0.2 — Scene system
-
-Manual test:
-
-```txt
-- Game starts in first scene.
-- Scene name/background is visible.
-- Clicking an exit changes to another scene.
-- Scene change does not crash.
-```
-
-Possible automated tests later:
-
-```txt
-- SceneManager starts with expected scene.
-- SceneManager can switch to valid scene id.
-- Invalid scene id is handled safely.
-```
-
-### v0.3 — Hotspots
-
-Manual test:
-
-```txt
-- Hotspot is visible or debug-visible.
-- Mouse click on hotspot triggers interaction.
-- Clicking outside hotspot does nothing.
-- Interaction text appears.
-```
-
-Possible automated tests later:
-
-```txt
-- Hotspot detects point inside rectangle.
-- Hotspot rejects point outside rectangle.
-```
-
-### v0.4 — Dialogue box and NPCs
-
-Manual test:
-
-```txt
-- Clicking NPC opens dialogue.
-- Dialogue text is readable.
-- Dialogue can advance.
-- Dialogue can close.
-```
-
-Possible automated tests later:
-
-```txt
-- Dialogue starts at first line.
-- Dialogue advances to next line.
-- Dialogue reports finished at the end.
-```
-
-### v0.5 — Inventory
-
-Manual test:
-
-```txt
-- Clicking item picks it up.
-- Item appears in inventory.
-- Item disappears from scene after pickup.
-- Same item cannot be picked up twice.
-```
-
-Automated tests:
-
-```txt
-- Inventory can add item.
-- Inventory can check if item exists.
-- Inventory can remove item.
-- Duplicate behavior is defined and tested.
-```
-
-### v0.6 — Use item on hotspot/NPC
-
-Manual test:
-
-```txt
-- Select inventory item.
-- Use wrong item on hotspot.
-- Failure text appears.
-- Use correct item on hotspot.
-- Progress changes.
-```
-
-Automated tests:
-
-```txt
-- Required item check succeeds with correct item.
-- Required item check fails with wrong item.
-```
-
-### v0.7 — Item combining
-
-Manual test:
-
-```txt
-- Inventory contains empty_cup and moon_herb.
-- Combine them.
-- Inventory removes input items.
-- Inventory adds glowing_tea.
-- Invalid combination shows failure message.
-```
-
-Automated tests:
-
-```txt
-- empty_cup + moon_herb returns glowing_tea.
-- moon_herb + empty_cup also works if combinations are order-insensitive.
-- Invalid combination returns None or a defined failure result.
-```
-
-### v0.8 — Quest flags
-
-Manual test:
-
-```txt
-- Obstacle blocks progress before quest flag.
-- Completing quest sets the correct flag.
-- Obstacle reacts differently after flag is set.
-```
-
-Automated tests:
-
-```txt
-- Quest flag can be set.
-- Quest flag can be checked.
-- Unknown flag is false by default.
-```
-
-### v0.9 — First complete demo
-
-Manual test:
-
-```txt
-- Start game from beginning.
-- Visit all MVP scenes.
-- Talk to required NPC.
-- Collect required items.
-- Combine required items.
-- Give/use required item.
-- Unlock final obstacle.
-- Reach ending message/screen.
-```
-
-Automated tests:
-
-```txt
-- Core inventory/recipe/flag logic passes.
-```
-
-## 8. Suggested future test files
-
-Once the systems exist, add:
+## Current automated test groups
 
 ```txt
 tests/
-├── __init__.py
-├── test_inventory.py
-├── test_recipes.py
-├── test_quests.py
+├── integration/
+│   ├── test_demo_flow.py
+│   └── test_world_state_persistence.py
+├── test_adventure_interaction_service.py
+├── test_adventure_scene.py
+├── test_content_validation.py
 ├── test_dialogue.py
-└── test_scene_manager.py
+├── test_exit_hotspot.py
+├── test_game_state.py
+├── test_hotspot.py
+├── test_input_bindings.py
+├── test_inventory.py
+├── test_inventory_bar.py
+├── test_item_combination.py
+├── test_item_hotspot.py
+├── test_item_use.py
+├── test_npc.py
+├── test_quest_flags.py
+├── test_recipe.py
+├── test_scene_event_result.py
+├── test_scene_manager.py
+└── test_text_wrapping.py
 ```
 
-Do not create all of these before the systems exist. Add them when useful.
+Add new test files only when they describe a real boundary.
 
-## 9. Example future inventory test
+## Full demo-flow integration test
 
-```python
-from game.systems.inventory import Inventory
+`tests/integration/test_demo_flow.py` protects the current v0.8.1 playable path using real demo content.
 
-
-def test_inventory_adds_item() -> None:
-    inventory = Inventory()
-
-    inventory.add("rusty_key")
-
-    assert inventory.has("rusty_key")
-```
-
-## 10. Example future recipe test
-
-```python
-from game.systems.recipes import combine_items
-
-
-def test_combines_cup_and_moon_herb() -> None:
-    result = combine_items("empty_cup", "moon_herb")
-
-    assert result == "glowing_tea"
-```
-
-## 11. Example future quest flag test
-
-```python
-from game.systems.quests import QuestFlags
-
-
-def test_quest_flag_can_be_set() -> None:
-    flags = QuestFlags()
-
-    flags.set("door_unlocked")
-
-    assert flags.has("door_unlocked")
-```
-
-## 12. What not to test automatically at first
-
-Do not spend time writing automated tests for:
+It covers:
 
 ```txt
-Pygame rendering
-exact pixel positions
-visual polish
-animation smoothness
-sound playback
-game feel
-complex mouse/UI flows
+Village Square
+→ collect Empty Cup
+→ Forest Path
+→ verify tower is locked
+→ collect Moon Herb
+→ combine Empty Cup + Moon Herb into Glowing Tea
+→ return to the witch
+→ give Glowing Tea to the witch
+→ verify WITCH_RECEIVED_TEA and TOWER_UNLOCKED
+→ return to Forest Path
+→ enter tower
+→ verify DEMO_COMPLETED
 ```
 
-These are better checked manually during early development.
+This test currently reflects the v0.8.1 implementation, where the witch unlocks the tower directly after receiving tea.
 
-## 13. HTML test report
-
-A custom HTML report is not needed at the start.
-
-For now, use:
-
-```bash
-make test
-```
-
-A custom report can be added later if the project becomes larger, but it is currently unnecessary.
-
-## 14. Recommended development rule
-
-After every implemented milestone, the agent or developer should provide:
+The intended v0.9 story flow will add the rusty key step:
 
 ```txt
-Changed files:
-- ...
-
-Manual test steps:
-- ...
-
-Automated tests:
-- ...
-
-Known issues:
-- ...
+Glowing Tea -> Retired Witch -> Rusty Key -> Tower Gate -> ending
 ```
 
-## 15. Current status
+When that feature is implemented, update the demo-flow integration test at the same time.
+
+## v0.8.1 regression checklist
+
+Automated coverage should protect these behaviors before further feature work:
+
+### Hotspot inspection
+
+- default text is returned without flags or completion
+- completed text is returned after local completion
+- flagged text wins when matching flag is active
+- inactive flags fall back correctly
+- priority is:
 
 ```txt
-pytest setup: planned
-custom test runner: not needed
-HTML report: not needed
-manual milestone checklist: required
-real automated tests: add when systems exist
+matching flag > completed interaction > default content
 ```
+
+### Content validation
+
+- valid demo content passes
+- unknown starting scene fails clearly
+- duplicate scene IDs fail clearly
+- unknown exit targets fail clearly
+- duplicate item IDs fail clearly
+- unknown pickup items fail clearly
+- unknown recipe ingredients/results fail clearly
+- unknown item-use requirements fail clearly
+- duplicate stable pickup/interaction IDs fail clearly
+
+### Persistent world state
+
+- new state has no collected pickups or completed interactions
+- repeated collection is idempotent
+- repeated completion is idempotent
+- recreated scenes hide already-collected pickups
+- recreated scenes restore completed interactions
+
+### Stateless item use
+
+- definitions do not store hidden completion state
+- completion is read from `GameState`
+- semantic world facts use flags
+- local one-time completions use interaction IDs
+- NPC and hotspot priority is:
+
+```txt
+matching flag > completed interaction > default content
+```
+
+### Recipe transactions
+
+- valid recipe succeeds
+- invalid pair leaves inventory unchanged
+- missing ingredient cannot partially mutate inventory
+- existing-result-item behavior is explicit
+- recipe operation can be tested without rendering
+
+### Interaction service
+
+- pickup, inspect, item use, NPC dialogue, and exits are covered
+- returned presentation outcome agrees with state mutation
+- service tests do not require drawing
+
+### Target resolution
+
+- inventory UI wins over world targets
+- world priority is:
+
+```txt
+NPC > exit > item pickup > hotspot
+```
+
+- empty space resolves to no target
+- collected pickups do not resolve
+- click and hover resolve the same world target
+- exits have hover feedback
+
+### UI helpers
+
+- shared text wrapping handles short text, wrapped text, blank text, and long words
+- `InventoryBar` drawing and hit testing use the same layout result
+- planned maximum visible inventory size remains inside the fixed-window layout
+
+## Manual test checklist
+
+Run after each milestone or meaningful refactor:
+
+```txt
+- Start the game.
+- ESC and window close still quit cleanly.
+- Talk to Retired Witch.
+- Advance and close dialogue.
+- Collect Empty Cup.
+- Travel to Forest Path.
+- Confirm tower is locked before helping the witch.
+- Collect Moon Herb.
+- Select Empty Cup in InventoryBar.
+- Click Moon Herb to combine.
+- Confirm Glowing Tea appears and ingredients are removed.
+- Return to Village Square.
+- Give Glowing Tea to Retired Witch.
+- Confirm witch dialogue/content changes.
+- Return to Forest Path.
+- Confirm tower exit is usable.
+- Enter tower.
+- Confirm ending/progress text appears.
+- Confirm long dialogue and messages wrap readably.
+- Confirm clicking each visible inventory row selects the matching item.
+```
+
+## Development rule
+
+For every implemented refactor step, record:
+
+```txt
+Changed files
+Automated tests run
+Manual checks to perform
+Known issues or intentional behavior
+```
+
+Keep tests close to the behavior they protect. Avoid testing private helpers unless the helper is a deliberately small boundary such as text wrapping, item combination, or target resolution.
