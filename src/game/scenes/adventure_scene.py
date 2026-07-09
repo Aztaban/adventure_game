@@ -4,7 +4,6 @@ import pygame
 
 from game.entities.exit_hotspot import ExitHotspot
 from game.entities.hotspot import Hotspot
-from game.entities.item import Item
 from game.entities.item_hotspot import ItemHotspot
 from game.entities.npc import NPC
 from game.game_state import GameState
@@ -16,9 +15,11 @@ from game.input.bindings import (
 from game.scene_event_result import SceneEventResult
 from game.scenes.base_scene import BaseScene
 from game.settings import WINDOW_WIDTH
+from game.systems.adventure_interaction_service import (
+    AdventureInteractionOutcome,
+    AdventureInteractionService,
+)
 from game.systems.dialogue import Dialogue
-from game.systems.item_combination import combine_inventory_items
-from game.systems.item_use import ItemUseInteraction
 from game.systems.recipe import RecipeBook
 from game.theme import (
     TEXT_HIGHLIGHT,
@@ -55,7 +56,10 @@ class AdventureScene(BaseScene):
         self.npcs = npcs
 
         self.game_state = game_state
-        self.recipe_book = recipe_book
+        self.interaction_service = AdventureInteractionService(
+            game_state=game_state,
+            recipe_book=recipe_book,
+        )
         self.interaction_text: str | None = None
         self.active_speaker_name = ""
 
@@ -136,15 +140,7 @@ class AdventureScene(BaseScene):
 
     def _handle_cancel(self) -> SceneEventResult:
         """Clear item selection before global cancel handling."""
-        inventory = self.game_state.inventory
-
-        if inventory.selected_item is None:
-            return SceneEventResult()
-
-        inventory.clear_selection()
-        self.interaction_text = "Item selection cleared."
-
-        return SceneEventResult(consumed=True)
+        return self._apply_interaction_outcome(self.interaction_service.clear_selected_item())
 
     def _handle_primary_action(
         self,
@@ -159,190 +155,50 @@ class AdventureScene(BaseScene):
         )
 
         if inventory_item is not None:
-            return self._handle_inventory_item_click(inventory_item)
+            return self._apply_interaction_outcome(
+                self.interaction_service.select_or_combine_inventory_item(inventory_item)
+            )
 
         npc = self._find_npc(position)
 
         if npc is not None:
-            return self._interact_with_npc(npc)
+            return self._apply_interaction_outcome(self.interaction_service.interact_with_npc(npc))
 
         exit_hotspot = self._find_exit_hotspot(position)
 
         if exit_hotspot is not None:
-            return self._interact_with_exit(exit_hotspot)
+            return self._apply_interaction_outcome(self.interaction_service.interact_with_exit(exit_hotspot))
 
         item_hotspot = self._find_item_hotspot(position)
 
         if item_hotspot is not None:
-            self._collect_item(item_hotspot)
-
-            return SceneEventResult(consumed=True)
+            return self._apply_interaction_outcome(self.interaction_service.collect_item(item_hotspot))
 
         hotspot = self._find_hotspot(position)
 
         if hotspot is not None:
-            return self._interact_with_hotspot(hotspot)
+            return self._apply_interaction_outcome(self.interaction_service.interact_with_hotspot(hotspot))
 
         return SceneEventResult()
 
-    def _handle_inventory_item_click(
+
+
+    def _apply_interaction_outcome(
         self,
-        clicked_item: Item,
+        outcome: AdventureInteractionOutcome,
     ) -> SceneEventResult:
-        """Select, deselect, or combine inventory items."""
-        inventory = self.game_state.inventory
-        selected_item = inventory.selected_item
-
-        if selected_item is None:
-            inventory.select(clicked_item.item_id)
-
-            self.interaction_text = f"Selected {clicked_item.name}. Click another item to combine them."
-
-            return SceneEventResult(consumed=True)
-
-        if selected_item.item_id == clicked_item.item_id:
-            inventory.clear_selection()
-
-            self.interaction_text = f"Deselected {clicked_item.name}."
-
-            return SceneEventResult(consumed=True)
-
-        self._combine_inventory_items(
-            first_item=selected_item,
-            second_item=clicked_item,
-        )
-
-        return SceneEventResult(consumed=True)
-
-    def _combine_inventory_items(
-        self,
-        first_item: Item,
-        second_item: Item,
-    ) -> None:
-        """Attempt to combine two inventory items."""
-        result = combine_inventory_items(
-            inventory=self.game_state.inventory,
-            recipe_book=self.recipe_book,
-            first_item_id=first_item.item_id,
-            second_item_id=second_item.item_id,
-        )
-
-        self.interaction_text = result.message
-
-    def _interact_with_npc(
-        self,
-        npc: NPC,
-    ) -> SceneEventResult:
-        """Talk to an NPC or use the selected item on them."""
-        inventory = self.game_state.inventory
-
-        if inventory.selected_item is not None:
-            self._attempt_item_use(npc.item_use)
-
-            return SceneEventResult(consumed=True)
-
-        self.active_speaker_name = npc.name
-
-        self.dialogue.start(
-            npc.dialogue_for(
-                self.game_state.has_flag,
-                self.game_state.has_completed_interaction,
-            )
-        )
-        self.interaction_text = None
-
-        return SceneEventResult(consumed=True)
-
-    def _interact_with_exit(
-        self,
-        exit_hotspot: ExitHotspot,
-    ) -> SceneEventResult:
-        """Use an exit or display its locked message."""
-        required_flag = exit_hotspot.required_flag
-
-        if required_flag is not None and not self.game_state.has_flag(required_flag):
-            self.interaction_text = exit_hotspot.locked_text
-
-            return SceneEventResult(consumed=True)
-
-        if exit_hotspot.completion_flag is not None:
-            self.game_state.set_flag(exit_hotspot.completion_flag)
+        """Apply service output to scene presentation state."""
+        if outcome.dialogue_lines:
+            self.active_speaker_name = outcome.speaker_name or ""
+            self.dialogue.start(outcome.dialogue_lines)
+            self.interaction_text = None
+        elif outcome.message is not None:
+            self.interaction_text = outcome.message
 
         return SceneEventResult(
-            consumed=True,
-            target_scene_id=exit_hotspot.target_scene_id,
+            consumed=outcome.consumed,
+            target_scene_id=outcome.target_scene_id
         )
-
-    def _interact_with_hotspot(
-        self,
-        hotspot: Hotspot,
-    ) -> SceneEventResult:
-        """Inspect a hotspot or use the selected item on it."""
-        inventory = self.game_state.inventory
-
-        if inventory.selected_item is not None:
-            self._attempt_item_use(hotspot.item_use)
-        else:
-            self.interaction_text = hotspot.inspect_text_for(
-                self.game_state.has_flag,
-                self.game_state.has_completed_interaction,
-            )
-
-        return SceneEventResult(consumed=True)
-
-    def _attempt_item_use(
-        self,
-        interaction: ItemUseInteraction | None,
-    ) -> None:
-        """Use the selected inventory item on a target."""
-        inventory = self.game_state.inventory
-        selected_item = inventory.selected_item
-
-        if selected_item is None:
-            return
-
-        if interaction is None:
-            self.interaction_text = f"{selected_item.name} does not seem useful here."
-            return
-
-        is_completed = interaction.has_been_completed(
-            self.game_state.has_flag,
-            self.game_state.has_completed_interaction,
-        )
-        result = interaction.attempt(
-            selected_item.item_id,
-            is_completed=is_completed,
-        )
-        self.interaction_text = result.message
-
-        if not result.success:
-            return
-
-        for flag in result.flags_to_set:
-            self.game_state.set_flag(flag)
-
-        if interaction.interaction_id is not None:
-            self.game_state.complete_interaction(interaction.interaction_id)
-
-        if result.consume_item:
-            inventory.remove(selected_item.item_id)
-        else:
-            inventory.clear_selection()
-
-    def _collect_item(
-        self,
-        item_hotspot: ItemHotspot,
-    ) -> None:
-        """Add a scene item and record its pickup as collected."""
-        inventory = self.game_state.inventory
-        was_added = inventory.add(item_hotspot.item)
-
-        self.game_state.collect_pickup(item_hotspot.pickup_id)
-
-        if was_added:
-            self.interaction_text = item_hotspot.pickup_text
-        else:
-            self.interaction_text = f"You already have {item_hotspot.item.name}."
 
     def _handle_dialogue_event(
         self,
