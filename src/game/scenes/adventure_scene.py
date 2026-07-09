@@ -40,7 +40,7 @@ class WorldTargetKind(Enum):
     NPC = "npc"
     EXIT = "exit"
     ITEM_PICKUP = "item_pickup"
-    HOTSPOT = "HOTSPOT"
+    HOTSPOT = "hotspot"
 
 
 @dataclass(frozen=True)
@@ -117,22 +117,15 @@ class AdventureScene(BaseScene):
 
         self._draw_scene_header(surface)
 
-        mouse_position = pygame.mouse.get_pos()
-        hovered_hotspot = self._find_hotspot(mouse_position)
-        hovered_item = self._find_item_hotspot(mouse_position)
-        hovered_npc = self._find_npc(mouse_position)
+        hovered_target = self._resolve_world_target(pygame.mouse.get_pos())
 
         self._draw_scene_entities(
             surface=surface,
-            hovered_hotspot=hovered_hotspot,
-            hovered_item=hovered_item,
-            hovered_npc=hovered_npc,
+            hovered_target=hovered_target,
         )
         self._draw_hover_text(
             surface=surface,
-            hovered_npc=hovered_npc,
-            hovered_item=hovered_item,
-            hovered_hotspot=hovered_hotspot,
+            hovered_target=hovered_target,
         )
 
         inventory = self.game_state.inventory
@@ -160,7 +153,9 @@ class AdventureScene(BaseScene):
 
     def _handle_cancel(self) -> SceneEventResult:
         """Clear item selection before global cancel handling."""
-        return self._apply_interaction_outcome(self.interaction_service.clear_selected_item())
+        return self._apply_interaction_outcome(
+            self.interaction_service.clear_selected_item()
+        )
 
     def _handle_primary_action(
         self,
@@ -176,7 +171,9 @@ class AdventureScene(BaseScene):
 
         if inventory_item is not None:
             return self._apply_interaction_outcome(
-                self.interaction_service.select_or_combine_inventory_item(inventory_item)
+                self.interaction_service.select_or_combine_inventory_item(
+                    inventory_item,
+                )
             )
 
         target = self._resolve_world_target(position)
@@ -186,7 +183,10 @@ class AdventureScene(BaseScene):
 
         return self._interact_with_world_target(target)
 
-    def _interact_with_world_target(self, target: WorldTarget) -> SceneEventResult:
+    def _interact_with_world_target(
+        self,
+        target: WorldTarget,
+    ) -> SceneEventResult:
         """Run the interaction matching a resolved world target."""
         if target.kind is WorldTargetKind.NPC:
             assert isinstance(target.entity, NPC)
@@ -229,7 +229,7 @@ class AdventureScene(BaseScene):
 
         return SceneEventResult(
             consumed=outcome.consumed,
-            target_scene_id=outcome.target_scene_id
+            target_scene_id=outcome.target_scene_id,
         )
 
     def _handle_dialogue_event(
@@ -354,7 +354,7 @@ class AdventureScene(BaseScene):
     ) -> str | None:
         """Return hover text for a resolved world target."""
         if target is None:
-            return
+            return None
 
         selected_item = self.game_state.inventory.selected_item
 

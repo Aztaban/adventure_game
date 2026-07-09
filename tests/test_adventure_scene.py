@@ -52,7 +52,7 @@ def get_inventory_row_position(
     row_index: int,
 ) -> tuple[int, int]:
     """Return the center position of an inventory item row."""
-    rows = scene.inventory_bar.item_rows(scene.game_state.inventory.items)
+    rows = scene.inventory_bar.layout_for_items(scene.game_state.inventory.items).item_rows
 
     return rows[row_index][1].center
 
@@ -679,7 +679,7 @@ def test_inventory_click_takes_precedence_over_world_target() -> None:
     item = create_item("inventory_item", "Inventory Item")
     game_state.inventory.add(item)
     scene = create_test_scene(game_state)
-    inventory_row = scene.inventory_bar.item_rows(game_state.inventory.items)[0][1]
+    inventory_row = scene.inventory_bar.layout_for_items(game_state.inventory.items).item_rows[0][1]
     overlapping_hotspot = Hotspot(
         rect=inventory_row.copy(),
         label="Overlapping Hotspot",

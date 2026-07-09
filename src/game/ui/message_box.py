@@ -3,6 +3,7 @@ from __future__ import annotations
 import pygame
 
 from game.theme import BORDER_DEFAULT, PANEL_BACKGROUND, TEXT_PRIMARY
+from game.ui.text import wrap_text
 
 
 class MessageBox:
@@ -26,7 +27,7 @@ class MessageBox:
             available_width,
         )
 
-        lines = self._wrap_text(text, maximum_text_width)
+        lines = wrap_text(self.font, text, maximum_text_width)
         line_height = self.font.get_linesize()
 
         text_width = max(self.font.size(line)[0] for line in lines)
@@ -51,25 +52,3 @@ class MessageBox:
             line_rect = line_surface.get_rect(centerx=panel_rect.centerx, y=text_y)
             surface.blit(line_surface, line_rect)
             text_y += line_height + self.LINE_SPACING
-
-    def _wrap_text(self, text: str, maximum_width: int) -> list[str]:
-        """Split text into lines that fit inside the message box."""
-        words = text.split()
-
-        if not words:
-            return [""]
-
-        lines: list[str] = []
-        current_line = words[0]
-
-        for word in words[1:]:
-            candidate = f"{current_line} {word}"
-
-            if self.font.size(candidate)[0] <= maximum_width:
-                current_line = candidate
-            else:
-                lines.append(current_line)
-                current_line = word
-
-        lines.append(current_line)
-        return lines

@@ -30,7 +30,7 @@ class GameApp:
         self.is_running = True
         self.debug_font = pygame.font.Font(None, 26)
 
-        self.game_state = GameState(recipe_book=create_demo_recipe_book())
+        self.game_state = GameState()
         self.recipe_book = create_demo_recipe_book()
 
         self.scene_manager = SceneManager(

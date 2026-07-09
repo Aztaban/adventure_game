@@ -8,6 +8,7 @@ from game.theme import (
     TEXT_PRIMARY,
     TEXT_SECONDARY,
 )
+from game.ui.text import wrap_text
 
 
 class DialogueBox:
@@ -67,7 +68,7 @@ class DialogueBox:
         text_y = panel_rect.y + self.INNER_PADDING + 42
         maximum_width = panel_rect.width - self.INNER_PADDING * 2
 
-        for line in self._wrap_text(text, maximum_width):
+        for line in wrap_text(self.text_font, text, maximum_width):
             line_surface = self.text_font.render(
                 line,
                 True,
@@ -88,29 +89,3 @@ class DialogueBox:
             )
         )
         surface.blit(hint_surface, hint_rect)
-
-    def _wrap_text(
-        self,
-        text: str,
-        maximum_width: int,
-    ) -> list[str]:
-        """Split text into lines that fit inside the panel."""
-        words = text.split()
-
-        if not words:
-            return [""]
-
-        lines: list[str] = []
-        current_line = words[0]
-
-        for word in words[1:]:
-            candidate = f"{current_line} {word}"
-
-            if self.text_font.size(candidate)[0] <= maximum_width:
-                current_line = candidate
-            else:
-                lines.append(current_line)
-                current_line = word
-
-        lines.append(current_line)
-        return lines

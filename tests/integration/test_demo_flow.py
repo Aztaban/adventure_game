@@ -68,7 +68,7 @@ def inventory_item_position(
     """Return the clickable inventory position for an item ID."""
     return next(
         row_rect.center
-        for item, row_rect in scene.inventory_bar.item_rows(scene.game_state.inventory.items)
+        for item, row_rect in scene.inventory_bar.layout_for_items(scene.game_state.inventory.items).item_rows
         if item.item_id == item_id
     )
 

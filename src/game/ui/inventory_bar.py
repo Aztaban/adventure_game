@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 import pygame
 
@@ -13,6 +14,14 @@ from game.theme import (
     TEXT_PRIMARY,
     TEXT_SECONDARY,
 )
+
+
+@dataclass(frozen=True)
+class InventoryBarLayout:
+    """Calculated inventory geometry for drawing and hit testing."""
+
+    panel_rect: pygame.Rect
+    item_rows: tuple[tuple[Item, pygame.Rect], ...]
 
 
 class InventoryBar:
@@ -42,7 +51,8 @@ class InventoryBar:
         selected_item: Item | None,
     ) -> None:
         """Draw the inventory and current selection."""
-        panel_rect = self._create_panel_rect(len(items))
+        layout = self.layout_for_items(items)
+        panel_rect = layout.panel_rect
 
         pygame.draw.rect(
             surface,
@@ -87,7 +97,11 @@ class InventoryBar:
 
         content_y += self.status_font.get_height() + self.SECTION_GAP
 
-        instruction = "Click another item to combine" if selected_item is not None else "Click an item to select"
+        instruction = (
+            "Click another item to combine"
+            if selected_item is not None
+            else "Click an item to select"
+        )
 
         instruction_surface = self.status_font.render(
             instruction,
@@ -114,8 +128,11 @@ class InventoryBar:
             )
             return
 
-        for item, row_rect in self.item_rows(items):
-            is_selected = selected_item is not None and selected_item.item_id == item.item_id
+        for item, row_rect in layout.item_rows:
+            is_selected = (
+                selected_item is not None
+                and selected_item.item_id == item.item_id
+            )
 
             if is_selected:
                 pygame.draw.rect(
@@ -154,24 +171,35 @@ class InventoryBar:
         items: Sequence[Item],
     ) -> Item | None:
         """Return the inventory item at a mouse position."""
-        for item, row_rect in self.item_rows(items):
+        for item, row_rect in self.layout_for_items(items).item_rows:
             if row_rect.collidepoint(position):
                 return item
 
         return None
 
-    def item_rows(
+    def layout_for_items(
         self,
         items: Sequence[Item],
-    ) -> tuple[tuple[Item, pygame.Rect], ...]:
-        """Return clickable inventory rows for the supplied items."""
-        panel_rect = self._create_panel_rect(len(items))
+    ) -> InventoryBarLayout:
+        """Return inventory panel and row geometry for the supplied items."""
+        content_rows = max(1, len(items))
+        panel_height = max(
+            self.MINIMUM_HEIGHT,
+            self._items_start_y()
+            + content_rows * self.ROW_HEIGHT
+            + self.INNER_PADDING,
+        )
+        panel_rect = pygame.Rect(
+            self.window_width - self.PANEL_WIDTH - self.PANEL_MARGIN,
+            self.PANEL_MARGIN,
+            self.PANEL_WIDTH,
+            panel_height,
+        )
 
         row_x = panel_rect.x + self.INNER_PADDING
         row_y = panel_rect.y + self._items_start_y()
         row_width = panel_rect.width - self.INNER_PADDING * 2
-
-        rows: list[tuple[Item, pygame.Rect]] = []
+        item_rows: list[tuple[Item, pygame.Rect]] = []
 
         for item in items:
             row_rect = pygame.Rect(
@@ -181,10 +209,13 @@ class InventoryBar:
                 self.ROW_HEIGHT,
             )
 
-            rows.append((item, row_rect))
+            item_rows.append((item, row_rect))
             row_y += self.ROW_HEIGHT
 
-        return tuple(rows)
+        return InventoryBarLayout(
+            panel_rect=panel_rect,
+            item_rows=tuple(item_rows),
+        )
 
     def _items_start_y(self) -> int:
         """Return the item-list offset relative to the panel."""
@@ -196,23 +227,4 @@ class InventoryBar:
             + self.SECTION_GAP
             + self.status_font.get_height()
             + self.ITEM_SECTION_GAP
-        )
-
-    def _create_panel_rect(
-        self,
-        item_count: int,
-    ) -> pygame.Rect:
-        """Create the inventory rectangle."""
-        content_rows = max(1, item_count)
-
-        panel_height = max(
-            self.MINIMUM_HEIGHT,
-            self._items_start_y() + content_rows * self.ROW_HEIGHT + self.INNER_PADDING,
-        )
-
-        return pygame.Rect(
-            self.window_width - self.PANEL_WIDTH - self.PANEL_MARGIN,
-            self.PANEL_MARGIN,
-            self.PANEL_WIDTH,
-            panel_height,
         )
