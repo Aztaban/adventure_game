@@ -182,3 +182,4 @@ def test_complete_key_based_demo_flow_uses_real_content() -> None:
 
     assert manager.current_scene_id == TOWER_INTERIOR
     assert game_state.has_flag(DEMO_COMPLETED)
+    assert game_state.ending_reached

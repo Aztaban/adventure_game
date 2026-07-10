@@ -146,6 +146,7 @@ def complete_demo(session: GameSession) -> None:
 
     assert session.scene_manager.current_scene_id == TOWER_INTERIOR
     assert session.game_state.has_flag(DEMO_COMPLETED)
+    assert session.game_state.ending_reached
 
 
 def assert_fresh_session(session: GameSession) -> None:
@@ -159,6 +160,7 @@ def assert_fresh_session(session: GameSession) -> None:
     assert not game_state.has_flag(WITCH_RECEIVED_TEA)
     assert not game_state.has_flag(TOWER_UNLOCKED)
     assert not game_state.has_flag(DEMO_COMPLETED)
+    assert not game_state.ending_reached
     assert not game_state.has_collected_pickup(EMPTY_CUP_PICKUP)
     assert not game_state.has_completed_interaction(OLD_WELL_INTERACTION)
     assert scene.interaction_text is None

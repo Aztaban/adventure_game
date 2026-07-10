@@ -26,6 +26,7 @@ class ExitHotspot:
     locked_label: str | None = None
     completion_flag: str | None = None
     item_use: ItemUseInteraction | None = None
+    ends_game: bool = False
 
     def contains_point(self, position: tuple[int, int]) -> bool:
         """Return True when the position is inside the exit."""

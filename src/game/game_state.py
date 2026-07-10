@@ -19,6 +19,26 @@ class GameState:
         default_factory=set,
         repr=False,
     )
+    ending_reached: bool = False
+
+    @property
+    def flags(self) -> tuple[str, ...]:
+        """Return active progression flags in deterministic order."""
+        return tuple(sorted(self._flags))
+
+    @property
+    def collected_pickup_ids(self) -> tuple[str, ...]:
+        """Return collected pickup IDs in deterministic order."""
+        return tuple(sorted(self._collected_pickup_ids))
+
+    @property
+    def completed_interaction_ids(self) -> tuple[str, ...]:
+        """Return completed interaction IDs in deterministic order."""
+        return tuple(sorted(self._completed_interaction_ids))
+
+    def mark_ending_reached(self) -> None:
+        """Record that the current session has reached its ending."""
+        self.ending_reached = True
 
     def has_flag(self, flag: str) -> bool:
         """Return whether a progression flag is active."""

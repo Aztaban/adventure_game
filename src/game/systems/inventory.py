@@ -16,6 +16,16 @@ class Inventory:
         return tuple(self._items.values())
 
     @property
+    def item_ids(self) -> tuple[str, ...]:
+        """Return all inventory item IDs in collection order."""
+        return tuple(self._items)
+
+    @property
+    def selected_item_id(self) -> str | None:
+        """Return the selected item ID when one is selected."""
+        return self._selected_item_id
+
+    @property
     def selected_item(self) -> Item | None:
         """Return the currently selected item."""
         if self._selected_item_id is None:

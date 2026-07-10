@@ -2,7 +2,10 @@ import pygame
 import pytest
 
 from game.content.demo_world import create_demo_content
+from game.content.flag_ids import DEMO_COMPLETED, TOWER_UNLOCKED, WITCH_RECEIVED_TEA
+from game.content.interaction_ids import OLD_WELL_INTERACTION
 from game.content.item_ids import EMPTY_CUP
+from game.content.pickup_ids import EMPTY_CUP_PICKUP, MOON_HERB_PICKUP
 from game.content.scene_ids import STARTING_SCENE_ID
 from game.game_session import create_game_session
 
@@ -17,6 +20,20 @@ def test_demo_content_exposes_static_registries() -> None:
     assert content.items_by_id[EMPTY_CUP].name == "Empty Cup"
     assert content.recipes == content.recipe_book.recipes
     assert STARTING_SCENE_ID in content.scenes_by_id
+    assert content.flag_ids == frozenset(
+        {
+            DEMO_COMPLETED,
+            TOWER_UNLOCKED,
+            WITCH_RECEIVED_TEA,
+        }
+    )
+    assert content.pickup_ids == frozenset(
+        {
+            EMPTY_CUP_PICKUP,
+            MOON_HERB_PICKUP,
+        }
+    )
+    assert content.interaction_ids == frozenset({OLD_WELL_INTERACTION})
 
 
 def test_demo_content_registries_are_read_only() -> None:

@@ -22,6 +22,10 @@ def test_game_state_sets_and_clears_flags() -> None:
 def test_game_state_starts_without_persistent_world_records() -> None:
     game_state = GameState()
 
+    assert game_state.flags == ()
+    assert game_state.collected_pickup_ids == ()
+    assert game_state.completed_interaction_ids == ()
+    assert not game_state.ending_reached
     assert not game_state.has_collected_pickup("pickup.test")
     assert not game_state.has_completed_interaction("interaction.test")
 
@@ -42,3 +46,11 @@ def test_completing_interaction_is_idempotent() -> None:
     game_state.complete_interaction("interaction.test")
 
     assert game_state.has_completed_interaction("interaction.test")
+
+
+def test_game_state_marks_ending_reached() -> None:
+    game_state = GameState()
+
+    game_state.mark_ending_reached()
+
+    assert game_state.ending_reached

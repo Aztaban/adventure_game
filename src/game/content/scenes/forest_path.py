@@ -58,6 +58,7 @@ def create_forest_path(
                     "The old lock looks like it needs a key."
                 ),
                 completion_flag=DEMO_COMPLETED,
+                ends_game=True,
                 item_use=ItemUseInteraction(
                     required_item_id=RUSTY_KEY,
                     success_text=(

@@ -163,6 +163,9 @@ class AdventureInteractionService:
         if exit_hotspot.completion_flag is not None:
             self.game_state.set_flag(exit_hotspot.completion_flag)
 
+        if exit_hotspot.ends_game:
+            self.game_state.mark_ending_reached()
+
         return AdventureInteractionOutcome(
             consumed=True,
             target_scene_id=exit_hotspot.target_scene_id,
