@@ -13,6 +13,7 @@ DIALOGUE_ADVANCE_KEYS = frozenset(
 )
 
 CANCEL_KEY = pygame.K_ESCAPE
+NEW_GAME_KEY = pygame.K_n
 
 
 def is_primary_action(event: pygame.event.Event) -> bool:
@@ -28,3 +29,7 @@ def is_dialogue_advance(event: pygame.event.Event) -> bool:
 def is_cancel(event: pygame.event.Event) -> bool:
     """Return whether an event is the cancel action."""
     return event.type == pygame.KEYDOWN and event.key == CANCEL_KEY
+
+def is_new_game(event: pygame.event.Event) -> bool:
+    """Return whether an event requests a fresh new game session."""
+    return event.type == pygame.KEYDOWN and event.key == NEW_GAME_KEY

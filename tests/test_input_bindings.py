@@ -3,6 +3,7 @@ import pygame
 from game.input.bindings import (
     is_cancel,
     is_dialogue_advance,
+    is_new_game,
     is_primary_action,
 )
 
@@ -37,3 +38,9 @@ def test_cancel_accepts_escape() -> None:
     event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)
 
     assert is_cancel(event)
+
+
+def test_new_game_accepts_n() -> None:
+    event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_n)
+
+    assert is_new_game(event)

@@ -2,12 +2,9 @@ from __future__ import annotations
 
 import pygame
 
-from game.content.demo_world import create_demo_scenes
 from game.content.recipes import create_demo_recipe_book
-from game.content.scene_ids import STARTING_SCENE_ID
-from game.game_state import GameState
-from game.input.bindings import is_cancel
-from game.scene_manager import SceneManager
+from game.game_session import GameSession, create_demo_game_session
+from game.input.bindings import is_cancel, is_new_game
 from game.settings import (
     FPS,
     GAME_TITLE,
@@ -30,13 +27,16 @@ class GameApp:
         self.is_running = True
         self.debug_font = pygame.font.Font(None, 26)
 
-        self.game_state = GameState()
         self.recipe_book = create_demo_recipe_book()
+        self.session = self._create_new_session()
 
-        self.scene_manager = SceneManager(
-            scenes=create_demo_scenes(self.game_state, self.recipe_book),
-            starting_scene_id=STARTING_SCENE_ID,
-        )
+    def _create_new_session(self) -> GameSession:
+        """Create a fresh playable session using static demo rules."""
+        return create_demo_game_session(self.recipe_book)
+
+    def start_new_game(self) -> None:
+        """Reset the current run by replacing the whole game session."""
+        self.session = self._create_new_session()
 
     def run(self) -> None:
         """Run the main game loop."""
@@ -45,7 +45,7 @@ class GameApp:
                 delta_time = self.clock.tick(FPS) / 1000.0
 
                 self._handle_events()
-                self.scene_manager.update(delta_time)
+                self.session.scene_manager.update(delta_time)
                 self._draw()
         finally:
             pygame.quit()
@@ -57,7 +57,11 @@ class GameApp:
                 self.is_running = False
                 continue
 
-            event_consumed = self.scene_manager.handle_event(event)
+            if is_new_game(event):
+                self.start_new_game()
+                continue
+
+            event_consumed = self.session.scene_manager.handle_event(event)
 
             if event_consumed:
                 continue
@@ -67,10 +71,11 @@ class GameApp:
 
     def _draw(self) -> None:
         """Draw the active scene and debug information."""
-        self.scene_manager.draw(self.screen)
+        self.session.scene_manager.draw(self.screen)
 
         fps = int(self.clock.get_fps())
-        debug_text = f"Scene: {self.scene_manager.current_scene_id} | FPS: {fps}"
+        scene_id = self.session.scene_manager.current_scene_id
+        debug_text = f"Scene: {scene_id} | FPS: {fps}"
         debug_surface = self.debug_font.render(
             debug_text,
             True,
