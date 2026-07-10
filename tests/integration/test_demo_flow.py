@@ -1,6 +1,6 @@
 import pygame
 
-from game.content.demo_world import create_demo_scenes
+from game.content.demo_world import create_demo_content
 from game.content.flag_ids import (
     DEMO_COMPLETED,
     TOWER_UNLOCKED,
@@ -14,10 +14,8 @@ from game.content.item_ids import (
     WATER_CUP,
 )
 from game.content.pickup_ids import EMPTY_CUP_PICKUP
-from game.content.recipes import create_demo_recipe_book
 from game.content.scene_ids import (
     FOREST_PATH,
-    STARTING_SCENE_ID,
     TOWER_INTERIOR,
     VILLAGE_SQUARE,
 )
@@ -25,7 +23,7 @@ from game.entities.exit_hotspot import ExitHotspot
 from game.entities.hotspot import Hotspot
 from game.entities.item_hotspot import ItemHotspot
 from game.entities.npc import NPC
-from game.game_state import GameState
+from game.game_session import create_game_session
 from game.scene_manager import SceneManager
 from game.scenes.adventure_scene import AdventureScene
 
@@ -99,13 +97,10 @@ def click(manager: SceneManager, position: tuple[int, int]) -> None:
 
 
 def test_complete_key_based_demo_flow_uses_real_content() -> None:
-    game_state = GameState()
-    recipe_book = create_demo_recipe_book()
-    scenes = create_demo_scenes(game_state, recipe_book)
-    manager = SceneManager(
-        scenes=scenes,
-        starting_scene_id=STARTING_SCENE_ID,
-    )
+    content = create_demo_content()
+    session = create_game_session(content)
+    game_state = session.game_state
+    manager = session.scene_manager
 
     assert manager.current_scene_id == VILLAGE_SQUARE
 

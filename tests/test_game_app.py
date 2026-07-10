@@ -2,8 +2,8 @@ import pygame
 import pytest
 
 from game.app import GameApp
+from game.content.demo_world import create_demo_content
 from game.content.items import create_empty_cup
-from game.content.recipes import create_demo_recipe_book
 from game.content.scene_ids import STARTING_SCENE_ID
 from game.game_session import create_demo_game_session
 
@@ -63,8 +63,8 @@ def test_app_new_game_event_replaces_session_before_scene_handling(
 
 def test_app_start_new_game_replaces_current_session() -> None:
     app = object.__new__(GameApp)
-    app.recipe_book = create_demo_recipe_book()
-    app.session = create_demo_game_session(app.recipe_book)
+    app.content = create_demo_content()
+    app.session = create_demo_game_session(app.content)
     old_session = app.session
 
     empty_cup = create_empty_cup()
@@ -75,7 +75,6 @@ def test_app_start_new_game_replaces_current_session() -> None:
     app.start_new_game()
 
     assert app.session is not old_session
-    assert app.session.recipe_book is app.recipe_book
     assert app.session.scene_manager.current_scene_id == STARTING_SCENE_ID
     assert len(app.session.game_state.inventory) == 0
     assert app.session.game_state.inventory.selected_item is None

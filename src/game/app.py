@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pygame
 
-from game.content.recipes import create_demo_recipe_book
-from game.game_session import GameSession, create_demo_game_session
+from game.content.demo_world import create_demo_content
+from game.game_session import GameSession, create_game_session
 from game.input.bindings import is_cancel, is_new_game
 from game.settings import (
     FPS,
@@ -27,12 +27,12 @@ class GameApp:
         self.is_running = True
         self.debug_font = pygame.font.Font(None, 26)
 
-        self.recipe_book = create_demo_recipe_book()
+        self.content = create_demo_content()
         self.session = self._create_new_session()
 
     def _create_new_session(self) -> GameSession:
-        """Create a fresh playable session using static demo rules."""
-        return create_demo_game_session(self.recipe_book)
+        """Create a fresh playable session using static demo content."""
+        return create_game_session(self.content)
 
     def start_new_game(self) -> None:
         """Reset the current run by replacing the whole game session."""

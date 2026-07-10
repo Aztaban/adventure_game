@@ -1,5 +1,6 @@
 import pygame
 
+from game.content.demo_world import create_demo_content
 from game.content.flag_ids import (
     DEMO_COMPLETED,
     TOWER_UNLOCKED,
@@ -14,7 +15,6 @@ from game.content.item_ids import (
     WATER_CUP,
 )
 from game.content.pickup_ids import EMPTY_CUP_PICKUP
-from game.content.recipes import create_demo_recipe_book
 from game.content.scene_ids import (
     FOREST_PATH,
     STARTING_SCENE_ID,
@@ -166,8 +166,8 @@ def assert_fresh_session(session: GameSession) -> None:
 
 
 def test_partially_progressed_game_can_reset_to_fresh_session() -> None:
-    recipe_book = create_demo_recipe_book()
-    session = create_demo_game_session(recipe_book)
+    content = create_demo_content()
+    session = create_demo_game_session(content)
     fill_cup_at_well(session)
 
     village = current_adventure_scene(session)
@@ -187,33 +187,31 @@ def test_partially_progressed_game_can_reset_to_fresh_session() -> None:
 
     assert forest.dialogue.is_active
 
-    reset_session = create_demo_game_session(recipe_book)
+    reset_session = create_demo_game_session(content)
 
     assert_fresh_session(reset_session)
-    assert reset_session.recipe_book is recipe_book
 
 
 def test_completed_game_can_reset_and_complete_again_in_same_process() -> None:
-    recipe_book = create_demo_recipe_book()
-    first_session = create_demo_game_session(recipe_book)
+    content = create_demo_content()
+    first_session = create_demo_game_session(content)
     complete_demo(first_session)
 
     assert first_session.game_state.has_flag(DEMO_COMPLETED)
 
-    second_session = create_demo_game_session(recipe_book)
+    second_session = create_demo_game_session(content)
 
     assert_fresh_session(second_session)
 
     complete_demo(second_session)
 
     assert second_session.game_state.has_flag(DEMO_COMPLETED)
-    assert second_session.recipe_book is recipe_book
 
 
 def test_two_sessions_do_not_leak_runtime_state() -> None:
-    recipe_book = create_demo_recipe_book()
-    first_session = create_demo_game_session(recipe_book)
-    second_session = create_demo_game_session(recipe_book)
+    content = create_demo_content()
+    first_session = create_demo_game_session(content)
+    second_session = create_demo_game_session(content)
 
     fill_cup_at_well(first_session)
 
@@ -222,4 +220,3 @@ def test_two_sessions_do_not_leak_runtime_state() -> None:
     assert first_session.game_state.has_completed_interaction(OLD_WELL_INTERACTION)
 
     assert_fresh_session(second_session)
-    assert second_session.recipe_book is recipe_book
