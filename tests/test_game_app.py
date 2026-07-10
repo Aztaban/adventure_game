@@ -3,7 +3,7 @@ import pytest
 
 from game.app import GameApp
 from game.content.demo_world import create_demo_content
-from game.content.items import create_empty_cup
+from game.content.item_ids import EMPTY_CUP
 from game.content.scene_ids import STARTING_SCENE_ID
 from game.game_session import create_demo_game_session
 
@@ -67,7 +67,7 @@ def test_app_start_new_game_replaces_current_session() -> None:
     app.session = create_demo_game_session(app.content)
     old_session = app.session
 
-    empty_cup = create_empty_cup()
+    empty_cup = app.content.items_by_id[EMPTY_CUP]
     old_session.game_state.inventory.add(empty_cup)
     old_session.game_state.inventory.select(empty_cup.item_id)
     old_session.game_state.set_flag("temporary_flag")

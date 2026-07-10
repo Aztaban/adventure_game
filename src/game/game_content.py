@@ -51,7 +51,11 @@ class GameContent:
     ) -> dict[str, BaseScene]:
         """Build fresh session scenes from reusable content definitions."""
         return {
-            scene_id: scene_builder(game_state, self.recipe_book)
+            scene_id: scene_builder(
+                game_state,
+                self.recipe_book,
+                self.items_by_id,
+            )
             for scene_id, scene_builder in self.scenes_by_id.items()
         }
 
@@ -98,7 +102,7 @@ def collect_content_id_registries(
                 hotspot.item_use,
                 flag_ids=flag_ids,
                 interaction_ids=interaction_ids,
-            ),
+            )
 
         for npc in scene.npcs:
             _add_optional(flag_ids, npc.dialogue_flag)

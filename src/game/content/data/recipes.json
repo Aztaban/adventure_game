@@ -1,0 +1,8 @@
+[
+  {
+    "first_item_id": "water_cup",
+    "second_item_id": "moon_herb",
+    "result_item_id": "glowing_tea",
+    "success_text": "You steep the Moon Herb in the cup of water. It becomes Glowing Tea."
+  }
+]

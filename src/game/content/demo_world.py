@@ -64,9 +64,11 @@ def _create_base_demo_content(
     recipe_book: RecipeBook | None = None,
 ) -> GameContent:
     """Create demo content before validation registries are attached."""
+    items_by_id = create_item_registry(create_demo_items())
+
     return GameContent(
-        items_by_id=create_item_registry(create_demo_items()),
-        recipe_book=recipe_book or create_demo_recipe_book(),
+        items_by_id=items_by_id,
+        recipe_book=recipe_book or create_demo_recipe_book(items_by_id),
         scenes_by_id=create_scene_registry(
             {
                 VILLAGE_SQUARE: create_village_square,

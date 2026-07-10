@@ -1,0 +1,27 @@
+[
+  {
+    "id": "empty_cup",
+    "name": "Empty Cup",
+    "description": "A chipped cup that looks ready for a suspicious beverage."
+  },
+  {
+    "id": "water_cup",
+    "name": "Cup of Water",
+    "description": "A cup filled with cold well water."
+  },
+  {
+    "id": "moon_herb",
+    "name": "Moon Herb",
+    "description": "A glowing herb with an unreasonable amount of confidence."
+  },
+  {
+    "id": "glowing_tea",
+    "name": "Glowing Tea",
+    "description": "A luminous herbal drink that is probably safe enough."
+  },
+  {
+    "id": "rusty_key",
+    "name": "Rusty Key",
+    "description": "An old key with just enough dignity left to open a tower gate."
+  }
+]

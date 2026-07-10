@@ -1,11 +1,12 @@
+from collections.abc import Mapping
+
 import pygame
 
 from game.content.flag_ids import (
     DEMO_COMPLETED,
     TOWER_UNLOCKED,
 )
-from game.content.item_ids import RUSTY_KEY
-from game.content.items import create_moon_herb
+from game.content.item_ids import MOON_HERB, RUSTY_KEY
 from game.content.pickup_ids import MOON_HERB_PICKUP
 from game.content.scene_ids import (
     TOWER_INTERIOR,
@@ -13,6 +14,7 @@ from game.content.scene_ids import (
 )
 from game.entities.exit_hotspot import ExitHotspot
 from game.entities.hotspot import Hotspot
+from game.entities.item import Item
 from game.entities.item_hotspot import ItemHotspot
 from game.entities.npc import NPC
 from game.game_state import GameState
@@ -25,6 +27,7 @@ from game.systems.recipe import RecipeBook
 def create_forest_path(
     game_state: GameState,
     recipe_book: RecipeBook,
+    items_by_id: Mapping[str, Item],
 ) -> AdventureScene:
     """Create the Forest Path scene."""
     return AdventureScene(
@@ -86,7 +89,7 @@ def create_forest_path(
             ItemHotspot(
                 pickup_id=MOON_HERB_PICKUP,
                 rect=pygame.Rect(850, 350, 180, 100),
-                item=create_moon_herb(),
+                item=items_by_id[MOON_HERB],
                 pickup_text=(
                     "You carefully collect the Moon Herb. "
                     "It seems pleased with itself."

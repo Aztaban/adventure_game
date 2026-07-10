@@ -1,9 +1,12 @@
+from collections.abc import Mapping
+
 import pygame
 
 from game.content.flag_ids import DEMO_COMPLETED
 from game.content.scene_ids import FOREST_PATH
 from game.entities.exit_hotspot import ExitHotspot
 from game.entities.hotspot import Hotspot
+from game.entities.item import Item
 from game.game_state import GameState
 from game.scenes.adventure_scene import AdventureScene
 from game.settings import WINDOW_HEIGHT
@@ -13,8 +16,11 @@ from game.systems.recipe import RecipeBook
 def create_tower_interior(
     game_state: GameState,
     recipe_book: RecipeBook,
+    items_by_id: Mapping[str, Item],
 ) -> AdventureScene:
     """Create the final tower scene."""
+    del items_by_id
+
     return AdventureScene(
         name="Ancient Tower",
         description=("The tower smells of dust, magic, and recently brewed tea."),

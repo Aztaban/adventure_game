@@ -2,12 +2,8 @@ import pygame
 import pytest
 
 from game.content.demo_world import create_demo_scenes
-from game.content.item_ids import EMPTY_CUP, MOON_HERB
-from game.content.items import (
-    create_demo_items,
-    create_empty_cup,
-    create_glowing_tea,
-)
+from game.content.item_ids import EMPTY_CUP, GLOWING_TEA, MOON_HERB
+from game.content.items import create_demo_items
 from game.content.recipes import create_demo_recipe_book
 from game.content.scene_ids import (
     FOREST_PATH,
@@ -34,7 +30,8 @@ def create_valid_demo_content() -> tuple[
 ]:
     """Create the real demo content used by validation tests."""
     game_state = GameState()
-    recipe_book = create_demo_recipe_book()
+    items = create_demo_items()
+    recipe_book = create_demo_recipe_book({item.item_id: item for item in items})
     scenes = create_demo_scenes(game_state, recipe_book)
 
     return scenes, game_state, recipe_book
@@ -120,7 +117,10 @@ def test_duplicate_item_id_fails_clearly() -> None:
         validate_content(
             scene_entries=scenes.items(),
             starting_scene_id=STARTING_SCENE_ID,
-            items=(*create_demo_items(), create_empty_cup()),
+            items=(
+                *create_demo_items(),
+                next(item for item in create_demo_items() if item.item_id == EMPTY_CUP),
+            ),
             recipes=recipe_book.recipes,
         )
 
@@ -146,7 +146,7 @@ def test_unknown_recipe_ingredient_fails_clearly() -> None:
     invalid_recipe = Recipe(
         first_item_id="missing_ingredient",
         second_item_id=MOON_HERB,
-        result_item=create_glowing_tea(),
+        result_item=next(item for item in create_demo_items() if item.item_id == GLOWING_TEA),
         success_text="Invalid recipe.",
     )
 

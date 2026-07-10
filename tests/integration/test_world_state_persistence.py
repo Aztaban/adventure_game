@@ -1,9 +1,9 @@
 import pygame
 
+from game.content.demo_world import create_demo_content
 from game.content.interaction_ids import OLD_WELL_INTERACTION
 from game.content.item_ids import EMPTY_CUP, WATER_CUP
 from game.content.pickup_ids import EMPTY_CUP_PICKUP
-from game.content.recipes import create_demo_recipe_book
 from game.content.scenes.village_square import create_village_square
 from game.entities.hotspot import Hotspot
 from game.entities.item_hotspot import ItemHotspot
@@ -34,13 +34,21 @@ def find_hotspot(scene: AdventureScene, label: str) -> Hotspot:
 
 def test_recreated_scene_hides_already_collected_pickup() -> None:
     game_state = GameState()
-    recipe_book = create_demo_recipe_book()
-    first_scene = create_village_square(game_state, recipe_book)
+    content = create_demo_content()
+    first_scene = create_village_square(
+        game_state,
+        content.recipe_book,
+        content.items_by_id,
+    )
     empty_cup_pickup = find_pickup(first_scene, EMPTY_CUP)
 
     first_result = first_scene.handle_event(create_primary_click(empty_cup_pickup.rect.center))
 
-    recreated_scene = create_village_square(game_state, recipe_book)
+    recreated_scene = create_village_square(
+        game_state,
+        content.recipe_book,
+        content.items_by_id,
+    )
     recreated_pickup = find_pickup(recreated_scene, EMPTY_CUP)
     second_result = recreated_scene.handle_event(create_primary_click(recreated_pickup.rect.center))
 
@@ -52,8 +60,12 @@ def test_recreated_scene_hides_already_collected_pickup() -> None:
 
 def test_completed_interaction_survives_scene_reconstruction() -> None:
     game_state = GameState()
-    recipe_book = create_demo_recipe_book()
-    first_scene = create_village_square(game_state, recipe_book)
+    content = create_demo_content()
+    first_scene = create_village_square(
+        game_state,
+        content.recipe_book,
+        content.items_by_id,
+    )
     empty_cup_pickup = find_pickup(first_scene, EMPTY_CUP)
     old_well = find_hotspot(first_scene, "Old Well")
 
@@ -65,7 +77,11 @@ def test_completed_interaction_survives_scene_reconstruction() -> None:
     assert not game_state.inventory.contains(EMPTY_CUP)
     assert game_state.inventory.contains(WATER_CUP)
 
-    recreated_scene = create_village_square(game_state, recipe_book)
+    recreated_scene = create_village_square(
+        game_state,
+        content.recipe_book,
+        content.items_by_id,
+    )
     recreated_well = find_hotspot(recreated_scene, "Old Well")
     result = recreated_scene.handle_event(create_primary_click(recreated_well.rect.center))
 

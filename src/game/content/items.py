@@ -1,64 +1,53 @@
-from game.content.item_ids import (
-    EMPTY_CUP,
-    GLOWING_TEA,
-    MOON_HERB,
-    RUSTY_KEY,
-    WATER_CUP,
+from __future__ import annotations
+
+from pathlib import Path
+
+from game.content.json_loader import (
+    ContentLoadError,
+    load_json_file,
+    require_string,
 )
 from game.entities.item import Item
 
-
-def create_empty_cup() -> Item:
-    """Create the Empty Cup item."""
-    return Item(
-        item_id=EMPTY_CUP,
-        name="Empty Cup",
-        description="A chipped cup that looks ready for a suspicious beverage.",
-    )
-
-
-def create_water_cup() -> Item:
-    """Create the Cup of Water item."""
-    return Item(
-        item_id=WATER_CUP,
-        name="Cup of Water",
-        description="A chipped cup now filled with cold well water.",
-    )
-
-
-def create_moon_herb() -> Item:
-    """Create the Moon Herb item."""
-    return Item(
-        item_id=MOON_HERB,
-        name="Moon Herb",
-        description="A glowing herb with an unreasonable amount of confidence.",
-    )
-
-
-def create_glowing_tea() -> Item:
-    """Create the Glowing Tea item."""
-    return Item(
-        item_id=GLOWING_TEA,
-        name="Glowing Tea",
-        description="A luminous herbal drink that is probably safe enough.",
-    )
-
-
-def create_rusty_key() -> Item:
-    """Create the Rusty Key item."""
-    return Item(
-        item_id=RUSTY_KEY,
-        name="Rusty Key",
-        description="An old tower key with more rust than confidence.",
-    )
+DEFAULT_ITEMS_PATH = Path(__file__).with_name("data") / "items.json"
 
 
 def create_demo_items() -> tuple[Item, ...]:
-    """Create the complete item catalog used by the demo."""
-    return (
-        create_empty_cup(),
-        create_water_cup(),
-        create_moon_herb(),
-        create_glowing_tea(),
-        create_rusty_key(),
-    )
+    """Load the complete item catalog used by the demo."""
+    return load_items_from_json(DEFAULT_ITEMS_PATH)
+
+
+def load_items_from_json(path: Path | str) -> tuple[Item, ...]:
+    """Load item definitions from a JSON file."""
+    source_path = Path(path)
+    data = load_json_file(source_path)
+
+    if not isinstance(data, list):
+        raise ContentLoadError(f"{source_path}: expected top-level list of item definitions.")
+
+    items: list[Item] = []
+    seen_ids: set[str] = set()
+
+    for index, entry in enumerate(data):
+        context = f"{source_path}: item[{index}]"
+
+        if not isinstance(entry, dict):
+            raise ContentLoadError(f"{context}: expected object.")
+
+        item_id = require_string(entry, "id", context)
+        name = require_string(entry, "name", context)
+        description = require_string(entry, "description", context)
+
+        if item_id in seen_ids:
+            raise ContentLoadError(f"{context}: duplicate item ID '{item_id}'.")
+
+        seen_ids.add(item_id)
+        items.append(
+            Item(
+                item_id=item_id,
+                name=name,
+                description=description,
+            )
+        )
+
+    return tuple(items)
