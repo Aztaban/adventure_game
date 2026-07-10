@@ -24,6 +24,24 @@ Example tone:
 Magic is real, but everyone is tired of filling magical paperwork.
 ```
 
+
+## Current content format decision
+
+R091-06 decision:
+
+```txt
+Items:     JSON
+Recipes:   JSON
+Scenes:    Python factories
+Dialogue:  Python factories
+```
+
+Items and recipes are data-driven because their schemas are small and stable. Scene and dialogue content remain in Python because full scenes include coordinates, exits, entity types, conditions, flags, and interactions. Dialogue also stays in Python until the planned v0.12 dialogue-choice system proves its final shape.
+
+Do not keep the same item or recipe definition in both Python and JSON. Stable Python constants are still acceptable when Python scene factories need to refer to item, flag, pickup, interaction, or scene IDs.
+
+Re-evaluate dialogue JSON after v0.12. Re-evaluate full scene JSON only after at least one larger scene proves that a data schema would be clearer than Python factories.
+
 ## Current v0.9 demo flow
 
 The implemented v0.9 flow is key-based and includes filling the cup first:

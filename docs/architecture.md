@@ -1,15 +1,16 @@
 # Architecture
 
-Status: current for v0.8.1
+Status: current after R091-06 content-format decision
 
 ## Goal
 
-Keep the game architecture small enough to understand while separating three things that should not own each other's work:
+Keep the game architecture small enough to understand while separating four things that should not own each other's work:
 
 ```txt
-Pygame presentation  -> event handling, drawing, UI state
-Gameplay rules       -> interactions, item use, recipes, exits
-Persistent state     -> inventory, flags, collected pickups, completions
+Pygame presentation   -> event handling, drawing, UI state
+Gameplay rules        -> interactions, item use, recipes, exits
+Reusable content      -> item/recipe data, scene factories, IDs, validation
+Persistent state      -> inventory, scene position, flags, pickups, completions, ending
 ```
 
 The project is still a prototype. Avoid large engine patterns unless the game actually needs them.
@@ -21,17 +22,24 @@ src/
 ├── main.py
 └── game/
     ├── app.py
+    ├── game_content.py
+    ├── game_session.py
     ├── game_state.py
     ├── scene_event_result.py
     ├── scene_manager.py
     ├── settings.py
+    ├── state_snapshot.py
     ├── theme.py
     ├── content/
+    │   ├── data/
+    │   │   ├── items.json
+    │   │   └── recipes.json
     │   ├── demo_world.py
     │   ├── flag_ids.py
     │   ├── interaction_ids.py
     │   ├── item_ids.py
     │   ├── items.py
+    │   ├── json_loader.py
     │   ├── pickup_ids.py
     │   ├── recipes.py
     │   ├── scene_ids.py
@@ -65,7 +73,19 @@ src/
         └── text.py
 ```
 
-There is no JSON content loader in v0.8.1. Demo content is still Python-created and validated at startup.
+## Composition overview
+
+Current startup/session ownership:
+
+```txt
+GameApp
+├── GameContent                 reusable content and rules
+└── GameSession                 one current playable run
+    ├── GameState               persistent runtime facts
+    └── SceneManager            current scene and session scene instances
+```
+
+A new game/reset creates a new `GameSession`. It does not manually clear many unrelated objects.
 
 ## Application layer
 
@@ -83,22 +103,154 @@ Responsibilities:
 
 - initialize Pygame
 - create the window and clock
-- create shared `GameState`
-- create static recipe rules
-- create and validate demo scenes
+- load/create reusable `GameContent`
+- create a fresh `GameSession`
 - own the main loop
 - delegate scene events, updates, and drawing
 - handle global quit behavior
+- handle global new-game/reset input
 
-`GameApp` composes the application. It should not implement item-use, recipe, or quest logic.
+`GameApp` composes the application. It should not implement item-use, recipe, quest, or save/load logic.
 
-## Scene layer
+## Reusable content
+
+### `game/game_content.py`
+
+`GameContent` owns reusable static content and rules that can be shared across sessions.
+
+Current responsibilities:
+
+```txt
+GameContent
+├── items_by_id
+├── recipe_book
+├── scenes_by_id
+├── starting_scene_id
+├── flag_ids
+├── pickup_ids
+└── interaction_ids
+```
+
+Rules:
+
+- `GameContent` is reusable.
+- `GameContent` should not contain current inventory, selected item, current scene, collected pickups, completed interactions, or ending state.
+- `GameContent.build_scenes(game_state)` creates fresh scene instances for one session.
+- Reusable content should not depend on Pygame fonts, surfaces, or live UI state.
+
+### `game/content/demo_world.py`
+
+Responsibilities:
+
+- create demo `GameContent`
+- load items and recipes
+- register scene builders
+- build validation scenes once
+- validate references before gameplay starts
+- collect ID registries for snapshot validation
+
+### Current supported content formats
+
+Authoritative formats:
+
+```txt
+Items:     JSON data loaded into Item objects
+Recipes:   JSON data loaded into Recipe / RecipeBook objects
+Scenes:    Python factories
+NPCs:      Python factories
+Hotspots:  Python factories
+Exits:     Python factories
+Dialogue:  Python factories
+```
+
+This is intentional. Items and recipes have small stable schemas. Scenes and dialogue are still design-heavy and expected to change.
+
+Python constants such as `EMPTY_CUP` or `RUSTY_KEY` are stable references used by Python scene logic. They are not duplicate item definitions. Item names/descriptions live in JSON.
+
+## Content loading and validation
+
+### `game/content/data/items.json`
+
+Contains item definitions:
+
+```txt
+id
+name
+description
+```
+
+### `game/content/data/recipes.json`
+
+Contains recipe definitions:
+
+```txt
+first_item_id
+second_item_id
+result_item_id
+success_text
+```
+
+Recipe JSON references item IDs. It does not embed result item definitions.
+
+### `game/content/json_loader.py`
+
+Contains shared JSON loading helpers and shared content-load error handling.
+
+Keep this module small. It should not become a content framework.
+
+### `game/content/validation.py`
+
+The validator catches broken content references early.
+
+It checks things like:
+
+- starting scene exists
+- scene IDs are unique
+- exits target known scenes
+- item IDs are unique
+- pickups reference known items
+- recipes reference known items
+- item-use requirements and result items reference known items
+- pickup and interaction stable IDs are unique
+
+The validator remains useful if more content later moves to JSON. The input shape may evolve, but the purpose remains the same.
+
+## Content-format decision for scenes and dialogue
+
+R091-06 decision:
+
+```txt
+Keep scenes and dialogue in Python for now.
+```
+
+Reasons:
+
+- There are not enough scenes yet to justify full-scene JSON.
+- The full-scene schema would include coordinates, entity types, item-use rules, flags, exits, and conditions.
+- Dialogue choices are planned for v0.12, so the dialogue schema is not stable yet.
+- Python factories currently give clearer errors and simpler refactoring than a premature scene loader.
+
+Re-evaluate after v0.12, once dialogue choices have a real shape.
+
+## Scene/session layer
+
+### `game/game_session.py`
+
+`GameSession` owns one playable run:
+
+```txt
+GameSession
+├── game_state
+└── scene_manager
+```
+
+Creating a new session gives a fresh game without restarting Python.
 
 ### `game/scene_manager.py`
 
 Responsibilities:
 
-- own scene instances
+- own the current session's scene instances
 - remember the current scene ID
 - route events, updates, and drawing to the active scene
 - perform scene transitions requested by scene results
@@ -115,7 +267,7 @@ draw(surface)
 
 ### `game/scenes/adventure_scene.py`
 
-`AdventureScene` is now mostly a Pygame adapter and presentation coordinator.
+`AdventureScene` is mostly a Pygame adapter and presentation coordinator.
 
 Responsibilities:
 
@@ -161,7 +313,7 @@ Collected pickups are ignored by consulting `GameState`.
 
 ### `game/game_state.py`
 
-`GameState` is the authoritative owner of persistent facts that must survive scene changes or scene reconstruction.
+`GameState` is the authoritative owner of persistent facts that must survive scene changes, reset/rebuild boundaries, and snapshot round trips.
 
 Current responsibilities:
 
@@ -170,7 +322,8 @@ GameState
 ├── inventory
 ├── progression flags
 ├── collected pickup IDs
-└── completed interaction IDs
+├── completed interaction IDs
+└── ending state
 ```
 
 Examples:
@@ -179,6 +332,7 @@ Examples:
 flag: tower_unlocked
 pickup: pickup.village.empty_cup
 interaction: interaction.village.old_well
+ending: ending_reached
 ```
 
 Transient presentation state does not belong in `GameState`.
@@ -192,49 +346,34 @@ Do not store these in `GameState`:
 - Pygame surfaces
 - layout rectangles
 
-## Static content and rules
+## Snapshot boundary
 
-Static content/rules are separate from runtime player/world state.
+### `game/state_snapshot.py`
 
-Examples:
+Snapshots prepare the project for save/load without adding file UI yet.
+
+Snapshot data contains plain values only:
 
 ```txt
-content IDs
-item definitions
-scene definitions/factories
-recipe definitions
-item-use definitions
-validation rules
+save_version
+current_scene_id
+inventory_item_ids
+selected_item_id or null
+flags
+collected_pickup_ids
+completed_interaction_ids
+ending_reached
 ```
 
-### `game/content/`
+Rules:
 
-Responsibilities:
+- no Pygame objects
+- no content definitions
+- no `pickle`
+- validate referenced IDs against `GameContent`
+- restore by constructing a fresh session and applying state
 
-- define stable scene/item/flag/pickup/interaction IDs
-- create demo items
-- create demo recipe book
-- create demo scene objects
-- validate content references before gameplay starts
-
-IDs are stable strings. Keep user-facing names separate from stable IDs.
-
-### `game/content/validation.py`
-
-The validator catches broken Python-created content references early.
-
-It checks things like:
-
-- starting scene exists
-- scene IDs are unique
-- exits target known scenes
-- item IDs are unique
-- pickups reference known items
-- recipes reference known items
-- item-use requirements reference known items
-- pickup and interaction stable IDs are unique
-
-This validator will still be useful if content later moves to JSON. The input shape may change later, but the purpose remains the same.
+## Gameplay systems
 
 ### `game/systems/recipe.py`
 
@@ -258,8 +397,6 @@ Responsibilities:
 
 `AdventureScene` should not perform the recipe mutation directly.
 
-## Interaction service
-
 ### `game/systems/adventure_interaction_service.py`
 
 `AdventureInteractionService` owns gameplay transactions that happen after a target has been resolved.
@@ -271,8 +408,8 @@ Responsibilities:
 - item collection
 - hotspot inspection
 - NPC dialogue outcome selection
-- using selected items on NPCs and hotspots
-- item consumption
+- using selected items on NPCs, hotspots, and exits
+- item consumption and result-item rewards
 - completion and flag updates
 - locked/unlocked exit evaluation
 - returning requested target scene IDs
@@ -317,31 +454,28 @@ Current UI widgets:
 
 The current design is fixed-window and intentionally simple. Do not add a generic layout engine, widget inheritance framework, scrolling, or responsive UI yet.
 
-## Data-driven content
+## Future content direction
 
-Deferred.
+Current order:
 
-There is no active `src/data` content pipeline in v0.8.1. JSON loading should wait until the Python content shape is stable enough to justify schemas, parsing, validation, and useful error messages.
+1. Items and recipes are JSON.
+2. Scenes and dialogue stay in Python.
+3. Dialogue format is revisited after v0.12 dialogue choices.
+4. Full scene JSON waits until a one-scene pilot proves the schema is simpler than Python.
 
-Recommended future order:
-
-1. Keep Python content while v0.9 completes the demo.
-2. Introduce clear content definition objects if needed.
-3. Move item definitions to data files first.
-4. Move recipes next.
-5. Move scenes/dialogue only after their schema is stable.
+Never evaluate arbitrary code or expression strings from content files.
 
 ## Design constraints
 
-Do not add these for the current prototype:
+Do not add these until the game has a concrete need:
 
 - event bus
 - command hierarchy
 - entity-component system
 - generic quest engine
-- JSON loader
-- save/load
+- full scene JSON loader
+- dialogue scripting language
 - complex crafting system
 - UI framework
 
-Add them only when the game has a concrete need.
+Add them only when real gameplay complexity justifies them.

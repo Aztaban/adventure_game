@@ -1,6 +1,6 @@
 # Testing Plan
 
-Status: current for v0.8.1
+Status: current after R091-06 content-format decision
 
 ## Purpose
 
@@ -42,10 +42,13 @@ Automated tests should focus on observable behavior and state changes.
 Good automated-test targets:
 
 - inventory behavior
-- game state flags, collected pickups, and completed interactions
+- game state flags, collected pickups, completed interactions, and ending state
+- session reset/new-game behavior
+- state snapshot export/restore behavior
+- JSON item/recipe loading
+- content validation
 - recipe lookup and item-combination transactions
 - item-use success/failure/completion behavior
-- content validation
 - scene manager transitions
 - dialogue state
 - interaction service outcomes
@@ -56,6 +59,7 @@ Good automated-test targets:
 Manual testing should cover:
 
 - window opens and closes correctly
+- `N` starts a fresh game from Village Square
 - hover/click feel
 - readability of dialogue and message boxes
 - object positions and spacing
@@ -71,12 +75,15 @@ Do not over-test exact pixels unless the layout rule is important for behavior.
 tests/
 ├── integration/
 │   ├── test_demo_flow.py
+│   ├── test_game_session_reset.py
+│   ├── test_state_snapshot.py
 │   └── test_world_state_persistence.py
 ├── test_adventure_interaction_service.py
 ├── test_adventure_scene.py
 ├── test_content_validation.py
 ├── test_dialogue.py
-├── test_exit_hotspot.py
+├── test_game_app.py
+├── test_game_content.py
 ├── test_game_state.py
 ├── test_hotspot.py
 ├── test_input_bindings.py
@@ -85,15 +92,55 @@ tests/
 ├── test_item_combination.py
 ├── test_item_hotspot.py
 ├── test_item_use.py
+├── test_json_content_loading.py
 ├── test_npc.py
 ├── test_quest_flags.py
 ├── test_recipe.py
-├── test_scene_event_result.py
 ├── test_scene_manager.py
 └── test_text_wrapping.py
 ```
 
 Add new test files only when they describe a real boundary.
+
+## Content-format testing strategy
+
+Current authoritative formats:
+
+```txt
+Items:     JSON
+Recipes:   JSON
+Scenes:    Python factories
+Dialogue:  Python factories
+```
+
+Tests should reflect that split.
+
+### JSON tests
+
+Use loader tests for:
+
+- valid item files
+- valid recipe files
+- missing fields
+- wrong field types
+- duplicate item IDs
+- duplicate recipe pairs
+- unknown recipe references
+- invalid JSON and missing files with useful path context
+
+Gameplay tests should not inspect raw JSON dictionaries. They should assert behavior through `Item`, `Recipe`, `RecipeBook`, `GameContent`, and `GameSession`.
+
+### Python scene/dialogue tests
+
+Keep scene/dialogue tests focused on behavior:
+
+- NPC default/completed/flagged dialogue
+- hotspot default/completed/flagged inspection
+- item-use outcomes
+- exit locking/unlocking
+- full demo flow
+
+Do not add scene JSON tests until scene JSON is intentionally introduced.
 
 ## Full demo-flow integration test
 
@@ -117,14 +164,55 @@ Village Square
 → use Rusty Key on Tower Gate
 → verify TOWER_UNLOCKED is set
 → enter tower
-→ verify DEMO_COMPLETED
+→ verify DEMO_COMPLETED and ending state
 ```
 
 This test reflects the v0.9 implementation: the witch gives a Rusty Key, and the key unlocks the tower gate.
 
+## v0.9.1 refactor regression checklist
+
+Automated coverage should protect these behaviors during post-demo refactors.
+
+### New-game/reset lifecycle
+
+- partial progress resets to a fresh game
+- completed game can reset and complete again in the same Python process
+- two sessions do not leak state
+- `N` triggers a fresh session from Village Square
+
+### GameContent/session separation
+
+- `GameContent` can be shared across sessions
+- sessions get fresh `GameState`
+- sessions get fresh scene instances
+- static content/rules are not stored in `GameState`
+
+### State snapshots
+
+- fresh-state round trip
+- mid-quest round trip
+- completed-demo round trip
+- selected item round trip
+- invalid scene/item/flag/pickup/interaction IDs fail clearly
+- snapshot data contains no Pygame objects or content definitions
+
+### JSON item/recipe pilot
+
+- valid files load
+- missing or wrong fields fail clearly
+- duplicate IDs fail
+- unknown recipe references fail
+- full demo works with loaded definitions
+
+### Scene/dialogue format decision
+
+- no scene JSON loader is added by accident
+- no dialogue JSON source competes with Python dialogue
+- docs say Python factories are the supported scene/dialogue format until v0.12 re-evaluation
+
 ## v0.8.1 regression checklist
 
-Automated coverage should protect these behaviors before further feature work:
+Keep these protected while building future features.
 
 ### Hotspot inspection
 
@@ -147,7 +235,7 @@ matching flag > completed interaction > default content
 - duplicate item IDs fail clearly
 - unknown pickup items fail clearly
 - unknown recipe ingredients/results fail clearly
-- unknown item-use requirements fail clearly
+- unknown item-use requirements/results fail clearly
 - duplicate stable pickup/interaction IDs fail clearly
 
 ### Persistent world state
@@ -233,6 +321,9 @@ Run after each milestone or meaningful refactor:
 - Confirm tower exit is usable.
 - Enter tower.
 - Confirm ending/progress text appears.
+- Press N.
+- Confirm a fresh game starts from Village Square.
+- Confirm inventory, flags, collected pickups, completions, and ending state are reset.
 - Confirm long dialogue and messages wrap readably.
 - Confirm clicking each visible inventory row selects the matching item.
 ```
@@ -248,4 +339,4 @@ Manual checks to perform
 Known issues or intentional behavior
 ```
 
-Keep tests close to the behavior they protect. Avoid testing private helpers unless the helper is a deliberately small boundary such as text wrapping, item combination, or target resolution.
+Keep tests close to the behavior they protect. Avoid testing private helpers unless the helper is a deliberately small boundary such as text wrapping, item combination, JSON loading, state snapshots, or target resolution.

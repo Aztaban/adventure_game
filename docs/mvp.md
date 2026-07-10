@@ -1,6 +1,6 @@
 # MVP
 
-Status: current after v0.9 implementation
+Status: current after R091-06 content-format decision
 
 ## MVP goal
 
@@ -62,9 +62,10 @@ rusty key -> tower gate -> finish demo
 - No pathfinding required
 - No real art required
 - No sound required
-- No save/load required
+- No full save/load menu required yet
 - No polished UI required
 - Placeholder rectangles/images are fine
+- Full scene/dialogue JSON is not required yet
 
 ## Hard non-goals for MVP
 
@@ -82,7 +83,8 @@ Do not implement these in MVP:
 - advanced animation
 - pathfinding
 - real asset pipeline
-- JSON content loader unless Python content becomes painful enough to justify it
+- full scene JSON loader before scene schema is proven
+- dialogue JSON before v0.12 dialogue choices stabilize
 
 ## MVP demo example for v0.9
 
@@ -137,3 +139,17 @@ The MVP is done when:
 - the game can track quest progress
 - the player can finish the demo
 - the full demo-flow integration test protects the intended v0.9 path
+
+
+## MVP content format
+
+Current supported formats:
+
+```txt
+Items:     JSON
+Recipes:   JSON
+Scenes:    Python factories
+Dialogue:  Python factories
+```
+
+This is enough for the MVP. Full scene/dialogue JSON is deferred until there is enough content and a stable enough schema to justify it. Dialogue JSON should be reconsidered after v0.12 dialogue choices.
