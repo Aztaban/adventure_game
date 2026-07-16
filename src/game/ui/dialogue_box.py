@@ -14,14 +14,18 @@ from game.ui.text import wrap_text
 class DialogueBox:
     """Render dialogue text in a panel at the bottom of the screen."""
 
-    PANEL_MARGIN = 30
-    PANEL_HEIGHT = 180
-    INNER_PADDING = 24
-    LINE_SPACING = 8
+    PANEL_HEIGHT = 170
+    PANEL_MARGIN = 24
+    INNER_PADDING = 20
+    LINE_SPACING = 6
 
-    def __init__(self) -> None:
-        self.text_font = pygame.font.Font(None, 32)
-        self.hint_font = pygame.font.Font(None, 23)
+    def __init__(
+        self,
+        text_font: pygame.font.Font,
+        hint_font: pygame.font.Font,
+    ) -> None:
+        self.text_font = text_font
+        self.hint_font = hint_font
 
     def draw(
         self,
@@ -29,7 +33,7 @@ class DialogueBox:
         speaker_name: str,
         text: str,
     ) -> None:
-        """Draw the active dialogue panel."""
+        """Draw the dialogue box."""
         panel_rect = pygame.Rect(
             self.PANEL_MARGIN,
             surface.get_height() - self.PANEL_HEIGHT - self.PANEL_MARGIN,

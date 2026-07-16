@@ -6,6 +6,7 @@ from game.entities.npc import NPC
 from game.game_state import GameState
 from game.scenes.adventure_scene import AdventureScene
 from game.systems.recipe import RecipeBook
+from game.ui.resources import UIResources
 
 pygame.font.init()
 
@@ -27,6 +28,7 @@ def create_test_scene(
         npcs=npcs or [],
         game_state=game_state,
         recipe_book=RecipeBook(),
+        ui_resources=UIResources(),
     )
 
 

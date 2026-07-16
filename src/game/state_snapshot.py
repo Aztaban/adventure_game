@@ -7,6 +7,7 @@ from game.game_content import GameContent
 from game.game_session import GameSession
 from game.game_state import GameState
 from game.scene_manager import SceneManager
+from game.ui.resources import UIResources
 
 SAVE_DATA_VERSION = 1
 
@@ -50,6 +51,7 @@ def restore_session_from_snapshot(
     *,
     content: GameContent,
     snapshot: Mapping[str, Any],
+    ui_resources: UIResources,
 ) -> GameSession:
     """Create a fresh session from a validated runtime-state snapshot."""
     validated_snapshot = _validate_snapshot(
@@ -61,7 +63,7 @@ def restore_session_from_snapshot(
         snapshot=validated_snapshot,
     )
     scene_manager = SceneManager(
-        scenes=content.build_scenes(game_state),
+        scenes=content.build_scenes(game_state, ui_resources),
         starting_scene_id=content.starting_scene_id,
     )
     scene_manager.change_scene(validated_snapshot["current_scene_id"])

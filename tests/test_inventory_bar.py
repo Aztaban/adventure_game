@@ -3,10 +3,23 @@ import pygame
 from game.entities.item import Item
 from game.settings import WINDOW_HEIGHT, WINDOW_WIDTH
 from game.ui.inventory_bar import InventoryBar
+from game.ui.resources import UIResources
 
 pygame.font.init()
 
 PLANNED_MAXIMUM_VISIBLE_ITEMS = 8
+
+
+def create_inventory_bar() -> InventoryBar:
+    """Create an InventoryBar with shared UI resources."""
+    resources = UIResources()
+
+    return InventoryBar(
+        window_width=WINDOW_WIDTH,
+        title_font=resources.inventory_title_font,
+        item_font=resources.inventory_item_font,
+        status_font=resources.inventory_status_font,
+    )
 
 
 def create_item(
@@ -33,7 +46,7 @@ def create_items(count: int) -> tuple[Item, ...]:
 
 
 def test_inventory_bar_draws_empty_inventory() -> None:
-    inventory_bar = InventoryBar(WINDOW_WIDTH)
+    inventory_bar = create_inventory_bar()
     surface = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
 
     inventory_bar.draw(
@@ -44,7 +57,7 @@ def test_inventory_bar_draws_empty_inventory() -> None:
 
 
 def test_inventory_bar_layout_for_empty_inventory_has_panel_and_no_rows() -> None:
-    inventory_bar = InventoryBar(WINDOW_WIDTH)
+    inventory_bar = create_inventory_bar()
 
     layout = inventory_bar.layout_for_items(())
 
@@ -54,7 +67,7 @@ def test_inventory_bar_layout_for_empty_inventory_has_panel_and_no_rows() -> Non
 
 
 def test_inventory_bar_creates_one_row_per_item() -> None:
-    inventory_bar = InventoryBar(WINDOW_WIDTH)
+    inventory_bar = create_inventory_bar()
     items = create_items(2)
 
     layout = inventory_bar.layout_for_items(items)
@@ -65,7 +78,7 @@ def test_inventory_bar_creates_one_row_per_item() -> None:
 
 
 def test_inventory_rows_do_not_overlap() -> None:
-    inventory_bar = InventoryBar(WINDOW_WIDTH)
+    inventory_bar = create_inventory_bar()
     items = create_items(2)
 
     rows = inventory_bar.layout_for_items(items).item_rows
@@ -78,7 +91,7 @@ def test_inventory_rows_do_not_overlap() -> None:
 
 
 def test_inventory_rows_respect_panel_padding() -> None:
-    inventory_bar = InventoryBar(WINDOW_WIDTH)
+    inventory_bar = create_inventory_bar()
     items = create_items(1)
 
     layout = inventory_bar.layout_for_items(items)
@@ -91,7 +104,7 @@ def test_inventory_rows_respect_panel_padding() -> None:
 
 
 def test_inventory_bar_finds_clicked_item_from_shared_layout() -> None:
-    inventory_bar = InventoryBar(WINDOW_WIDTH)
+    inventory_bar = create_inventory_bar()
     items = create_items(2)
     layout = inventory_bar.layout_for_items(items)
 
@@ -104,7 +117,7 @@ def test_inventory_bar_finds_clicked_item_from_shared_layout() -> None:
 
 
 def test_inventory_bar_returns_none_outside_item_rows() -> None:
-    inventory_bar = InventoryBar(WINDOW_WIDTH)
+    inventory_bar = create_inventory_bar()
     items = create_items(1)
 
     clicked_item = inventory_bar.item_at_position(
@@ -116,7 +129,7 @@ def test_inventory_bar_returns_none_outside_item_rows() -> None:
 
 
 def test_planned_maximum_inventory_size_fits_inside_window() -> None:
-    inventory_bar = InventoryBar(WINDOW_WIDTH)
+    inventory_bar = create_inventory_bar()
     items = create_items(PLANNED_MAXIMUM_VISIBLE_ITEMS)
 
     layout = inventory_bar.layout_for_items(items)

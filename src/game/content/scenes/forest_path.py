@@ -22,12 +22,14 @@ from game.scenes.adventure_scene import AdventureScene
 from game.settings import WINDOW_HEIGHT, WINDOW_WIDTH
 from game.systems.item_use import ItemUseInteraction
 from game.systems.recipe import RecipeBook
+from game.ui.resources import UIResources
 
 
 def create_forest_path(
     game_state: GameState,
     recipe_book: RecipeBook,
     items_by_id: Mapping[str, Item],
+    ui_resources: UIResources,
 ) -> AdventureScene:
     """Create the Forest Path scene."""
     return AdventureScene(
@@ -113,4 +115,5 @@ def create_forest_path(
         ],
         game_state=game_state,
         recipe_book=recipe_book,
+        ui_resources=ui_resources,
     )

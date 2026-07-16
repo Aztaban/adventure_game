@@ -19,12 +19,18 @@ from game.game_content import (
 from game.game_state import GameState
 from game.scenes.base_scene import BaseScene
 from game.systems.recipe import RecipeBook
+from game.ui.resources import UIResources
 
 
-def create_demo_content() -> GameContent:
+def create_demo_content(
+    ui_resources: UIResources | None = None,
+) -> GameContent:
     """Create and validate reusable content for the demo adventure."""
     base_content = _create_base_demo_content()
-    validation_scenes = base_content.build_scenes(GameState())
+    validation_scenes = base_content.build_scenes(
+        GameState(),
+        ui_resources or UIResources(),
+    )
 
     _validate_game_content(
         content=base_content,
@@ -46,10 +52,11 @@ def create_demo_content() -> GameContent:
 def create_demo_scenes(
     game_state: GameState,
     recipe_book: RecipeBook,
+    ui_resources: UIResources | None = None,
 ) -> dict[str, BaseScene]:
     """Create and validate all scenes used by the first playable demo."""
     content = _create_base_demo_content(recipe_book=recipe_book)
-    scenes = content.build_scenes(game_state)
+    scenes = content.build_scenes(game_state, ui_resources or UIResources())
 
     _validate_game_content(
         content=content,

@@ -27,6 +27,7 @@ from game.entities.item_hotspot import ItemHotspot
 from game.entities.npc import NPC
 from game.game_session import GameSession, create_demo_game_session
 from game.scenes.adventure_scene import AdventureScene
+from game.ui.resources import UIResources
 
 pygame.font.init()
 
@@ -169,7 +170,7 @@ def assert_fresh_session(session: GameSession) -> None:
 
 def test_partially_progressed_game_can_reset_to_fresh_session() -> None:
     content = create_demo_content()
-    session = create_demo_game_session(content)
+    session = create_demo_game_session(content, UIResources())
     fill_cup_at_well(session)
 
     village = current_adventure_scene(session)
@@ -189,19 +190,19 @@ def test_partially_progressed_game_can_reset_to_fresh_session() -> None:
 
     assert forest.dialogue.is_active
 
-    reset_session = create_demo_game_session(content)
+    reset_session = create_demo_game_session(content, UIResources())
 
     assert_fresh_session(reset_session)
 
 
 def test_completed_game_can_reset_and_complete_again_in_same_process() -> None:
     content = create_demo_content()
-    first_session = create_demo_game_session(content)
+    first_session = create_demo_game_session(content, UIResources())
     complete_demo(first_session)
 
     assert first_session.game_state.has_flag(DEMO_COMPLETED)
 
-    second_session = create_demo_game_session(content)
+    second_session = create_demo_game_session(content, UIResources())
 
     assert_fresh_session(second_session)
 
@@ -212,8 +213,8 @@ def test_completed_game_can_reset_and_complete_again_in_same_process() -> None:
 
 def test_two_sessions_do_not_leak_runtime_state() -> None:
     content = create_demo_content()
-    first_session = create_demo_game_session(content)
-    second_session = create_demo_game_session(content)
+    first_session = create_demo_game_session(content, UIResources())
+    second_session = create_demo_game_session(content, UIResources())
 
     fill_cup_at_well(first_session)
 

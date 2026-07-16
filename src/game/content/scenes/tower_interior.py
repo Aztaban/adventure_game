@@ -11,12 +11,14 @@ from game.game_state import GameState
 from game.scenes.adventure_scene import AdventureScene
 from game.settings import WINDOW_HEIGHT
 from game.systems.recipe import RecipeBook
+from game.ui.resources import UIResources
 
 
 def create_tower_interior(
     game_state: GameState,
     recipe_book: RecipeBook,
     items_by_id: Mapping[str, Item],
+    ui_resources: UIResources,
 ) -> AdventureScene:
     """Create the final tower scene."""
     del items_by_id
@@ -50,4 +52,5 @@ def create_tower_interior(
         npcs=[],
         game_state=game_state,
         recipe_book=recipe_book,
+        ui_resources=ui_resources,
     )

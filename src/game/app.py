@@ -12,6 +12,7 @@ from game.settings import (
     WINDOW_WIDTH,
 )
 from game.theme import TEXT_SECONDARY
+from game.ui.resources import UIResources
 
 
 class GameApp:
@@ -25,14 +26,14 @@ class GameApp:
 
         self.clock = pygame.time.Clock()
         self.is_running = True
-        self.debug_font = pygame.font.Font(None, 26)
+        self.ui_resources = UIResources()
 
-        self.content = create_demo_content()
+        self.content = create_demo_content(self.ui_resources)
         self.session = self._create_new_session()
 
     def _create_new_session(self) -> GameSession:
         """Create a fresh playable session using static demo content."""
-        return create_game_session(self.content)
+        return create_game_session(self.content, self.ui_resources)
 
     def start_new_game(self) -> None:
         """Reset the current run by replacing the whole game session."""
@@ -76,7 +77,7 @@ class GameApp:
         fps = int(self.clock.get_fps())
         scene_id = self.session.scene_manager.current_scene_id
         debug_text = f"Scene: {scene_id} | FPS: {fps}"
-        debug_surface = self.debug_font.render(
+        debug_surface = self.ui_resources.debug_font.render(
             debug_text,
             True,
             TEXT_SECONDARY,

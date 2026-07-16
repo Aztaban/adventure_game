@@ -25,12 +25,14 @@ from game.scenes.adventure_scene import AdventureScene
 from game.settings import WINDOW_HEIGHT, WINDOW_WIDTH
 from game.systems.item_use import ItemUseInteraction
 from game.systems.recipe import RecipeBook
+from game.ui.resources import UIResources
 
 
 def create_village_square(
     game_state: GameState,
     recipe_book: RecipeBook,
     items_by_id: Mapping[str, Item],
+    ui_resources: UIResources,
 ) -> AdventureScene:
     """Create the Village Square scene."""
     return AdventureScene(
@@ -119,4 +121,5 @@ def create_village_square(
         ],
         game_state=game_state,
         recipe_book=recipe_book,
+        ui_resources=ui_resources,
     )

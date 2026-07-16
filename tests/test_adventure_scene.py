@@ -9,6 +9,7 @@ from game.game_state import GameState
 from game.scenes.adventure_scene import AdventureScene, WorldTargetKind
 from game.systems.item_use import ItemUseInteraction
 from game.systems.recipe import Recipe, RecipeBook
+from game.ui.resources import UIResources
 
 pygame.font.init()
 
@@ -32,6 +33,7 @@ def create_test_scene(
         npcs=npcs or [],
         game_state=game_state,
         recipe_book=recipe_book or RecipeBook(),
+        ui_resources=UIResources(),
     )
 
 

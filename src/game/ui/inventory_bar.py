@@ -37,12 +37,17 @@ class InventoryBar:
 
     MINIMUM_HEIGHT = 180
 
-    def __init__(self, window_width: int) -> None:
+    def __init__(
+        self,
+        window_width: int,
+        title_font: pygame.font.Font,
+        item_font: pygame.font.Font,
+        status_font: pygame.font.Font,
+    ) -> None:
         self.window_width = window_width
-
-        self.title_font = pygame.font.Font(None, 32)
-        self.item_font = pygame.font.Font(None, 26)
-        self.status_font = pygame.font.Font(None, 22)
+        self.title_font = title_font
+        self.item_font = item_font
+        self.status_font = status_font
 
     def draw(
         self,

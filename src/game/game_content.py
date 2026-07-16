@@ -10,8 +10,12 @@ from game.scenes.adventure_scene import AdventureScene
 from game.scenes.base_scene import BaseScene
 from game.systems.item_use import ItemUseInteraction
 from game.systems.recipe import Recipe, RecipeBook
+from game.ui.resources import UIResources
 
-SceneBuilder = Callable[[GameState, RecipeBook], BaseScene]
+SceneBuilder = Callable[
+    [GameState, RecipeBook, Mapping[str, Item], UIResources],
+    BaseScene,
+]
 
 
 @dataclass(frozen=True)
@@ -48,6 +52,7 @@ class GameContent:
     def build_scenes(
         self,
         game_state: GameState,
+        ui_resources: UIResources,
     ) -> dict[str, BaseScene]:
         """Build fresh session scenes from reusable content definitions."""
         return {
@@ -55,6 +60,7 @@ class GameContent:
                 game_state,
                 self.recipe_book,
                 self.items_by_id,
+                ui_resources,
             )
             for scene_id, scene_builder in self.scenes_by_id.items()
         }

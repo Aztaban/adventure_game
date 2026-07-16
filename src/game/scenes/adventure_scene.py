@@ -32,6 +32,7 @@ from game.theme import (
 from game.ui.dialogue_box import DialogueBox
 from game.ui.inventory_bar import InventoryBar
 from game.ui.message_box import MessageBox
+from game.ui.resources import UIResources
 
 
 class WorldTargetKind(Enum):
@@ -65,6 +66,7 @@ class AdventureScene(BaseScene):
         npcs: list[NPC],
         game_state: GameState,
         recipe_book: RecipeBook,
+        ui_resources: UIResources,
     ) -> None:
         self.name = name
         self.description = description
@@ -84,12 +86,20 @@ class AdventureScene(BaseScene):
         self.active_speaker_name = ""
 
         self.dialogue = Dialogue()
-        self.dialogue_box = DialogueBox()
-        self.inventory_bar = InventoryBar(WINDOW_WIDTH)
-        self.message_box = MessageBox()
+        self.dialogue_box = DialogueBox(
+            text_font=ui_resources.dialogue_font,
+            hint_font=ui_resources.hint_font,
+        )
+        self.inventory_bar = InventoryBar(
+            window_width=WINDOW_WIDTH,
+            title_font=ui_resources.inventory_title_font,
+            item_font=ui_resources.inventory_item_font,
+            status_font=ui_resources.inventory_status_font,
+        )
+        self.message_box = MessageBox(ui_resources.body_font)
 
-        self.title_font = pygame.font.Font(None, 52)
-        self.body_font = pygame.font.Font(None, 30)
+        self.title_font = ui_resources.title_font
+        self.body_font = ui_resources.body_font
 
     def handle_event(
         self,
@@ -313,7 +323,10 @@ class AdventureScene(BaseScene):
         for exit_hotspot in self.exits:
             required_flag = exit_hotspot.required_flag
 
-            is_locked = required_flag is not None and not self.game_state.has_flag(required_flag)
+            is_locked = (
+                required_flag is not None
+                and not self.game_state.has_flag(required_flag)
+            )
 
             exit_hotspot.draw(
                 surface,
@@ -389,7 +402,10 @@ class AdventureScene(BaseScene):
     ) -> str:
         """Return the exit label matching current locked state."""
         required_flag = exit_hotspot.required_flag
-        is_locked = required_flag is not None and not self.game_state.has_flag(required_flag)
+        is_locked = (
+            required_flag is not None
+            and not self.game_state.has_flag(required_flag)
+        )
 
         if is_locked and exit_hotspot.locked_label is not None:
             return exit_hotspot.locked_label

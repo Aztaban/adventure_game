@@ -26,6 +26,7 @@ from game.entities.npc import NPC
 from game.game_session import create_game_session
 from game.scene_manager import SceneManager
 from game.scenes.adventure_scene import AdventureScene
+from game.ui.resources import UIResources
 
 pygame.font.init()
 
@@ -98,7 +99,7 @@ def click(manager: SceneManager, position: tuple[int, int]) -> None:
 
 def test_complete_key_based_demo_flow_uses_real_content() -> None:
     content = create_demo_content()
-    session = create_game_session(content)
+    session = create_game_session(content, UIResources())
     game_state = session.game_state
     manager = session.scene_manager
 

@@ -6,6 +6,7 @@ from game.content.demo_world import create_demo_content
 from game.content.item_ids import EMPTY_CUP
 from game.content.scene_ids import STARTING_SCENE_ID
 from game.game_session import create_demo_game_session
+from game.ui.resources import UIResources
 
 pygame.font.init()
 
@@ -64,7 +65,8 @@ def test_app_new_game_event_replaces_session_before_scene_handling(
 def test_app_start_new_game_replaces_current_session() -> None:
     app = object.__new__(GameApp)
     app.content = create_demo_content()
-    app.session = create_demo_game_session(app.content)
+    app.ui_resources = UIResources()
+    app.session = create_demo_game_session(app.content, app.ui_resources)
     old_session = app.session
 
     empty_cup = app.content.items_by_id[EMPTY_CUP]

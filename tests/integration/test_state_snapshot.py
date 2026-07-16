@@ -34,6 +34,7 @@ from game.state_snapshot import (
     create_state_snapshot,
     restore_session_from_snapshot,
 )
+from game.ui.resources import UIResources
 
 pygame.font.init()
 
@@ -158,12 +159,13 @@ def complete_demo(session: GameSession) -> None:
 
 def test_fresh_state_snapshot_round_trip() -> None:
     content = create_demo_content()
-    session = create_game_session(content)
+    session = create_game_session(content, UIResources())
 
     snapshot = create_state_snapshot(session)
     restored_session = restore_session_from_snapshot(
         content=content,
         snapshot=snapshot,
+        ui_resources=UIResources(),
     )
 
     assert snapshot == {
@@ -181,7 +183,7 @@ def test_fresh_state_snapshot_round_trip() -> None:
 
 def test_mid_quest_state_snapshot_round_trip() -> None:
     content = create_demo_content()
-    session = create_game_session(content)
+    session = create_game_session(content, UIResources())
     fill_cup_at_well(session)
 
     village = current_adventure_scene(session)
@@ -191,6 +193,7 @@ def test_mid_quest_state_snapshot_round_trip() -> None:
     restored_session = restore_session_from_snapshot(
         content=content,
         snapshot=snapshot,
+        ui_resources=UIResources(),
     )
 
     assert snapshot["current_scene_id"] == FOREST_PATH
@@ -211,13 +214,14 @@ def test_mid_quest_state_snapshot_round_trip() -> None:
 
 def test_completed_demo_state_snapshot_round_trip() -> None:
     content = create_demo_content()
-    session = create_game_session(content)
+    session = create_game_session(content, UIResources())
     complete_demo(session)
 
     snapshot = create_state_snapshot(session)
     restored_session = restore_session_from_snapshot(
         content=content,
         snapshot=snapshot,
+        ui_resources=UIResources(),
     )
 
     assert snapshot["current_scene_id"] == TOWER_INTERIOR
@@ -241,7 +245,7 @@ def test_completed_demo_state_snapshot_round_trip() -> None:
 
 def test_selected_item_snapshot_round_trip() -> None:
     content = create_demo_content()
-    session = create_game_session(content)
+    session = create_game_session(content, UIResources())
     village = current_adventure_scene(session)
     empty_cup_pickup = find_pickup(village, EMPTY_CUP)
     click(session, empty_cup_pickup.rect.center)
@@ -251,6 +255,7 @@ def test_selected_item_snapshot_round_trip() -> None:
     restored_session = restore_session_from_snapshot(
         content=content,
         snapshot=snapshot,
+        ui_resources=UIResources(),
     )
 
     assert snapshot["inventory_item_ids"] == [EMPTY_CUP]
@@ -261,7 +266,7 @@ def test_selected_item_snapshot_round_trip() -> None:
 
 def test_snapshot_with_unknown_scene_id_fails_clearly() -> None:
     content = create_demo_content()
-    snapshot = create_state_snapshot(create_game_session(content))
+    snapshot = create_state_snapshot(create_game_session(content, UIResources()))
     snapshot["current_scene_id"] = "missing_scene"
 
     with pytest.raises(
@@ -271,12 +276,13 @@ def test_snapshot_with_unknown_scene_id_fails_clearly() -> None:
         restore_session_from_snapshot(
             content=content,
             snapshot=snapshot,
+            ui_resources=UIResources(),
         )
 
 
 def test_snapshot_with_unknown_item_id_fails_clearly() -> None:
     content = create_demo_content()
-    snapshot = create_state_snapshot(create_game_session(content))
+    snapshot = create_state_snapshot(create_game_session(content, UIResources()))
     snapshot["inventory_item_ids"] = ["missing_item"]
 
     with pytest.raises(
@@ -286,12 +292,13 @@ def test_snapshot_with_unknown_item_id_fails_clearly() -> None:
         restore_session_from_snapshot(
             content=content,
             snapshot=snapshot,
+            ui_resources=UIResources(),
         )
 
 
 def test_snapshot_with_unknown_interaction_id_fails_clearly() -> None:
     content = create_demo_content()
-    snapshot = create_state_snapshot(create_game_session(content))
+    snapshot = create_state_snapshot(create_game_session(content, UIResources()))
     snapshot["completed_interaction_ids"] = ["missing_interaction"]
 
     with pytest.raises(
@@ -301,12 +308,13 @@ def test_snapshot_with_unknown_interaction_id_fails_clearly() -> None:
         restore_session_from_snapshot(
             content=content,
             snapshot=snapshot,
+            ui_resources=UIResources(),
         )
 
 
 def test_snapshot_with_unknown_flag_id_fails_clearly() -> None:
     content = create_demo_content()
-    snapshot = create_state_snapshot(create_game_session(content))
+    snapshot = create_state_snapshot(create_game_session(content, UIResources()))
     snapshot["flags"] = ["missing_flag"]
 
     with pytest.raises(
@@ -316,12 +324,13 @@ def test_snapshot_with_unknown_flag_id_fails_clearly() -> None:
         restore_session_from_snapshot(
             content=content,
             snapshot=snapshot,
+            ui_resources=UIResources(),
         )
 
 
 def test_snapshot_with_selected_item_not_in_inventory_fails_clearly() -> None:
     content = create_demo_content()
-    snapshot = create_state_snapshot(create_game_session(content))
+    snapshot = create_state_snapshot(create_game_session(content, UIResources()))
     snapshot["selected_item_id"] = EMPTY_CUP
 
     with pytest.raises(
@@ -331,4 +340,5 @@ def test_snapshot_with_selected_item_not_in_inventory_fails_clearly() -> None:
         restore_session_from_snapshot(
             content=content,
             snapshot=snapshot,
+            ui_resources=UIResources(),
         )
