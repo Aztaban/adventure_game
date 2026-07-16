@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.9.1 - 2026-07-17
+
+### Added
+- Added GameSession as the owner of one running game session.
+- Added deterministic new-game/reset behavior with N.
+- Added GameContent as the reusable static-content composition root.
+- Added serialization-ready state snapshots using plain Python values.
+- Added snapshot restoration with save-version and content-reference validation.
+- Added explicit ending-state persistence.
+- Added JSON loading for item and recipe definitions.
+- Added shared JSON loading and field-validation helpers.
+- Added UIResources for shared and cached font ownership.
+- Added stable future image and audio asset lookup boundaries.
+- Added tests for session isolation, reset behavior, snapshot round trips, JSON loading, and UI resource reuse.
+- Added documentation describing current content formats and future refactor checkpoints.
+
+### Changed
+- New games now construct a fresh session instead of manually clearing scattered runtime fields.
+- Static content and rules are now separated from mutable session state.
+- Multiple sessions can reuse the same GameContent without sharing runtime state.
+- Scene instances are rebuilt from reusable content and fresh GameState.
+- GameState remains the owner of inventory, selection, flags, collected pickups, completed interactions, and ending state.
+- State snapshots now contain only stable IDs and serialization-safe values.
+- Item names, descriptions, and recipe definitions now have JSON as their single authoritative source.
+- Python item ID constants remain only as stable references for Python-authored scene logic.
+- Scenes and dialogue remain Python-authored until dialogue choices stabilize.
+- Scene and widget font construction now uses shared UIResources.
+- Tests are now organized into clearer unit, integration, Pygame-adapter, and manual-testing layers.
+- JSON content-loading tests were moved into the integration-test layer.
+- Content validation now works through the current GameContent composition path.
+
 ## 0.9.0 - 2026-07-09
 
 ### Added
