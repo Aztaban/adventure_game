@@ -4,7 +4,8 @@ from pathlib import Path
 import pytest
 
 from game.content.item_ids import GLOWING_TEA, MOON_HERB, WATER_CUP
-from game.content.items import ContentLoadError, create_demo_items, load_items_from_json
+from game.content.items import create_demo_items, load_items_from_json
+from game.content.json_loader import ContentLoadError
 from game.content.recipes import create_demo_recipe_book, load_recipe_book_from_json
 
 

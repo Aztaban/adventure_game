@@ -1,6 +1,6 @@
 # Testing Plan
 
-Status: current after R091-06 content-format decision
+Status: current after R091-08 test-layering cleanup
 
 ## Purpose
 
@@ -35,26 +35,44 @@ Run one focused test file:
 PYTHONPATH=src .venv/bin/python -m pytest tests/test_inventory.py
 ```
 
-## Test boundaries
+## Test layers
 
-Automated tests should focus on observable behavior and state changes.
+Use the narrowest layer that can prove the behavior. Automated tests should focus on observable behavior and state changes.
 
-Good automated-test targets:
+### Pure unit tests
+
+Pure unit tests should avoid Pygame setup and real demo scenes when possible. Use them for:
 
 - inventory behavior
-- game state flags, collected pickups, completed interactions, and ending state
-- session reset/new-game behavior
-- state snapshot export/restore behavior
-- JSON item/recipe loading
-- content validation
 - recipe lookup and item-combination transactions
+- game state flags, collected pickups, completed interactions, and ending state
+- state snapshot validation helpers
 - item-use success/failure/completion behavior
-- scene manager transitions
-- dialogue state
-- interaction service outcomes
-- target resolution priority
-- UI helper geometry and text wrapping
+- interaction service outcomes that do not require rendered scenes
+- text wrapping and other pure UI helpers
+
+### Integration tests
+
+Integration tests use real demo content or multiple runtime objects together. Use them for:
+
 - complete demo-flow integration
+- session reset/new-game behavior
+- state snapshot export/restore round trips
+- world-state persistence across scene reconstruction
+- JSON item/recipe loading from files
+- content validation against real content
+
+### Pygame adapter tests
+
+Pygame-dependent tests should be a clearly identified minority. Use them for:
+
+- input translation
+- scene hit testing and target priority
+- modal dialogue behavior
+- hover text and render-adjacent behavior
+- widget layout and click geometry
+
+### Manual tests
 
 Manual testing should cover:
 
@@ -76,6 +94,7 @@ tests/
 ├── integration/
 │   ├── test_demo_flow.py
 │   ├── test_game_session_reset.py
+│   ├── test_json_content_loading.py
 │   ├── test_state_snapshot.py
 │   └── test_world_state_persistence.py
 ├── test_adventure_interaction_service.py
@@ -92,7 +111,6 @@ tests/
 ├── test_item_combination.py
 ├── test_item_hotspot.py
 ├── test_item_use.py
-├── test_json_content_loading.py
 ├── test_npc.py
 ├── test_quest_flags.py
 ├── test_recipe.py

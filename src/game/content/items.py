@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from game.content.json_loader import (
     ContentLoadError,
@@ -34,20 +35,25 @@ def load_items_from_json(path: Path | str) -> tuple[Item, ...]:
         if not isinstance(entry, dict):
             raise ContentLoadError(f"{context}: expected object.")
 
-        item_id = require_string(entry, "id", context)
-        name = require_string(entry, "name", context)
-        description = require_string(entry, "description", context)
+        item = _create_item(entry=entry, context=context)
 
-        if item_id in seen_ids:
-            raise ContentLoadError(f"{context}: duplicate item ID '{item_id}'.")
+        if item.item_id in seen_ids:
+            raise ContentLoadError(f"{context}: duplicate item ID '{item.item_id}'.")
 
-        seen_ids.add(item_id)
-        items.append(
-            Item(
-                item_id=item_id,
-                name=name,
-                description=description,
-            )
-        )
+        seen_ids.add(item.item_id)
+        items.append(item)
 
     return tuple(items)
+
+
+def _create_item(
+    *,
+    entry: dict[str, Any],
+    context: str,
+) -> Item:
+    """Create one item from a validated JSON object."""
+    return Item(
+        item_id = require_string(entry, "id", context),
+        name = require_string(entry, "name", context),
+        description = require_string(entry, "description", context),
+    )

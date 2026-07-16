@@ -18,7 +18,6 @@ from game.game_content import (
 )
 from game.game_state import GameState
 from game.scenes.base_scene import BaseScene
-from game.systems.recipe import RecipeBook
 from game.ui.resources import UIResources
 
 
@@ -49,33 +48,13 @@ def create_demo_content(
     )
 
 
-def create_demo_scenes(
-    game_state: GameState,
-    recipe_book: RecipeBook,
-    ui_resources: UIResources | None = None,
-) -> dict[str, BaseScene]:
-    """Create and validate all scenes used by the first playable demo."""
-    content = _create_base_demo_content(recipe_book=recipe_book)
-    scenes = content.build_scenes(game_state, ui_resources or UIResources())
-
-    _validate_game_content(
-        content=content,
-        scenes=scenes,
-    )
-
-    return scenes
-
-
-def _create_base_demo_content(
-    *,
-    recipe_book: RecipeBook | None = None,
-) -> GameContent:
+def _create_base_demo_content() -> GameContent:
     """Create demo content before validation registries are attached."""
     items_by_id = create_item_registry(create_demo_items())
 
     return GameContent(
         items_by_id=items_by_id,
-        recipe_book=recipe_book or create_demo_recipe_book(items_by_id),
+        recipe_book=create_demo_recipe_book(items_by_id),
         scenes_by_id=create_scene_registry(
             {
                 VILLAGE_SQUARE: create_village_square,
