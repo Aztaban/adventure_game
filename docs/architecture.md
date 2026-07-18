@@ -1,13 +1,14 @@
 # Architecture
 
-Status: current after the v0.9.1 foundation release
+Status: current for the v0.10 presentation milestone
 
 ## Goal
 
-Keep the game architecture small enough to understand while separating four things that should not own each other's work:
+Keep the game architecture small enough to understand while separating five things that should not own each other's work:
 
 ```txt
-Pygame presentation   -> event handling, drawing, UI state
+Application flow      -> title, gameplay, ending, global quit/new game
+Pygame presentation   -> event handling, drawing, UI state, optional asset playback
 Gameplay rules        -> interactions, item use, recipes, exits
 Reusable content      -> item/recipe data, scene factories, IDs, validation
 Persistent state      -> inventory, scene position, flags, pickups, completions, ending
@@ -22,6 +23,7 @@ src/
 ├── main.py
 └── game/
     ├── app.py
+    ├── asset_ids.py
     ├── game_content.py
     ├── game_session.py
     ├── game_state.py
@@ -67,10 +69,18 @@ src/
     │   ├── item_use.py
     │   └── recipe.py
     └── ui/
+        ├── asset_panel.py
         ├── dialogue_box.py
+        ├── interaction_prompt.py
         ├── inventory_bar.py
+        ├── menu_screen.py
         ├── message_box.py
+        ├── resources.py
         └── text.py
+
+assets/
+├── images/                    replaceable PNG backgrounds and sprites
+└── audio/                     replaceable Ogg sound effects
 ```
 
 ## Composition overview
@@ -79,6 +89,9 @@ Current startup/session ownership:
 
 ```txt
 GameApp
+├── AppMode                     title, playing, or ending
+├── MenuScreen                  title and ending presentation
+├── UIResources                 shared font/image/sound caches
 ├── GameContent                 reusable content and rules
 └── GameSession                 one current playable run
     ├── GameState               persistent runtime facts
@@ -105,10 +118,13 @@ Responsibilities:
 - create the window and clock
 - load/create reusable `GameContent`
 - create a fresh `GameSession`
+- own the title, playing, and ending application modes
 - own the main loop
-- delegate scene events, updates, and drawing
+- delegate gameplay events, updates, and drawing
+- draw the ending menu as an overlay over the entered tower scene
 - handle global quit behavior
 - handle global new-game/reset input
+- play scene-transition presentation cues
 
 `GameApp` composes the application. It should not implement item-use, recipe, quest, or save/load logic.
 
@@ -135,7 +151,7 @@ Rules:
 
 - `GameContent` is reusable.
 - `GameContent` should not contain current inventory, selected item, current scene, collected pickups, completed interactions, or ending state.
-- `GameContent.build_scenes(game_state)` creates fresh scene instances for one session.
+- `GameContent.build_scenes(game_state, ui_resources)` creates fresh scene instances for one session.
 - Reusable content should not depend on Pygame fonts, surfaces, or live UI state.
 
 ### `game/content/demo_world.py`
@@ -269,7 +285,7 @@ Current transition behavior is intentionally small:
 - Creating a new session clears all scene-local presentation state because it creates fresh scene instances.
 - Restoring a snapshot creates fresh scene instances and restores persistent state only; transient messages and open dialogue are not serialized.
 
-No `on_enter()` or `on_exit()` hooks are needed for the current behavior. Add them only when a real feature such as timers, animation, audio, or loading transitions requires them.
+No `on_enter()` or `on_exit()` hooks are needed for the current behavior. The app detects scene-ID changes for the current transition sound. Add lifecycle hooks only when a future feature needs per-scene start/stop behavior such as looping music, animation timers, or loading transitions.
 
 ### `game/scenes/base_scene.py`
 
@@ -291,9 +307,10 @@ Responsibilities:
 - check inventory UI before world targets
 - resolve clicked or hovered world targets
 - call `AdventureInteractionService`
-- apply returned messages, dialogue, and target scene IDs
+- apply returned messages, dialogue, target scene IDs, and optional sound cues
 - own transient scene presentation state
-- draw scene header, entities, hover text, inventory, messages, and dialogue
+- load optional scene/entity images through `UIResources`
+- draw scene header, entities, hover prompts, inventory, messages, and dialogue
 
 It should not directly:
 
@@ -438,13 +455,14 @@ message
 speaker_name
 dialogue_lines
 target_scene_id
+sound_effect_id
 ```
 
-The service must not draw, create fonts, import UI widgets, or change `SceneManager` directly.
+The service must not draw, create fonts, import UI widgets, play audio directly, or change `SceneManager` directly. A sound asset ID is only a presentation cue returned to the Pygame adapter.
 
 ## Entities
 
-Entities are lightweight scene content objects with rectangle hit testing and placeholder drawing.
+Entities are lightweight scene content objects with rectangle hit testing, optional image asset IDs, and safe placeholder drawing.
 
 Current entities:
 
@@ -456,19 +474,44 @@ Current entities:
 
 Some entities contain static interaction definitions, but runtime completion is stored in `GameState`.
 
-## UI
+## UI and presentation resources
 
-Current UI widgets:
+Current focused UI components:
 
+- `MenuScreen` for the two-button title and ending menus
+- `InteractionPrompt` for hover action and input guidance
 - `InventoryBar`
 - `DialogueBox`
 - `MessageBox`
+- `asset_panel.draw_labeled_asset()` for image-backed entities with readable fallback labels
 
 `game/ui/text.py` contains shared text wrapping.
 
-`InventoryBar` calculates one layout result used by both drawing and hit testing.
+`InventoryBar` and `MenuScreen` each calculate one layout result used by both drawing and hit testing.
 
-The current design is fixed-window and intentionally simple. Do not add a generic layout engine, widget inheritance framework, scrolling, or responsive UI yet.
+### `game/ui/resources.py`
+
+`UIResources` owns small application-wide caches for:
+
+```txt
+font size -> pygame Font
+(image asset ID, requested size) -> optional pygame Surface
+audio asset ID -> optional pygame Sound
+```
+
+Rules:
+
+- paths are derived from stable IDs in `game/asset_ids.py`
+- images use `assets/images/<asset_id>.png`
+- sounds use `assets/audio/<asset_id>.ogg`
+- missing or invalid optional assets return `None`
+- rendering falls back to labeled colored rectangles
+- sound playback becomes a no-op when the mixer or file is unavailable
+- no manifest, atlas, animation loader, channel manager, or preload phase is added yet
+
+The exact replacement contract is documented in `docs/asset-guide.md`.
+
+The current design remains fixed-window and intentionally simple. Do not add a generic layout engine, widget inheritance framework, scrolling, responsive UI, or broad asset pipeline yet.
 
 ## Future content direction
 

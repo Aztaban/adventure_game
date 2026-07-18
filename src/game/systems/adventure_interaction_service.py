@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from game.asset_ids import DIALOGUE_SOUND, PICKUP_SOUND
 from game.entities.exit_hotspot import ExitHotspot
 from game.entities.hotspot import Hotspot
 from game.entities.item import Item
@@ -22,6 +23,7 @@ class AdventureInteractionOutcome:
     speaker_name: str | None = None
     dialogue_lines: tuple[str, ...] = ()
     target_scene_id: str | None = None
+    sound_effect_id: str | None = None
 
 
 class AdventureInteractionService:
@@ -106,6 +108,7 @@ class AdventureInteractionService:
         return AdventureInteractionOutcome(
             consumed=True,
             message=message,
+            sound_effect_id=PICKUP_SOUND if was_added else None,
         )
 
     def interact_with_npc(
@@ -123,6 +126,7 @@ class AdventureInteractionService:
                 self.game_state.has_flag,
                 self.game_state.has_completed_interaction,
             ),
+            sound_effect_id=DIALOGUE_SOUND,
         )
 
     def interact_with_hotspot(
@@ -147,7 +151,10 @@ class AdventureInteractionService:
     ) -> AdventureInteractionOutcome:
         """Use an exit, unlock it with an item, or return its locked message."""
         if self.game_state.inventory.selected_item is not None and exit_hotspot.item_use is not None:
-            return self.use_selected_item(exit_hotspot.item_use)
+            return self.use_selected_item(
+                exit_hotspot.item_use,
+                success_sound_id=exit_hotspot.unlock_sound_id,
+            )
 
         required_flag = exit_hotspot.required_flag
 
@@ -171,6 +178,8 @@ class AdventureInteractionService:
     def use_selected_item(
         self,
         interaction: ItemUseInteraction | None,
+        *,
+        success_sound_id: str | None = None,
     ) -> AdventureInteractionOutcome:
         """Use the selected inventory item on a target interaction."""
         inventory = self.game_state.inventory
@@ -225,4 +234,5 @@ class AdventureInteractionService:
         return AdventureInteractionOutcome(
             consumed=True,
             message=result.message,
+            sound_effect_id=success_sound_id,
         )

@@ -1,5 +1,6 @@
 import pygame
 
+from game.asset_ids import DIALOGUE_SOUND, PICKUP_SOUND
 from game.entities.exit_hotspot import ExitHotspot
 from game.entities.hotspot import Hotspot
 from game.entities.item import Item
@@ -85,6 +86,7 @@ def test_service_collects_pickup_once() -> None:
 
     assert first_outcome.consumed
     assert first_outcome.message == "You pick up the cup."
+    assert first_outcome.sound_effect_id == PICKUP_SOUND
     assert game_state.inventory.contains(item.item_id)
     assert game_state.has_collected_pickup(item_hotspot.pickup_id)
     assert not second_outcome.consumed
@@ -120,6 +122,7 @@ def test_service_returns_npc_dialogue_outcome_without_opening_dialogue_ui() -> N
     assert outcome.speaker_name == "Guide"
     assert outcome.dialogue_lines == ("Hello.", "Good luck.")
     assert outcome.message is None
+    assert outcome.sound_effect_id == DIALOGUE_SOUND
 
 
 def test_service_uses_correct_item_on_hotspot_and_updates_state() -> None:
@@ -317,6 +320,7 @@ def test_service_uses_selected_item_on_exit_to_unlock_it() -> None:
             flags_to_set=("tower_open",),
             completion_flag="tower_open",
         ),
+        unlock_sound_id="sfx.test_unlock",
     )
     game_state = GameState()
     service = create_service(game_state)
@@ -329,6 +333,7 @@ def test_service_uses_selected_item_on_exit_to_unlock_it() -> None:
     assert unlock_outcome.consumed
     assert unlock_outcome.message == "The gate unlocks."
     assert unlock_outcome.target_scene_id is None
+    assert unlock_outcome.sound_effect_id == "sfx.test_unlock"
     assert not game_state.inventory.contains(key.item_id)
     assert game_state.has_flag("tower_open")
     assert enter_outcome.consumed

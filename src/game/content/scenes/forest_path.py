@@ -2,6 +2,15 @@ from collections.abc import Mapping
 
 import pygame
 
+from game.asset_ids import (
+    FOREST_PATH_BACKGROUND,
+    MOON_HERB_IMAGE,
+    MUSHROOM_GUARD_IMAGE,
+    PATH_EXIT_IMAGE,
+    SUSPICIOUS_STUMP_IMAGE,
+    TOWER_GATE_IMAGE,
+    UNLOCK_SOUND,
+)
 from game.content.flag_ids import (
     DEMO_COMPLETED,
     TOWER_UNLOCKED,
@@ -46,6 +55,7 @@ def create_forest_path(
                 ),
                 target_scene_id=VILLAGE_SQUARE,
                 label="To Village",
+                image_asset_id=PATH_EXIT_IMAGE,
             ),
             ExitHotspot(
                 rect=pygame.Rect(
@@ -70,6 +80,8 @@ def create_forest_path(
                     flags_to_set=(TOWER_UNLOCKED,),
                     completion_flag=TOWER_UNLOCKED,
                 ),
+                image_asset_id=TOWER_GATE_IMAGE,
+                unlock_sound_id=UNLOCK_SOUND,
             ),
         ],
         hotspots=[
@@ -79,6 +91,7 @@ def create_forest_path(
                 inspect_text="The stump looks back at you. You decide not to mention it.",
                 inspect_flag=TOWER_UNLOCKED,
                 flagged_inspect_text="The stump nods toward the now-open tower gate.",
+                image_asset_id=SUSPICIOUS_STUMP_IMAGE,
             )
         ],
         item_hotspots=[
@@ -87,6 +100,7 @@ def create_forest_path(
                 rect=pygame.Rect(850, 350, 180, 100),
                 item=items_by_id[MOON_HERB],
                 pickup_text=("You carefully collect the Moon Herb. It seems pleased with itself."),
+                image_asset_id=MOON_HERB_IMAGE,
             )
         ],
         npcs=[
@@ -102,9 +116,11 @@ def create_forest_path(
                     "The tower gate opened.",
                     "I assume this was authorized by a taller mushroom.",
                 ),
+                image_asset_id=MUSHROOM_GUARD_IMAGE,
             )
         ],
         game_state=game_state,
         recipe_book=recipe_book,
         ui_resources=ui_resources,
+        background_image_id=FOREST_PATH_BACKGROUND,
     )

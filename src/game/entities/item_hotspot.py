@@ -10,8 +10,8 @@ from game.theme import (
     ITEM_BACKGROUND,
     ITEM_BACKGROUND_HOVERED,
     TEXT_HIGHLIGHT,
-    TEXT_PRIMARY,
 )
+from game.ui.asset_panel import draw_labeled_asset
 
 
 @dataclass
@@ -22,6 +22,7 @@ class ItemHotspot:
     rect: pygame.Rect
     item: Item
     pickup_text: str
+    image_asset_id: str | None = None
 
     def contains_point(self, position: tuple[int, int]) -> bool:
         """Return whether a position is inside the item area."""
@@ -32,30 +33,19 @@ class ItemHotspot:
         surface: pygame.Surface,
         font: pygame.font.Font,
         is_hovered: bool,
+        image: pygame.Surface | None = None,
     ) -> None:
-        """Draw a placeholder representation of the item."""
+        """Draw an image-backed or fallback item pickup."""
         background_color = ITEM_BACKGROUND_HOVERED if is_hovered else ITEM_BACKGROUND
         border_color = TEXT_HIGHLIGHT if is_hovered else BORDER_DEFAULT
 
-        pygame.draw.rect(
+        draw_labeled_asset(
             surface,
-            background_color,
             self.rect,
-            border_radius=6,
-        )
-        pygame.draw.rect(
-            surface,
-            border_color,
-            self.rect,
-            width=2,
-            border_radius=6,
-        )
-
-        label_surface = font.render(
+            font,
             self.item.name,
-            True,
-            TEXT_PRIMARY,
+            image,
+            background_color=background_color,
+            border_color=border_color,
+            border_radius=6,
         )
-        label_rect = label_surface.get_rect(center=self.rect.center)
-
-        surface.blit(label_surface, label_rect)

@@ -1,6 +1,6 @@
 # Roadmap
 
-Status: current after the v0.9.1 foundation release
+Status: v0.10 implementation complete; v0.11 planning next
 
 ## Development principle
 
@@ -204,15 +204,12 @@ Delivered:
 
 - deterministic `N = New Game` behavior through fresh `GameSession` construction
 - reusable `GameContent` separated from current-session `GameState`
-- explicit session scene ownership and documented scene-lifecycle behavior
+- explicit session scene ownership
 - serialization-ready plain-data snapshots with version and stable-ID validation
 - JSON-backed item and recipe definitions converted into typed domain objects
 - documented decision to keep scenes and dialogue in Python through v0.12
 - shared cached fonts and future asset lookup boundaries in `UIResources`
-- clearer unit, integration, and Pygame-adapter test responsibilities
-- one authoritative construction path: `create_demo_content()` → `create_game_session()` → `GameContent.build_scenes()`
-- removal of obsolete demo-only construction wrappers and stale temporary documentation
-- full Ruff and pytest verification protecting the existing v0.9 gameplay flow
+- unit, integration, and Pygame-adapter test coverage for the new boundaries
 
 Snapshot fields:
 
@@ -220,7 +217,7 @@ Snapshot fields:
 save_version
 current_scene_id
 inventory_item_ids
-selected_item_id or null
+selected_item_id
 flags
 collected_pickup_ids
 completed_interaction_ids
@@ -238,7 +235,35 @@ Dialogue:  Python factories
 
 Revisit dialogue JSON after v0.12 dialogue choices. Consider full-scene data only after a larger-scene pilot proves that its schema is clearer than Python factories.
 
-## Next planned milestone: v0.10 — Polish and presentation pass
+## Current patch target: v0.9.2 — Post-refactor cleanup
+
+Goal:
+
+```txt
+Remove obsolete construction paths and align documentation without changing gameplay.
+```
+
+Scope:
+
+- remove obsolete demo-only session and scene construction wrappers
+- keep one authoritative `GameContent` session-construction path
+- update affected tests without moving unrelated test files
+- document the current scene lifecycle and test-layer responsibilities
+- replace historical refactor task logs with a future-only refactor backlog
+- remove stale temporary documentation
+- apply configured formatting and rerun all automated checks
+
+Not in scope:
+
+- gameplay changes
+- save-file UI or persistence
+- new content
+- scene or dialogue JSON
+- new architecture abstractions
+
+## Milestone v0.10 — Polish and presentation pass
+
+Status: implementation complete; release verification pending
 
 Goal:
 
@@ -246,29 +271,34 @@ Goal:
 Make the complete demo nicer to play without expanding scope.
 ```
 
-Possible features:
+Implemented:
 
-- title screen with Start / Quit
-- clearer ending message or ending screen
-- improved hover labels and interaction prompts
-- better placeholder art or simple sprite assets
-- basic sound effects for pickup, dialogue, unlock, and scene transition
-- improved dialogue and message box spacing
-- README play instructions
+- title screen with Start Game / Quit
+- ending overlay with Play Again / Quit
+- clearer hover action panels and selected-item prompts
+- replaceable PNG background, object, item, NPC, and exit placeholders
+- optional Ogg sound effects for pickup, dialogue, unlock, and scene transition
+- improved dialogue and message-box spacing
+- README setup, controls, and demo instructions
+- focused asset requirements in `docs/asset-guide.md`
 
 Tests/checks:
 
 - title/new-game flow works
-- ending can return to new game or quit
-- full demo-flow integration still passes
+- ending can return to a fresh game or quit
+- keyboard and mouse menu input works
+- full demo-flow integration remains unchanged
+- missing optional assets fail safely
 - manual visual/readability checklist updated
 
-Avoid:
+Intentionally avoided:
 
 - new quest chains
 - save menu
 - complex animation system
-- asset pipeline larger than the current need
+- music/channel management
+- resizable-window layout
+- asset manifest, atlas, or pipeline larger than the current need
 
 ## Milestone v0.11 — Save/load prototype
 

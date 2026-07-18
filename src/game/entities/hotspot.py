@@ -11,8 +11,8 @@ from game.theme import (
     HOTSPOT_BACKGROUND,
     HOTSPOT_BACKGROUND_HOVERED,
     TEXT_HIGHLIGHT,
-    TEXT_PRIMARY,
 )
+from game.ui.asset_panel import draw_labeled_asset
 
 
 @dataclass
@@ -26,6 +26,7 @@ class Hotspot:
     completed_inspect_text: str | None = None
     inspect_flag: str | None = None
     flagged_inspect_text: str | None = None
+    image_asset_id: str | None = None
 
     def inspect_text_for(
         self,
@@ -57,24 +58,18 @@ class Hotspot:
         surface: pygame.Surface,
         font: pygame.font.Font,
         is_hovered: bool,
+        image: pygame.Surface | None = None,
     ) -> None:
-        """Draw a visible placeholder for the hotspot."""
+        """Draw an image-backed or fallback hotspot."""
         fill_color = HOTSPOT_BACKGROUND_HOVERED if is_hovered else HOTSPOT_BACKGROUND
         border_color = TEXT_HIGHLIGHT if is_hovered else BORDER_DEFAULT
 
-        pygame.draw.rect(surface, fill_color, self.rect)
-        pygame.draw.rect(
+        draw_labeled_asset(
             surface,
-            border_color,
             self.rect,
-            width=2,
-        )
-
-        label_surface = font.render(
+            font,
             self.label,
-            True,
-            TEXT_PRIMARY,
+            image,
+            background_color=fill_color,
+            border_color=border_color,
         )
-        label_rect = label_surface.get_rect(center=self.rect.center)
-
-        surface.blit(label_surface, label_rect)

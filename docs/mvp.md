@@ -93,10 +93,10 @@ Do not implement these in MVP:
 ```txt
 village_square
 forest_path
-tower_interior or tower_entrance
+tower_interior
 ```
 
-Use one consistent final scene name during v0.9 cleanup.
+The current in-game scene name is `Ancient Tower`.
 
 ### NPCs
 

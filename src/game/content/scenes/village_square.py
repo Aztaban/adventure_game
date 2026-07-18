@@ -2,6 +2,14 @@ from collections.abc import Mapping
 
 import pygame
 
+from game.asset_ids import (
+    EMPTY_CUP_IMAGE,
+    NOTICE_BOARD_IMAGE,
+    OLD_WELL_IMAGE,
+    PATH_EXIT_IMAGE,
+    RETIRED_WITCH_IMAGE,
+    VILLAGE_SQUARE_BACKGROUND,
+)
 from game.content.flag_ids import (
     TOWER_UNLOCKED,
     WITCH_RECEIVED_TEA,
@@ -49,6 +57,7 @@ def create_village_square(
                 ),
                 target_scene_id=FOREST_PATH,
                 label="To Forest",
+                image_asset_id=PATH_EXIT_IMAGE,
             )
         ],
         hotspots=[
@@ -58,6 +67,7 @@ def create_village_square(
                 inspect_text="The notice says: Beware the forest. Also, bake sale Friday.",
                 inspect_flag=TOWER_UNLOCKED,
                 flagged_inspect_text="A new message has appeared: The old tower path is open again.",
+                image_asset_id=NOTICE_BOARD_IMAGE,
             ),
             Hotspot(
                 rect=pygame.Rect(450, 300, 180, 100),
@@ -73,6 +83,7 @@ def create_village_square(
                     interaction_id=OLD_WELL_INTERACTION,
                 ),
                 completed_inspect_text="The well is now pretending it cannot hear you.",
+                image_asset_id=OLD_WELL_IMAGE,
             ),
         ],
         item_hotspots=[
@@ -81,6 +92,7 @@ def create_village_square(
                 rect=pygame.Rect(390, 460, 180, 80),
                 item=items_by_id[EMPTY_CUP],
                 pickup_text="You pick up the Empty Cup. It smells faintly of adventure.",
+                image_asset_id=EMPTY_CUP_IMAGE,
             )
         ],
         npcs=[
@@ -110,9 +122,11 @@ def create_village_square(
                     "Try the Rusty Key on the tower gate.",
                     "If anything inside has too many eyes, be polite.",
                 ),
+                image_asset_id=RETIRED_WITCH_IMAGE,
             )
         ],
         game_state=game_state,
         recipe_book=recipe_book,
         ui_resources=ui_resources,
+        background_image_id=VILLAGE_SQUARE_BACKGROUND,
     )

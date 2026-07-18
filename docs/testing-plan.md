@@ -1,6 +1,6 @@
 # Testing Plan
 
-Status: current after the v0.9.1 foundation release
+Status: current for the v0.10 presentation milestone
 
 ## Purpose
 
@@ -58,10 +58,14 @@ Good automated-test targets:
 
 Manual testing should cover:
 
+- title screen opens before gameplay
+- Start Game and Quit work with mouse and keyboard
 - window opens and closes correctly
 - `N` starts a fresh game from Village Square
 - hover/click feel
-- readability of dialogue and message boxes
+- readability of hover prompts, dialogue, message boxes, title, and ending overlay
+- image scaling and label readability
+- sound volume, repetition, and clipping
 - object positions and spacing
 - whether the flow feels understandable
 - visual regressions
@@ -71,7 +75,7 @@ Do not over-test exact pixels unless the layout rule is important for behavior.
 
 ## Test layers
 
-Use three practical layers even when files remain in the compact `tests/` tree:
+Use three practical layers. Directory placement should reflect the behavior under test:
 
 ```txt
 pure unit tests      -> inventory, recipes, state, item use, snapshots, loaders, validation
@@ -88,28 +92,21 @@ tests/
 ├── integration/
 │   ├── test_demo_flow.py
 │   ├── test_game_session_reset.py
+│   ├── test_json_content_loading.py
 │   ├── test_state_snapshot.py
 │   └── test_world_state_persistence.py
 ├── test_adventure_interaction_service.py
 ├── test_adventure_scene.py
 ├── test_content_validation.py
-├── test_dialogue.py
 ├── test_game_app.py
 ├── test_game_content.py
 ├── test_game_state.py
-├── test_hotspot.py
-├── test_input_bindings.py
-├── test_inventory.py
-├── test_inventory_bar.py
-├── test_item_combination.py
-├── test_item_hotspot.py
-├── test_item_use.py
-├── test_json_content_loading.py
-├── test_npc.py
-├── test_quest_flags.py
-├── test_recipe.py
+├── test_inventory*.py
+├── test_item*.py
+├── test_menu_screen.py
 ├── test_scene_manager.py
-└── test_text_wrapping.py
+├── test_ui_resources.py
+└── other focused unit and Pygame-adapter tests
 ```
 
 Add new test files only when they describe a real boundary.
@@ -181,9 +178,37 @@ Village Square
 
 This test reflects the v0.9 implementation: the witch gives a Rusty Key, and the key unlocks the tower gate.
 
+## v0.10 presentation regression checklist
+
+### Title and ending flow
+
+- startup begins on the title screen
+- Start Game creates a fresh session in Village Square
+- title Quit and `Esc` close the game
+- reaching the ending shows the ending overlay over the Ancient Tower
+- Play Again creates a fresh session
+- ending Quit closes the game
+- `N` still creates a fresh session from title, gameplay, or ending
+
+### Presentation resources
+
+- fonts, images, and sounds are cached by `UIResources`
+- missing images fall back to labeled rectangles
+- missing sounds or an unavailable mixer remain non-fatal
+- pickup, dialogue, unlock, and scene-transition cues use stable asset IDs
+- replacement requirements remain documented in `docs/asset-guide.md`
+
+### Readability
+
+- hover panel states the action and input clearly
+- a selected item changes NPC/hotspot/locked-exit prompts to item-use wording
+- dialogue speaker, body, and continuation hint do not collide
+- message boxes remain inside the scene area and do not sit under the inventory panel
+- entity labels remain readable over image assets
+
 ## v0.9.1 refactor regression checklist
 
-Automated coverage should protect these behaviors during post-demo refactors.
+Automated coverage protects these completed foundation behaviors during later changes.
 
 ### New-game/reset lifecycle
 
@@ -309,8 +334,11 @@ NPC > exit > item pickup > hotspot
 Run after each milestone or meaningful refactor:
 
 ```txt
-- Start the game.
-- ESC and window close still quit cleanly.
+- Start the game and confirm the title screen appears.
+- Check title art, title/subtitle spacing, and button hover/selection states.
+- Start with mouse, then restart and verify keyboard Start works.
+- Confirm title Quit and Esc close cleanly.
+- Start again and confirm Village Square appears.
 - Talk to Retired Witch.
 - Advance and close dialogue.
 - Collect Empty Cup.
@@ -332,11 +360,17 @@ Run after each milestone or meaningful refactor:
 - Use Rusty Key on Tower Gate.
 - Confirm tower exit is usable.
 - Enter tower.
-- Confirm ending/progress text appears.
-- Press N.
+- Confirm the Ancient Tower appears behind the Demo Complete overlay.
+- Check ending text and Play Again / Quit button spacing.
+- Choose Play Again and confirm a fresh game starts.
+- Complete or simulate the ending again and confirm Quit closes cleanly.
+- Press N during a run.
 - Confirm a fresh game starts from Village Square.
 - Confirm inventory, flags, collected pickups, completions, and ending state are reset.
-- Confirm long dialogue and messages wrap readably.
+- Confirm hover prompts, long dialogue, and messages wrap readably without overlapping inventory.
+- Confirm every included image is scaled cleanly and each label remains readable.
+- Confirm pickup, dialogue, unlock, and transition sounds are audible but not harsh or clipped.
+- Temporarily rename one image and one sound; confirm fallback visuals/silence do not crash the game.
 - Confirm clicking each visible inventory row selects the matching item.
 ```
 

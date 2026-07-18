@@ -5,6 +5,7 @@ from enum import Enum
 
 import pygame
 
+from game.asset_ids import DIALOGUE_SOUND
 from game.entities.exit_hotspot import ExitHotspot
 from game.entities.hotspot import Hotspot
 from game.entities.item_hotspot import ItemHotspot
@@ -25,11 +26,11 @@ from game.systems.adventure_interaction_service import (
 from game.systems.dialogue import Dialogue
 from game.systems.recipe import RecipeBook
 from game.theme import (
-    TEXT_HIGHLIGHT,
     TEXT_PRIMARY,
     TEXT_SECONDARY,
 )
 from game.ui.dialogue_box import DialogueBox
+from game.ui.interaction_prompt import InteractionPrompt
 from game.ui.inventory_bar import InventoryBar
 from game.ui.message_box import MessageBox
 from game.ui.resources import UIResources
@@ -67,10 +68,12 @@ class AdventureScene(BaseScene):
         game_state: GameState,
         recipe_book: RecipeBook,
         ui_resources: UIResources,
+        background_image_id: str | None = None,
     ) -> None:
         self.name = name
         self.description = description
         self.background_color = background_color
+        self.background_image_id = background_image_id
 
         self.exits = exits
         self.hotspots = hotspots
@@ -84,6 +87,7 @@ class AdventureScene(BaseScene):
         )
         self.interaction_text: str | None = None
         self.active_speaker_name = ""
+        self.ui_resources = ui_resources
 
         self.dialogue = Dialogue()
         self.dialogue_box = DialogueBox(
@@ -97,6 +101,10 @@ class AdventureScene(BaseScene):
             status_font=ui_resources.inventory_status_font,
         )
         self.message_box = MessageBox(ui_resources.body_font)
+        self.interaction_prompt = InteractionPrompt(
+            action_font=ui_resources.body_font,
+            hint_font=ui_resources.hint_font,
+        )
 
         self.title_font = ui_resources.title_font
         self.body_font = ui_resources.body_font
@@ -123,7 +131,15 @@ class AdventureScene(BaseScene):
 
     def draw(self, surface: pygame.Surface) -> None:
         """Draw the complete scene."""
-        surface.fill(self.background_color)
+        background = self.ui_resources.image(
+            self.background_image_id,
+            surface.get_size(),
+        )
+
+        if background is None:
+            surface.fill(self.background_color)
+        else:
+            surface.blit(background, (0, 0))
 
         self._draw_scene_header(surface)
 
@@ -147,9 +163,17 @@ class AdventureScene(BaseScene):
         )
 
         if self.interaction_text is not None and not self.dialogue.is_active:
+            inventory_left = self.inventory_bar.layout_for_items(inventory.items).panel_rect.left
+            message_area = pygame.Rect(
+                20,
+                0,
+                max(320, inventory_left - 40),
+                surface.get_height(),
+            )
             self.message_box.draw(
                 surface,
                 self.interaction_text,
+                available_rect=message_area,
             )
 
         current_line = self.dialogue.current_line
@@ -220,6 +244,8 @@ class AdventureScene(BaseScene):
         outcome: AdventureInteractionOutcome,
     ) -> SceneEventResult:
         """Apply service output to scene presentation state."""
+        self.ui_resources.play_sound(outcome.sound_effect_id)
+
         if outcome.dialogue_lines:
             self.active_speaker_name = outcome.speaker_name or ""
             self.dialogue.start(outcome.dialogue_lines)
@@ -239,6 +265,9 @@ class AdventureScene(BaseScene):
         """Advance or close the active dialogue."""
         if is_primary_action(event) or is_dialogue_advance(event):
             self.dialogue.advance()
+
+            if self.dialogue.current_line is not None:
+                self.ui_resources.play_sound(DIALOGUE_SOUND, volume=0.4)
 
             return SceneEventResult(consumed=True)
 
@@ -265,8 +294,8 @@ class AdventureScene(BaseScene):
             TEXT_SECONDARY,
         )
 
-        surface.blit(title_surface, (40, 40))
-        surface.blit(description_surface, (40, 100))
+        surface.blit(title_surface, (40, 34))
+        surface.blit(description_surface, (40, 92))
 
     def _draw_scene_entities(
         self,
@@ -283,6 +312,10 @@ class AdventureScene(BaseScene):
                     WorldTargetKind.HOTSPOT,
                     hotspot,
                 ),
+                image=self.ui_resources.image(
+                    hotspot.image_asset_id,
+                    hotspot.rect.size,
+                ),
             )
 
         for item_hotspot in self.item_hotspots:
@@ -297,6 +330,10 @@ class AdventureScene(BaseScene):
                     WorldTargetKind.ITEM_PICKUP,
                     item_hotspot,
                 ),
+                image=self.ui_resources.image(
+                    item_hotspot.image_asset_id,
+                    item_hotspot.rect.size,
+                ),
             )
 
         for npc in self.npcs:
@@ -307,6 +344,10 @@ class AdventureScene(BaseScene):
                     hovered_target,
                     WorldTargetKind.NPC,
                     npc,
+                ),
+                image=self.ui_resources.image(
+                    npc.image_asset_id,
+                    npc.rect.size,
                 ),
             )
 
@@ -324,6 +365,10 @@ class AdventureScene(BaseScene):
                     WorldTargetKind.EXIT,
                     exit_hotspot,
                 ),
+                image=self.ui_resources.image(
+                    exit_hotspot.image_asset_id,
+                    exit_hotspot.rect.size,
+                ),
             )
 
     def _draw_hover_text(
@@ -340,13 +385,15 @@ class AdventureScene(BaseScene):
         if hover_text is None:
             return
 
-        hover_surface = self.body_font.render(
-            hover_text,
-            True,
-            TEXT_HIGHLIGHT,
-        )
+        inventory_left = self.inventory_bar.layout_for_items(self.game_state.inventory.items).panel_rect.left
+        maximum_width = max(320, inventory_left - 80)
 
-        surface.blit(hover_surface, (40, 150))
+        self.interaction_prompt.draw(
+            surface,
+            action_text=hover_text,
+            hint_text=self._hover_hint_for_target(hovered_target),
+            maximum_width=maximum_width,
+        )
 
     def _hover_text_for_target(
         self,
@@ -369,6 +416,12 @@ class AdventureScene(BaseScene):
         if target.kind is WorldTargetKind.EXIT:
             assert isinstance(target.entity, ExitHotspot)
 
+            if selected_item is not None and target.entity.item_use is not None:
+                return f"Use {selected_item.name} on {self._display_label_for_exit(target.entity)}"
+
+            if self._is_exit_locked(target.entity):
+                return f"Inspect: {self._display_label_for_exit(target.entity)}"
+
             return f"Go to: {self._display_label_for_exit(target.entity)}"
 
         if target.kind is WorldTargetKind.ITEM_PICKUP:
@@ -383,18 +436,45 @@ class AdventureScene(BaseScene):
 
         return f"Inspect: {target.entity.label}"
 
+    def _hover_hint_for_target(
+        self,
+        target: WorldTarget | None,
+    ) -> str:
+        """Return a clear mouse action hint for the resolved target."""
+        if target is None:
+            return ""
+
+        selected_item = self.game_state.inventory.selected_item
+
+        if selected_item is not None and target.kind in {
+            WorldTargetKind.NPC,
+            WorldTargetKind.EXIT,
+            WorldTargetKind.HOTSPOT,
+        }:
+            return "Left click to use the selected item"
+
+        hints = {
+            WorldTargetKind.NPC: "Left click to talk",
+            WorldTargetKind.EXIT: "Left click to travel or inspect",
+            WorldTargetKind.ITEM_PICKUP: "Left click to collect",
+            WorldTargetKind.HOTSPOT: "Left click to inspect",
+        }
+        return hints[target.kind]
+
     def _display_label_for_exit(
         self,
         exit_hotspot: ExitHotspot,
     ) -> str:
         """Return the exit label matching current locked state."""
-        required_flag = exit_hotspot.required_flag
-        is_locked = required_flag is not None and not self.game_state.has_flag(required_flag)
-
-        if is_locked and exit_hotspot.locked_label is not None:
+        if self._is_exit_locked(exit_hotspot) and exit_hotspot.locked_label is not None:
             return exit_hotspot.locked_label
 
         return exit_hotspot.label
+
+    def _is_exit_locked(self, exit_hotspot: ExitHotspot) -> bool:
+        """Return whether the exit currently fails its required flag."""
+        required_flag = exit_hotspot.required_flag
+        return required_flag is not None and not self.game_state.has_flag(required_flag)
 
     def _resolve_world_target(
         self,

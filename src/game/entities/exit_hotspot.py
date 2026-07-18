@@ -9,9 +9,10 @@ from game.theme import (
     BORDER_DEFAULT,
     EXIT_BACKGROUND,
     EXIT_LOCKED_BACKGROUND,
+    EXIT_LOCKED_OVERLAY,
     TEXT_HIGHLIGHT,
-    TEXT_PRIMARY,
 )
+from game.ui.asset_panel import draw_labeled_asset
 
 
 @dataclass
@@ -27,6 +28,8 @@ class ExitHotspot:
     completion_flag: str | None = None
     item_use: ItemUseInteraction | None = None
     ends_game: bool = False
+    image_asset_id: str | None = None
+    unlock_sound_id: str | None = None
 
     def contains_point(self, position: tuple[int, int]) -> bool:
         """Return True when the position is inside the exit."""
@@ -38,8 +41,9 @@ class ExitHotspot:
         font: pygame.font.Font,
         is_locked: bool = False,
         is_hovered: bool = False,
+        image: pygame.Surface | None = None
     ) -> None:
-        """Draw a visible placeholder exit."""
+        """Draw an image-backed or fallback exit."""
         background_color = EXIT_LOCKED_BACKGROUND if is_locked else EXIT_BACKGROUND
         border_color = TEXT_HIGHLIGHT if is_hovered else BORDER_DEFAULT
         displayed_label = self.label
@@ -47,10 +51,13 @@ class ExitHotspot:
         if is_locked and self.locked_label is not None:
             displayed_label = self.locked_label
 
-        pygame.draw.rect(surface, background_color, self.rect)
-        pygame.draw.rect(surface, border_color, self.rect, width=2)
-
-        label_surface = font.render(displayed_label, True, TEXT_PRIMARY)
-        label_rect = label_surface.get_rect(center=self.rect.center)
-
-        surface.blit(label_surface, label_rect)
+        draw_labeled_asset(
+            surface,
+            self.rect,
+            font,
+            displayed_label,
+            image,
+            background_color=background_color,
+            border_color=border_color,
+            overlay_color=EXIT_LOCKED_OVERLAY if is_locked and image is not None else None,
+        )

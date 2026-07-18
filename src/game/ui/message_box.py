@@ -9,19 +9,26 @@ from game.ui.text import wrap_text
 class MessageBox:
     """Draw short interaction messages near the bottom of the screen."""
 
-    MAXIMUM_WIDTH = 900
+    MAXIMUM_WIDTH = 820
     HORIZONTAL_MARGIN = 30
-    BOTTOM_MARGIN = 48
+    BOTTOM_MARGIN = 34
     HORIZONTAL_PADDING = 24
-    VERTICAL_PADDING = 14
-    LINE_SPACING = 5
+    VERTICAL_PADDING = 16
+    LINE_SPACING = 6
 
     def __init__(self, font: pygame.font.Font) -> None:
         self.font = font
 
-    def draw(self, surface: pygame.Surface, text: str) -> None:
-        """Draw a wrapped interaction message."""
-        available_width = surface.get_width() - self.HORIZONTAL_MARGIN * 2 - self.HORIZONTAL_PADDING * 2
+    def draw(
+        self,
+        surface: pygame.Surface,
+        text: str,
+        *,
+        available_rect: pygame.rect | None,
+    ) -> None:
+        """Draw a wrapped interaction message inside an optional content area."""
+        content_rect = available_rect or surface.get_rect()
+        available_width = content_rect.width - self.HORIZONTAL_MARGIN * 2 - self.HORIZONTAL_PADDING * 2
         maximum_text_width = min(
             self.MAXIMUM_WIDTH - self.HORIZONTAL_PADDING * 2,
             available_width,
@@ -38,12 +45,12 @@ class MessageBox:
 
         panel_rect = pygame.Rect(0, 0, panel_width, panel_height)
         panel_rect.midbottom = (
-            surface.get_width() // 2,
-            surface.get_height() - self.BOTTOM_MARGIN,
+            content_rect.centerx,
+            content_rect.bottom - self.BOTTOM_MARGIN,
         )
 
-        pygame.draw.rect(surface, PANEL_BACKGROUND, panel_rect, border_radius=8)
-        pygame.draw.rect(surface, BORDER_DEFAULT, panel_rect, width=2, border_radius=8)
+        pygame.draw.rect(surface, PANEL_BACKGROUND, panel_rect, border_radius=10)
+        pygame.draw.rect(surface, BORDER_DEFAULT, panel_rect, width=2, border_radius=10)
 
         text_y = panel_rect.y + self.VERTICAL_PADDING
 

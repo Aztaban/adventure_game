@@ -2,6 +2,11 @@ from collections.abc import Mapping
 
 import pygame
 
+from game.asset_ids import (
+    ANCIENT_PEDESTAL_IMAGE,
+    PATH_EXIT_IMAGE,
+    TOWER_INTERIOR_BACKGROUND,
+)
 from game.content.flag_ids import DEMO_COMPLETED
 from game.content.scene_ids import FOREST_PATH
 from game.entities.exit_hotspot import ExitHotspot
@@ -37,6 +42,7 @@ def create_tower_interior(
                 ),
                 target_scene_id=FOREST_PATH,
                 label="Leave Tower",
+                image_asset_id=PATH_EXIT_IMAGE,
             )
         ],
         hotspots=[
@@ -46,6 +52,7 @@ def create_tower_interior(
                 inspect_text=("The pedestal waits for someone to finish the demo."),
                 inspect_flag=DEMO_COMPLETED,
                 flagged_inspect_text=("The pedestal glows warmly. Demo complete. The tower will remember this."),
+                image_asset_id=ANCIENT_PEDESTAL_IMAGE,
             )
         ],
         item_hotspots=[],
@@ -53,4 +60,5 @@ def create_tower_interior(
         game_state=game_state,
         recipe_book=recipe_book,
         ui_resources=ui_resources,
+        background_image_id=TOWER_INTERIOR_BACKGROUND,
     )

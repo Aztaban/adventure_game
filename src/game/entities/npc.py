@@ -12,6 +12,7 @@ from game.theme import (
     TEXT_HIGHLIGHT,
     TEXT_PRIMARY,
 )
+from game.ui.asset_panel import draw_labeled_asset
 
 
 @dataclass
@@ -25,6 +26,7 @@ class NPC:
     completed_dialogue_lines: tuple[str, ...] = ()
     dialogue_flag: str | None = None
     flagged_dialogue_lines: tuple[str, ...] = ()
+    image_asset_id: str | None = None
 
     def dialogue_for(
         self,
@@ -56,24 +58,18 @@ class NPC:
         surface: pygame.Surface,
         font: pygame.font.Font,
         is_hovered: bool,
+        image: pygame.Surface | None = None,
     ) -> None:
-        """Draw a placeholder NPC."""
+        """Draw an image-backed or fallback NPC."""
         background_color = NPC_BACKGROUND_HOVERED if is_hovered else NPC_BACKGROUND
         border_color = TEXT_HIGHLIGHT if is_hovered else TEXT_PRIMARY
 
-        pygame.draw.rect(surface, background_color, self.rect)
-        pygame.draw.rect(
+        draw_labeled_asset(
             surface,
-            border_color,
             self.rect,
-            width=2,
-        )
-
-        label_surface = font.render(
+            font,
             self.name,
-            True,
-            TEXT_PRIMARY,
+            image,
+            background_color=background_color,
+            border_color=border_color,
         )
-        label_rect = label_surface.get_rect(center=self.rect.center)
-
-        surface.blit(label_surface, label_rect)

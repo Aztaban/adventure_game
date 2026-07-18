@@ -1,6 +1,6 @@
 # Content Plan
 
-Status: current after the v0.9.1 foundation release
+Status: current for the v0.10 presentation milestone
 
 ## Purpose
 
@@ -41,6 +41,20 @@ Items and recipes are data-driven because their schemas are small and stable. Sc
 Do not keep the same item or recipe definition in both Python and JSON. Stable Python constants are still acceptable when Python scene factories need to refer to item, flag, pickup, interaction, or scene IDs.
 
 Re-evaluate dialogue JSON after v0.12. Re-evaluate full scene JSON only after at least one larger scene proves that a data schema would be clearer than Python factories.
+
+## Current presentation assets
+
+v0.10 adds replaceable presentation assets without changing story content:
+
+```txt
+Backgrounds: PNG
+NPC/object/item/exit art: PNG with transparent backgrounds where useful
+Sound effects: Ogg Vorbis
+```
+
+Stable IDs and exact replacement requirements are documented in `docs/asset-guide.md`.
+
+The art remains presentation metadata on Python scene factories. Missing assets use the existing colored placeholder rendering, so asset replacement does not become a gameplay or content-loading dependency.
 
 ## Current v0.9 demo flow
 
@@ -111,7 +125,7 @@ Current/potential content:
 - Ancient Pedestal
 - completion text after entering
 
-The exact name can be cleaned up during v0.9. Use one consistent in-game name once the final flow is implemented.
+The implemented in-game name is `Ancient Tower`; the stable scene ID remains `tower_interior`.
 
 ## First demo NPCs
 

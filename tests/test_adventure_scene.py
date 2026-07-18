@@ -1,5 +1,6 @@
 import pygame
 
+from game.asset_ids import DIALOGUE_SOUND, PICKUP_SOUND
 from game.entities.exit_hotspot import ExitHotspot
 from game.entities.hotspot import Hotspot
 from game.entities.item import Item
@@ -14,6 +15,18 @@ from game.ui.resources import UIResources
 pygame.font.init()
 
 
+class RecordingUIResources(UIResources):
+    """UI resources double that records requested presentation sounds."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.played_sound_ids: list[str | None] = []
+
+    def play_sound(self, asset_id: str | None, *, volume: float = 0.55) -> None:
+        del volume
+        self.played_sound_ids.append(asset_id)
+
+
 def create_test_scene(
     game_state: GameState,
     exits: list[ExitHotspot] | None = None,
@@ -21,6 +34,7 @@ def create_test_scene(
     item_hotspots: list[ItemHotspot] | None = None,
     npcs: list[NPC] | None = None,
     recipe_book: RecipeBook | None = None,
+    ui_resources: UIResources | None = None,
 ) -> AdventureScene:
     """Create a minimal AdventureScene for behavioral tests."""
     return AdventureScene(
@@ -33,7 +47,7 @@ def create_test_scene(
         npcs=npcs or [],
         game_state=game_state,
         recipe_book=recipe_book or RecipeBook(),
-        ui_resources=UIResources(),
+        ui_resources=ui_resources or UIResources(),
     )
 
 
@@ -896,4 +910,43 @@ def test_exit_hover_text_uses_locked_label_when_exit_is_locked() -> None:
 
     assert target is not None
     assert target.kind is WorldTargetKind.EXIT
-    assert scene._hover_text_for_target(target) == "Go to: Tower Gate (Locked)"
+    assert scene._hover_text_for_target(target) == "Inspect: Tower Gate (Locked)"
+
+
+def test_scene_plays_pickup_sound_from_interaction_outcome() -> None:
+    resources = RecordingUIResources()
+    item = create_item("sound_item", "Sound Item")
+    pickup = ItemHotspot(
+        pickup_id="pickup.sound_item",
+        rect=pygame.Rect(100, 100, 120, 80),
+        item=item,
+        pickup_text="Collected.",
+    )
+    scene = create_test_scene(
+        GameState(),
+        item_hotspots=[pickup],
+        ui_resources=resources,
+    )
+
+    scene.handle_event(create_primary_click(pickup.rect.center))
+
+    assert resources.played_sound_ids == [PICKUP_SOUND]
+
+
+def test_scene_plays_dialogue_sound_for_open_and_next_line() -> None:
+    resources = RecordingUIResources()
+    npc = NPC(
+        rect=pygame.Rect(100, 100, 120, 120),
+        name="Guide",
+        dialogue_lines=("First.", "Second."),
+    )
+    scene = create_test_scene(
+        GameState(),
+        npcs=[npc],
+        ui_resources=resources,
+    )
+
+    scene.handle_event(create_primary_click(npc.rect.center))
+    scene.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE))
+
+    assert resources.played_sound_ids == [DIALOGUE_SOUND, DIALOGUE_SOUND]

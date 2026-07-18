@@ -12,12 +12,14 @@ from game.ui.text import wrap_text
 
 
 class DialogueBox:
-    """Render dialogue text in a panel at the bottom of the screen."""
+    """Render dialogue text in a spacious panel at the bottom of the screen."""
 
-    PANEL_HEIGHT = 170
-    PANEL_MARGIN = 24
-    INNER_PADDING = 20
-    LINE_SPACING = 6
+    PANEL_HEIGHT = 198
+    PANEL_MARGIN = 22
+    INNER_PADDING = 22
+    LINE_SPACING = 7
+    SPEAKER_GAP = 12
+    HINT_TOP_GAP = 10
 
     def __init__(
         self,
@@ -45,14 +47,14 @@ class DialogueBox:
             surface,
             DIALOGUE_BACKGROUND,
             panel_rect,
-            border_radius=10,
+            border_radius=12,
         )
         pygame.draw.rect(
             surface,
             DIALOGUE_BORDER,
             panel_rect,
             width=2,
-            border_radius=10,
+            border_radius=12,
         )
 
         speaker_surface = self.text_font.render(
@@ -68,11 +70,25 @@ class DialogueBox:
             ),
         )
 
+        separator_y = panel_rect.y + self.INNER_PADDING + speaker_surface.get_height() + self.SPEAKER_GAP
+        pygame.draw.line(
+            surface,
+            DIALOGUE_BORDER,
+            (panel_rect.x + self.INNER_PADDING, separator_y),
+            (panel_rect.right - self.INNER_PADDING, separator_y),
+            width=1,
+        )
+
         text_x = panel_rect.x + self.INNER_PADDING
-        text_y = panel_rect.y + self.INNER_PADDING + 42
+        text_y = separator_y + self.SPEAKER_GAP
+        hint_height = self.hint_font.get_linesize()
         maximum_width = panel_rect.width - self.INNER_PADDING * 2
+        maximum_text_bottom = panel_rect.bottom - self.INNER_PADDING - hint_height - self.HINT_TOP_GAP
 
         for line in wrap_text(self.text_font, text, maximum_width):
+            if text_y + self.text_font.get_linesize() > maximum_text_bottom:
+                break
+
             line_surface = self.text_font.render(
                 line,
                 True,
@@ -89,7 +105,7 @@ class DialogueBox:
         hint_rect = hint_surface.get_rect(
             bottomright=(
                 panel_rect.right - self.INNER_PADDING,
-                panel_rect.bottom - 14,
+                panel_rect.bottom - self.INNER_PADDING,
             )
         )
         surface.blit(hint_surface, hint_rect)
