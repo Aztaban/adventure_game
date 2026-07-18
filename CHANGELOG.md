@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.9.2 - 2026-07-18
+
+### Added
+- Consolidated demo session construction around the existing create_demo_content() and create_game_session() composition path.
+- Updated session reset, application, and content-validation tests to use the authoritative generic construction APIs.
+- Documented the current scene lifecycle, including persistent state ownership and the handling of transient dialogue, messages, and hover state.
+- Clarified the responsibilities of unit, integration, and Pygame-adapter tests.
+- Updated roadmap and architecture documentation to reflect the completed v0.9.1 foundation and the next planned milestone.
+- Applied the configured Ruff formatter across source and test files.
+
+### Removed
+- Removed the obsolete create_demo_game_session() convenience wrapper.
+- Removed the obsolete create_demo_scenes() convenience wrapper.
+- Removed stale temporary release documentation from docs/temp.md.
+- Removed completed refactor records from the active refactor backlog so it contains only pending or deferred work.
+
 ## 0.9.1 - 2026-07-17
 
 ### Added
