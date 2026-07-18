@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.10.0 - 2026-07-18
+
+### Added
+- Added a title screen with Start Game and Quit options.
+- Added a demo-complete ending overlay with Play Again and Quit options.
+- Added improved hover labels and contextual interaction prompts.
+- Added placeholder background and sprite assets that can be replaced using stable asset IDs.
+- Added basic sound effects for pickups, dialogue, gate unlocking, and scene transitions.
+- Added image and sound caching to UIResources.
+- Added graceful visual and audio fallbacks when optional assets are missing.
+- Added README instructions covering setup, controls, gameplay, and the complete demo flow.
+- Added an asset guide describing supported image and audio formats, dimensions, filenames, and replacement rules.
+- Added automated tests for title-screen behavior, ending actions, resource loading, and presentation-state flow.
+
+### Changed
+- Improved dialogue-box, message-box, entity-label, and inventory spacing.
+- Improved interaction prompts when an inventory item is selected.
+- Improved locked-exit feedback and other contextual player messages.
+- Updated application flow to support title, gameplay, and ending presentation modes.
+- Kept the Ancient Tower visible behind the ending overlay.
+- Updated N so it starts a completely fresh game from title, gameplay, or ending states.
+- Expanded UIResources from font caching into the shared boundary for fonts, images, and sounds.
+- Updated architecture, roadmap, testing, content, MVP, refactor-backlog, and asset documentation for the v0.10 presentation milestone.
+- Updated the package version to 0.10.0.
+
+### Tests
+- Added coverage for title-screen Start and Quit behavior.
+- Added coverage for restarting or quitting from the ending screen.
+- Preserved the complete key-based demo-flow integration test.
+- Added image-loading and audio-loading checks.
+- Expanded the automated test suite from 168 to 181 passing tests.
+- Updated the manual visual and readability regression checklist.
+
 ## 0.9.2 - 2026-07-18
 
 ### Added
