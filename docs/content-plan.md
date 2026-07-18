@@ -36,11 +36,11 @@ Scenes:    Python factories
 Dialogue:  Python factories
 ```
 
-Items and recipes are data-driven because their schemas are small and stable. Scene and dialogue content remain in Python because full scenes include coordinates, exits, entity types, conditions, flags, and interactions. Dialogue also stays in Python until the planned v0.12 dialogue-choice system proves its final shape.
+Items and recipes are data-driven because their schemas are small and stable. Scene and dialogue content remain in Python because full scenes include coordinates, exits, entity types, conditions, flags, and interactions. Dialogue also stays in Python until the planned v0.13 dialogue-choice system proves its final shape.
 
 Do not keep the same item or recipe definition in both Python and JSON. Stable Python constants are still acceptable when Python scene factories need to refer to item, flag, pickup, interaction, or scene IDs.
 
-Re-evaluate dialogue JSON after v0.12. Re-evaluate full scene JSON only after at least one larger scene proves that a data schema would be clearer than Python factories.
+Re-evaluate dialogue JSON after v0.13. Re-evaluate full scene JSON only after at least one larger scene proves that a data schema would be clearer than Python factories.
 
 ## Current presentation assets
 
@@ -303,3 +303,47 @@ Do not implement yet.
 - optional side quest with a lost hat
 - simple magic puzzles
 - larger mystery about why the tower is cursed
+
+## Long-term authored adventure direction
+
+The intended full game is a humorous, authored point-and-click adventure inspired by the puzzle/dialogue feel of games such as *Polda*. It should use original characters, worldbuilding, writing, art, and interface decisions.
+
+Content growth should emphasize:
+
+- connected scenes with memorable inspectable details
+- character-driven dialogue and recurring jokes
+- inventory puzzles with clear state changes
+- optional observations that enrich the world without hiding required progress
+- objective support before the number of active goals becomes confusing
+
+## Content-format decision gates
+
+Do not move content into JSON only because the project is larger. Move a content type when its schema is stable, validation is useful, and authoring becomes clearer.
+
+```txt
+v0.13 dialogue choices
+    -> prove branching and stable IDs
+    -> reconsider dialogue JSON
+
+v0.15 larger-scene/camera pilot
+    -> prove coordinate and interaction needs
+
+v0.17 production content pilot
+    -> compare one representative scene in Python and data form
+    -> decide whether scene JSON is useful
+
+v0.20 larger chapter pilot
+    -> measure authoring duplication
+    -> decide whether focused tooling is justified
+```
+
+Items and recipes should continue using stable JSON IDs. Add fields such as inventory icon IDs, examine text, or categories only when the corresponding player-facing feature is implemented.
+
+## Interaction design gates
+
+The exact Polda-style interaction language remains intentionally undecided until the relevant pilots:
+
+- v0.15 decides contextual click, inspect behavior, selected-item cursor feedback, and larger-scene/camera needs
+- v0.16 decides instant interaction versus visible move-then-interact behavior and whether pathfinding is required
+
+Do not write large amounts of content that depend on one option before the option is proven.

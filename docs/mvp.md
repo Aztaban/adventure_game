@@ -84,7 +84,7 @@ Do not implement these in MVP:
 - pathfinding
 - real asset pipeline
 - full scene JSON loader before scene schema is proven
-- dialogue JSON before v0.12 dialogue choices stabilize
+- dialogue JSON before v0.13 dialogue choices stabilize
 
 ## MVP demo example for v0.9
 
@@ -152,4 +152,4 @@ Scenes:    Python factories
 Dialogue:  Python factories
 ```
 
-This is enough for the MVP. Full scene/dialogue JSON is deferred until there is enough content and a stable enough schema to justify it. Dialogue JSON should be reconsidered after v0.12 dialogue choices.
+This is enough for the MVP. Full scene/dialogue JSON is deferred until there is enough content and a stable enough schema to justify it. Dialogue JSON should be reconsidered after v0.13 dialogue choices.

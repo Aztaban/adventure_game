@@ -245,7 +245,7 @@ Automated coverage protects these completed foundation behaviors during later ch
 
 - no scene JSON loader is added by accident
 - no dialogue JSON source competes with Python dialogue
-- docs say Python factories are the supported scene/dialogue format until v0.12 re-evaluation
+- docs say Python factories are the supported scene/dialogue format until v0.13 re-evaluation
 
 ## v0.8.1 regression checklist
 

@@ -119,3 +119,26 @@ No code change is required when the stable asset ID and file format stay the sam
 - unavailable audio mixer: gameplay continues without sound
 
 This fallback is intentional for development and automated tests.
+
+## Preparing source art for future display scaling
+
+The current runtime contract remains `1280 x 720`, but v0.11 is planned to present that logical resolution at larger physical window sizes and fullscreen.
+
+For newly created backgrounds:
+
+```txt
+composition:          16:9
+recommended master:  2560 x 1440 or larger
+current runtime PNG: 1280 x 720
+```
+
+Keep editable high-resolution source files outside the runtime asset directory. Export optimized runtime PNG files under the existing stable asset IDs.
+
+For sprites and objects:
+
+- keep transparent source masters at roughly twice the expected runtime display size when practical
+- preserve enough empty padding for hover outlines and label strips
+- avoid very thin details that disappear when the logical surface is scaled down
+- do not create separate files for every physical screen resolution
+
+The display layer should scale the complete logical composition uniformly. Asset authors should not compensate for letterboxing or physical window dimensions inside scene artwork.

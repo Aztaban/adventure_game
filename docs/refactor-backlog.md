@@ -2,78 +2,167 @@
 
 Project: Adventure Game  
 Current baseline: v0.10 presentation milestone  
-Next feature milestone: v0.11 save/load prototype
+Next feature milestone: v0.11 display and controls foundation  
+Next planned refactor milestone: v0.11.1 display/input hardening
 
 ## Purpose
 
-This file tracks only refactors that are still planned or being considered.
+This file contains only pending or decision-gated refactor work.
 
-It is not a release history and does not retain completed task lists. Completed work belongs in `CHANGELOG.md`; stable architectural decisions belong in `docs/architecture.md` or the relevant design document.
-
-Detailed implementation tasks should be written only after the related feature milestone has established a concrete need. Until then, this backlog records the refactor pressure, its trigger, and the intended outcome.
+It is not release history. Completed refactors belong in `CHANGELOG.md`, and stable implemented architecture belongs in `docs/architecture.md`. Detailed task sequences live in milestone task documents only when the related feature is close enough to implement.
 
 ## Maintenance rules
 
-- Keep only pending, deferred, or decision-gated refactors.
-- Add a refactor when an implemented or approved feature creates clear architectural pressure.
-- Describe the problem and desired boundary before prescribing classes, patterns, or file layouts.
-- Plan detailed tasks after the related milestone behavior is stable enough to evaluate.
-- Ask before changes that materially affect architecture or player behavior.
-- Preserve the current gameplay flow and tests during every refactor.
-- Remove completed items when the release is recorded in `CHANGELOG.md`.
-- Avoid generic engine infrastructure without evidence from the game.
+- Keep only refactors that have not been completed.
+- Tie each planned refactor to the feature milestone that creates evidence for it.
+- Describe the pressure and desired outcome before prescribing a pattern or class name.
+- Use `.1` milestones for focused cleanup and regression hardening after a feature milestone.
+- Skip a planned extraction when the preceding feature does not create enough duplication or ownership pressure.
+- Preserve gameplay, save compatibility, and tests during refactors.
+- Ask before changes that materially alter architecture or player behavior.
+- Remove completed entries after they are recorded in `CHANGELOG.md`.
+- Avoid generic engine systems without a demonstrated game need.
 
-## Planned refactor points
+## Highest-priority refactor focus
 
-### After v0.11 save/load prototype
+### v0.11.1 — Display/input refactor and hardening
 
-- **Save repository boundary:** isolate filesystem access from snapshot creation and restoration after the first real save workflow is proven.
-- **Save migrations:** add migration steps only after more than one supported save format exists.
-- **Slot and autosave ownership:** refactor save-slot selection and autosave policy after player-facing behavior is decided.
-- **Transient-state restoration:** decide whether open dialogue, messages, or other presentation state should remain intentionally excluded.
+Trigger:
 
-### After v0.12 dialogue choices
+```txt
+v0.11 has proven fullscreen/window scaling, logical mouse conversion, semantic actions, and a Controls screen.
+```
 
-- **Dialogue model:** introduce stable dialogue-node IDs and branching structures only after the choice behavior is implemented and tested.
-- **Dialogue content format:** reconsider dialogue JSON only when the choice schema is stable and demonstrably clearer than Python factories.
-- **Conversation state:** separate persistent conversation outcomes from transient dialogue presentation if branching requires it.
+Planned outcomes:
 
-### After v0.13 quest journal or objective hints
+- keep all logical-to-physical scaling and letterbox calculations in one authoritative boundary
+- keep physical-to-logical pointer conversion in the same boundary
+- centralize semantic actions, actual bindings, and player-facing binding labels
+- remove duplicate raw-key handling from title, ending, controls, and gameplay paths
+- clarify display configuration ownership without building a general settings framework
+- preserve `1280 x 720` scene/UI coordinates and existing gameplay behavior
 
-- **Objective model:** keep deriving objectives from current state while that remains simple; introduce explicit quest-step IDs only when derivation becomes unclear or duplicated.
-- **Player-facing versus internal state:** separate objective text from internal flags when the journal needs independent wording, ordering, or completion history.
+Evidence checks before extraction:
 
-### After v0.14 larger-scene and camera pilot
+- Is display math duplicated across event handling and drawing?
+- Does `GameApp` have more than one reason to understand scale/offset calculations?
+- Can the Controls screen obtain labels directly from binding data?
+- Are menu and gameplay actions translated consistently?
+- Did a new screen make `AppMode` branching meaningfully harder to read?
 
-- **Coordinate boundaries:** formalize world-space, camera-space, and screen-space conversion after the camera behavior is proven.
-- **Camera ownership:** choose whether camera state belongs to the scene, session, or a focused component based on the pilot.
-- **Spatial lookup:** add indexing only when measured target counts make linear hit testing inadequate.
+Possible boundaries, only if justified:
 
-### After v0.16 real asset and content production
+- a focused viewport/display component
+- an `InputAction` enum or equivalent semantic-action catalog
+- a binding description/catalog object
 
-- **Asset manifest and validation:** centralize asset IDs, paths, and validation when the number of real assets justifies it.
-- **Fallback rendering policy:** decide whether placeholder rectangle rendering remains available for tests or debug builds.
-- **Resource lifetime:** define preload and release behavior only if memory use or load pauses become observable problems.
-- **Content construction:** reconsider scene data files only after larger content volume demonstrates that Python factories are a bottleneck.
+Do not add during this refactor:
+
+- editable bindings
+- a widget hierarchy
+- camera/world coordinates
+- persistent settings unless separately approved
+
+## Planned refactor milestones
+
+### v0.12.1 — Persistence/menu refactor
+
+After the real save/load flow is working:
+
+- isolate filesystem access from snapshot creation and restoration
+- centralize user-data/save path resolution and atomic writes
+- evaluate a small screen or screen-stack boundary if menu-mode branching has become cumbersome
+- add save migrations only when a second supported save format exists
+- keep transient presentation state intentionally separate from persistent game state
+
+### v0.13.1 — Dialogue model/content refactor
+
+After dialogue choices prove their shape:
+
+- introduce stable node/choice IDs where save/load or branching requires them
+- separate persistent conversation outcomes from transient dialogue presentation
+- pilot dialogue JSON only if it is clearer than Python factories
+- avoid arbitrary expression evaluation or a scripting language
+
+### v0.14.1 — Objective-state refactor
+
+After objective hints/journal behavior is proven:
+
+- separate player-facing objective wording from internal flags if duplication appears
+- introduce explicit quest-step IDs only when derived objectives are insufficient
+- avoid a general quest engine while a small objective model remains clear
+
+### v0.15.1 — Scene coordinate and interaction refactor
+
+After the interaction/camera pilot:
+
+- formalize logical-screen, world, and camera coordinate conversion
+- choose camera ownership from observed usage
+- centralize target resolution under the selected point-and-click interaction model
+- split `AdventureScene` only where distinct responsibilities are demonstrated
+- add spatial lookup only if measured scene complexity requires it
+
+### v0.16.1 — Movement/runtime entity refactor
+
+After visible movement is proven useful:
+
+- isolate movement and move-then-interact sequencing
+- separate static definitions, runtime state, and Pygame views only where animation or movement requires it
+- avoid an entity-component system without strong evidence
+
+### v0.17.1 — Resource/content refactor
+
+After production assets, larger inventory, and a content pilot:
+
+- replace working-directory asset assumptions with packaged application paths
+- split `UIResources` only if image, sound, music, path, or lifetime responsibilities have become unclear
+- introduce an asset manifest and validation only if asset volume justifies it
+- add bounded caches, preload groups, or release behavior only after measuring load time or memory pressure
+- adopt scene JSON only if the representative data-driven scene is clearer to author and validate
+- separate content definitions, runtime state, and views only where production entities require it
+
+### v0.18.1 — Audio/lifecycle refactor
+
+After music and ambience are implemented:
+
+- separate short SFX, music streaming, and ambience responsibilities
+- add scene enter/exit hooks only where audio lifecycle needs them
+- centralize master/music/SFX volumes and channel policy
+
+### v0.19.1 — Release architecture hardening
+
+After packaging and settings are functional:
+
+- centralize application resource, save, config, log, and credit paths
+- remove development-current-directory assumptions
+- validate packaged startup and failure diagnostics
+
+### v0.20.1 — Content-authoring refactor
+
+After the first larger chapter exposes real production friction:
+
+- remove repeated scene/dialogue/content construction patterns
+- add focused authoring helpers, loaders, or validation for proven bottlenecks
+- consider lightweight tooling only when manual authoring has become measurably inefficient
 
 ## Unscheduled, evidence-gated candidates
 
-These are not planned milestones. Reconsider them only when a concrete feature cannot remain clear without them:
+These are not approved milestones:
 
-- explicit scene enter/exit hooks when music, animation, timers, or loading transitions require them
-- explicit quest definitions
-- a command or action object for replayable interactions
-- broader dependency injection or service composition
-- a reusable widget hierarchy
-- content tooling or editor support
-- an event-dispatch layer for multiple independent listeners
+- reusable UI widget hierarchy
+- broad dependency injection or service composition
+- generic event dispatch for multiple independent listeners
+- universal command/action objects
+- content editor or modding support
+- localization framework beyond stable text ownership/readiness
 
 ## Not planned without strong evidence
 
 - generic event bus
 - entity-component system
 - service locator
-- scripting language for conditions
+- embedded scripting language
 - inheritance-heavy UI framework
 - universal command framework
-- database-backed local prototype content
+- database-backed local content
+- general-purpose game engine extraction

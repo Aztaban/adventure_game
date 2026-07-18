@@ -243,10 +243,10 @@ Reasons:
 
 - There are not enough scenes yet to justify full-scene JSON.
 - The full-scene schema would include coordinates, entity types, item-use rules, flags, exits, and conditions.
-- Dialogue choices are planned for v0.12, so the dialogue schema is not stable yet.
+- Dialogue choices are planned for v0.13, so the dialogue schema is not stable yet.
 - Python factories currently give clearer errors and simpler refactoring than a premature scene loader.
 
-Re-evaluate after v0.12, once dialogue choices have a real shape.
+Re-evaluate after v0.13, once dialogue choices have a real shape.
 
 ## Scene/session layer
 
@@ -519,7 +519,7 @@ Current order:
 
 1. Items and recipes are JSON.
 2. Scenes and dialogue stay in Python.
-3. Dialogue format is revisited after v0.12 dialogue choices.
+3. Dialogue format is revisited after v0.13 dialogue choices.
 4. Full scene JSON waits until a one-scene pilot proves the schema is simpler than Python.
 
 Never evaluate arbitrary code or expression strings from content files.
