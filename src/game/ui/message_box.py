@@ -21,11 +21,7 @@ class MessageBox:
 
     def draw(self, surface: pygame.Surface, text: str) -> None:
         """Draw a wrapped interaction message."""
-        available_width = (
-            surface.get_width()
-            - self.HORIZONTAL_MARGIN * 2
-            - self.HORIZONTAL_PADDING * 2
-        )
+        available_width = surface.get_width() - self.HORIZONTAL_MARGIN * 2 - self.HORIZONTAL_PADDING * 2
         maximum_text_width = min(
             self.MAXIMUM_WIDTH - self.HORIZONTAL_PADDING * 2,
             available_width,
@@ -35,10 +31,7 @@ class MessageBox:
         line_height = self.font.get_linesize()
 
         text_width = max(self.font.size(line)[0] for line in lines)
-        text_height = (
-            len(lines) * line_height
-            + max(0, len(lines) - 1) * self.LINE_SPACING
-        )
+        text_height = len(lines) * line_height + max(0, len(lines) - 1) * self.LINE_SPACING
 
         panel_width = text_width + self.HORIZONTAL_PADDING * 2
         panel_height = text_height + self.VERTICAL_PADDING * 2

@@ -36,10 +36,7 @@ def combine_inventory_items(
     recipe = recipe_book.find(first_item_id, second_item_id)
 
     if recipe is None:
-        return ItemCombinationResult(
-            success=False,
-            message=f"{first_item.name} and {second_item.name} do not combine."
-        )
+        return ItemCombinationResult(success=False, message=f"{first_item.name} and {second_item.name} do not combine.")
 
     result_item = recipe.result_item
 

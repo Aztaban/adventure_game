@@ -73,9 +73,7 @@ def test_completed_interaction_returns_completed_dialogue() -> None:
         completed_dialogue_lines=("Completed dialogue.",),
     )
 
-    assert dialogue_for(npc, completed_interaction_id="interaction.test") == (
-        "Completed dialogue.",
-    )
+    assert dialogue_for(npc, completed_interaction_id="interaction.test") == ("Completed dialogue.",)
 
 
 def test_active_matching_flag_returns_flagged_dialogue() -> None:
@@ -84,9 +82,7 @@ def test_active_matching_flag_returns_flagged_dialogue() -> None:
         flagged_dialogue_lines=("Flagged dialogue.",),
     )
 
-    assert dialogue_for(npc, active_flag="world_changed") == (
-        "Flagged dialogue.",
-    )
+    assert dialogue_for(npc, active_flag="world_changed") == ("Flagged dialogue.",)
 
 
 def test_inactive_flag_falls_back_to_completed_dialogue() -> None:
@@ -97,9 +93,7 @@ def test_inactive_flag_falls_back_to_completed_dialogue() -> None:
         flagged_dialogue_lines=("Flagged dialogue.",),
     )
 
-    assert dialogue_for(npc, completed_interaction_id="interaction.test") == (
-        "Completed dialogue.",
-    )
+    assert dialogue_for(npc, completed_interaction_id="interaction.test") == ("Completed dialogue.",)
 
 
 def test_dialogue_priority_is_flag_then_completed_then_default() -> None:
@@ -111,9 +105,7 @@ def test_dialogue_priority_is_flag_then_completed_then_default() -> None:
     )
 
     assert dialogue_for(npc) == ("Default dialogue.",)
-    assert dialogue_for(npc, completed_interaction_id="interaction.test") == (
-        "Completed dialogue.",
-    )
+    assert dialogue_for(npc, completed_interaction_id="interaction.test") == ("Completed dialogue.",)
     assert dialogue_for(
         npc,
         active_flag="world_changed",

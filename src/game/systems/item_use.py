@@ -37,8 +37,7 @@ class ItemUseInteraction:
 
         if has_interaction_id == has_completion_flag:
             raise ValueError(
-                "Item-use interaction requires exactly one completion "
-                "identifier: interaction_id or completion_flag."
+                "Item-use interaction requires exactly one completion identifier: interaction_id or completion_flag."
             )
 
         if self.completion_flag is not None and self.completion_flag not in self.flags_to_set:

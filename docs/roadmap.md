@@ -1,6 +1,6 @@
 # Roadmap
 
-Status: current after R091-06 content-format decision
+Status: current after the v0.9.1 foundation release
 
 ## Development principle
 
@@ -192,7 +192,7 @@ Delivered features:
 - `TOWER_UNLOCKED` remains the semantic world fact after key use
 - full demo-flow integration test protects the route
 
-## Current refactor sequence: v0.9.1 — Post-demo foundation
+## Milestone v0.9.1 — Post-demo foundation
 
 Goal:
 
@@ -200,66 +200,21 @@ Goal:
 Clean up architecture after the complete demo proves the gameplay shape.
 ```
 
-### R091-01 — New-game/reset lifecycle
+Delivered:
 
-Goal:
+- deterministic `N = New Game` behavior through fresh `GameSession` construction
+- reusable `GameContent` separated from current-session `GameState`
+- explicit session scene ownership and documented scene-lifecycle behavior
+- serialization-ready plain-data snapshots with version and stable-ID validation
+- JSON-backed item and recipe definitions converted into typed domain objects
+- documented decision to keep scenes and dialogue in Python through v0.12
+- shared cached fonts and future asset lookup boundaries in `UIResources`
+- clearer unit, integration, and Pygame-adapter test responsibilities
+- one authoritative construction path: `create_demo_content()` → `create_game_session()` → `GameContent.build_scenes()`
+- removal of obsolete demo-only construction wrappers and stale temporary documentation
+- full Ruff and pytest verification protecting the existing v0.9 gameplay flow
 
-```txt
-A fresh game is deterministic without restarting Python.
-```
-
-Delivered/expected scope:
-
-- `N = New Game`
-- fresh `GameState`
-- reset inventory and selected item
-- reset flags, collected pickups, completed interactions, and ending state
-- restore starting scene
-- clear messages, dialogue, hover, and presentation state by creating a new session
-- prefer constructing a new session over manual scattered clearing
-
-### R091-02 — Separate `GameContent` from session state
-
-Goal:
-
-```txt
-Every important object is clearly reusable content or current-session state.
-```
-
-Delivered/expected scope:
-
-- `GameContent` owns reusable item/recipe/scene-builder content
-- `GameSession` owns one fresh run
-- sessions share content without sharing state
-- static rules do not live in `GameState`
-- scenes are built from content plus session state
-
-### R091-03 — Optional cleanup checkpoint
-
-Goal:
-
-```txt
-Keep the refactor branch small and understandable before snapshot work.
-```
-
-Suggested scope if needed:
-
-- rename unclear helpers introduced by R091-01/R091-02
-- update tests that still construct content/session awkwardly
-- remove compatibility helpers that are no longer used
-- no new gameplay behavior
-
-Skip this checkpoint if the code remains clean.
-
-### R091-04 — Serialization-ready state snapshots
-
-Goal:
-
-```txt
-Runtime state round-trips through plain Python data with stable IDs.
-```
-
-Delivered/expected snapshot fields:
+Snapshot fields:
 
 ```txt
 save_version
@@ -272,62 +227,18 @@ completed_interaction_ids
 ending_reached
 ```
 
-Scope:
-
-- export snapshot operation
-- restore session from snapshot operation
-- validate referenced IDs against `GameContent`
-- exclude Pygame objects and content definitions
-- no save menu or final file format yet
-- never use `pickle`
-
-### R091-05 — Pilot JSON for items and recipes
-
-Goal:
+Content-format decision:
 
 ```txt
-Move only simple stable content to JSON while keeping gameplay code typed.
+Items:     JSON
+Recipes:   JSON
+Scenes:    Python factories
+Dialogue:  Python factories
 ```
 
-Scope:
+Revisit dialogue JSON after v0.12 dialogue choices. Consider full-scene data only after a larger-scene pilot proves that its schema is clearer than Python factories.
 
-- `items.json`
-- `recipes.json`
-- JSON loaders with useful errors
-- duplicate and reference validation
-- typed `Item`, `Recipe`, and `RecipeBook` output
-- gameplay code does not use raw dictionaries
-- Python constants remain acceptable stable references for Python scene factories
-
-Not in scope:
-
-- scene JSON
-- dialogue JSON
-- NPC/hotspot/exit JSON
-- content editor
-- modding system
-
-### R091-06 — Decide scene/dialogue content format
-
-Decision:
-
-```txt
-Keep scenes and dialogue in Python for now.
-```
-
-Why:
-
-- there are not enough scenes yet to justify full-scene JSON
-- scene schema includes coordinates, entity types, flags, interactions, and exits
-- dialogue choices are planned for v0.12, so dialogue schema is not stable yet
-- Python factories currently give clearer errors and faster iteration
-
-Revisit:
-
-- dialogue JSON after v0.12 dialogue choices exist
-- full scene JSON only after one-scene data pilot proves the schema is simpler than Python
-
-## Milestone v0.10 — Polish and presentation pass
+## Next planned milestone: v0.10 — Polish and presentation pass
 
 Goal:
 

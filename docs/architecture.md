@@ -1,6 +1,6 @@
 # Architecture
 
-Status: current after R091-06 content-format decision
+Status: current after the v0.9.1 foundation release
 
 ## Goal
 
@@ -254,6 +254,22 @@ Responsibilities:
 - remember the current scene ID
 - route events, updates, and drawing to the active scene
 - perform scene transitions requested by scene results
+
+## Current scene lifecycle policy
+
+Session scenes are created once when a `GameSession` is built and remain owned by that session.
+
+Current transition behavior is intentionally small:
+
+- `SceneManager` changes only the active scene ID.
+- Persistent world facts remain in `GameState` and are never reset by a scene transition.
+- Interaction messages remain local to the scene that produced them and are still present when that same scene is revisited.
+- Dialogue input is modal, so an active dialogue cannot trigger an exit transition underneath it.
+- Hover state is resolved from the current mouse position during drawing and is not stored across transitions.
+- Creating a new session clears all scene-local presentation state because it creates fresh scene instances.
+- Restoring a snapshot creates fresh scene instances and restores persistent state only; transient messages and open dialogue are not serialized.
+
+No `on_enter()` or `on_exit()` hooks are needed for the current behavior. Add them only when a real feature such as timers, animation, audio, or loading transitions requires them.
 
 ### `game/scenes/base_scene.py`
 

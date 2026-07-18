@@ -1,6 +1,6 @@
 # Content Plan
 
-Status: current after v0.9 implementation
+Status: current after the v0.9.1 foundation release
 
 ## Purpose
 

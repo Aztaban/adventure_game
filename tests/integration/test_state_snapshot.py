@@ -59,9 +59,7 @@ def current_adventure_scene(session: GameSession) -> AdventureScene:
 
 def find_pickup(scene: AdventureScene, item_id: str) -> ItemHotspot:
     """Find a pickup by item ID."""
-    return next(
-        pickup for pickup in scene.item_hotspots if pickup.item.item_id == item_id
-    )
+    return next(pickup for pickup in scene.item_hotspots if pickup.item.item_id == item_id)
 
 
 def find_hotspot(scene: AdventureScene, label: str) -> Hotspot:
@@ -71,11 +69,7 @@ def find_hotspot(scene: AdventureScene, label: str) -> Hotspot:
 
 def find_exit(scene: AdventureScene, target_scene_id: str) -> ExitHotspot:
     """Find an exit by its target scene ID."""
-    return next(
-        exit_hotspot
-        for exit_hotspot in scene.exits
-        if exit_hotspot.target_scene_id == target_scene_id
-    )
+    return next(exit_hotspot for exit_hotspot in scene.exits if exit_hotspot.target_scene_id == target_scene_id)
 
 
 def find_npc(scene: AdventureScene, name: str) -> NPC:
@@ -90,9 +84,7 @@ def inventory_item_position(
     """Return the clickable inventory position for an item ID."""
     return next(
         row_rect.center
-        for item, row_rect in scene.inventory_bar.layout_for_items(
-            scene.game_state.inventory.items
-        ).item_rows
+        for item, row_rect in scene.inventory_bar.layout_for_items(scene.game_state.inventory.items).item_rows
         if item.item_id == item_id
     )
 

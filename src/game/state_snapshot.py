@@ -115,10 +115,7 @@ def _validate_snapshot(
     save_version = snapshot.get("save_version")
 
     if save_version != SAVE_DATA_VERSION:
-        errors.append(
-            f"Unsupported save version '{save_version}'. "
-            f"Expected '{SAVE_DATA_VERSION}'."
-        )
+        errors.append(f"Unsupported save version '{save_version}'. Expected '{SAVE_DATA_VERSION}'.")
 
     current_scene_id = _require_string(snapshot, "current_scene_id", errors)
     inventory_item_ids = _require_string_list(
@@ -184,10 +181,7 @@ def _validate_snapshot(
         )
 
         if selected_item_id not in inventory_item_ids:
-            errors.append(
-                f"Selected item ID '{selected_item_id}' is not present "
-                "in inventory_item_ids."
-            )
+            errors.append(f"Selected item ID '{selected_item_id}' is not present in inventory_item_ids.")
 
     _validate_no_duplicates(
         values=inventory_item_ids,
@@ -212,9 +206,7 @@ def _validate_snapshot(
 
     if errors:
         formatted_errors = "\n- ".join(errors)
-        raise SnapshotValidationError(
-            f"State snapshot validation failed:\n- {formatted_errors}"
-        )
+        raise SnapshotValidationError(f"State snapshot validation failed:\n- {formatted_errors}")
 
     return GameSnapshot(
         save_version=SAVE_DATA_VERSION,

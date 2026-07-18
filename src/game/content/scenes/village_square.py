@@ -65,10 +65,7 @@ def create_village_square(
                 inspect_text="The well whispers something about unpaid rent.",
                 item_use=ItemUseInteraction(
                     required_item_id=EMPTY_CUP,
-                    success_text=(
-                        "You lower the Empty Cup into the well. "
-                        "It comes back as a Cup of Water."
-                    ),
+                    success_text=("You lower the Empty Cup into the well. It comes back as a Cup of Water."),
                     failure_text="The well refuses that item with unnecessary confidence.",
                     completed_text="The well has already filled your cup once today.",
                     consume_item=True,
@@ -98,13 +95,9 @@ def create_village_square(
                 item_use=ItemUseInteraction(
                     required_item_id=GLOWING_TEA,
                     success_text=(
-                        "The witch drinks the Glowing Tea and smiles. "
-                        "She gives you a Rusty Key for the tower gate."
+                        "The witch drinks the Glowing Tea and smiles. She gives you a Rusty Key for the tower gate."
                     ),
-                    failure_text=(
-                        "The witch examines the item and hands it back. "
-                        "That is definitely not Glowing Tea."
-                    ),
+                    failure_text=("The witch examines the item and hands it back. That is definitely not Glowing Tea."),
                     completed_text="The witch has already finished the tea and given you the key.",
                     consume_item=True,
                     flags_to_set=(WITCH_RECEIVED_TEA,),

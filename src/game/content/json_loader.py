@@ -19,10 +19,7 @@ def load_json_file(path: Path | str) -> Any:
     except FileNotFoundError as error:
         raise ContentLoadError(f"{source_path}: file not found.") from error
     except json.JSONDecodeError as error:
-        raise ContentLoadError(
-            f"{source_path}: invalid JSON at line "
-            f"{error.lineno}, column {error.colno}."
-        ) from error
+        raise ContentLoadError(f"{source_path}: invalid JSON at line {error.lineno}, column {error.colno}.") from error
 
 
 def require_string(
@@ -34,8 +31,6 @@ def require_string(
     value = entry.get(field_name)
 
     if not isinstance(value, str) or value == "":
-        raise ContentLoadError(
-            f"{context}: field '{field_name}' must be a non-empty string."
-        )
+        raise ContentLoadError(f"{context}: field '{field_name}' must be a non-empty string.")
 
     return value

@@ -146,10 +146,7 @@ class AdventureInteractionService:
         exit_hotspot: ExitHotspot,
     ) -> AdventureInteractionOutcome:
         """Use an exit, unlock it with an item, or return its locked message."""
-        if (
-            self.game_state.inventory.selected_item is not None
-            and exit_hotspot.item_use is not None
-        ):
+        if self.game_state.inventory.selected_item is not None and exit_hotspot.item_use is not None:
             return self.use_selected_item(exit_hotspot.item_use)
 
         required_flag = exit_hotspot.required_flag
@@ -203,10 +200,7 @@ class AdventureInteractionService:
                 message=result.message,
             )
 
-        if (
-            result.result_item is not None
-            and inventory.contains(result.result_item.item_id)
-        ):
+        if result.result_item is not None and inventory.contains(result.result_item.item_id):
             inventory.clear_selection()
 
             return AdventureInteractionOutcome(

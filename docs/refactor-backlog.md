@@ -1,26 +1,27 @@
 # Refactor Backlog
 
 Project: Adventure Game  
-Current baseline: v0.9.1 released  
-Next feature milestone: v0.10
+Current baseline: v0.9.1  
+Completed refactor releases: v0.8.1 and v0.9.1  
+Next planned milestone: v0.10 polish and presentation
 
 ## Purpose
 
-This backlog contains only unfinished or future refactor work.
+This backlog converts the v0.8 architecture review into small, test-first steps.
 
-Completed v0.8.1 tasks and completed v0.9.1 tasks have been removed. Historical implementation details remain available in the changelog and Git history.
+The v0.8.1 refactor must preserve the current gameplay flow. The larger content, lifecycle, and save-readiness refactor should happen only after the complete v0.9 demo is working.
 
 ## Working rules
 
-- Add refactors only when a completed feature creates concrete pressure.
-- Prefer one focused branch and one focused commit per backlog item.
-- Protect behavior with tests before changing ownership or architecture.
+- Complete tasks in order unless a task says otherwise.
+- Add tests before changing protected behavior.
+- Keep each task small enough for one focused review and usually one commit.
 - Run `make check` after every task.
-- Manually test behavior-affecting changes.
-- Keep gameplay logic independent from Pygame resources.
-- Keep content definitions separate from session state.
-- Do not introduce generic frameworks without a demonstrated need.
-- Remove compatibility paths once all callers use the supported path.
+- Manually test every behavior-affecting task.
+- Do not add new v0.9 content during v0.8.1.
+- Do not introduce JSON loaders during v0.8.1.
+- Do not add dependencies or build a generic engine.
+- Keep the names `InventoryBar` and `inventory_bar.py`.
 
 ## Status legend
 
@@ -34,494 +35,1102 @@ Completed v0.8.1 tasks and completed v0.9.1 tasks have been removed. Historical 
 
 ---
 
-# Current architecture baseline
+# Part I — v0.8.1 focused refactor
 
-The following decisions are already implemented and are no longer backlog items:
+## Goals
+
+- Protect the complete v0.8 gameplay flow with tests.
+- Fix confirmed interaction defects.
+- Centralize persistent runtime state.
+- Separate mutable state from content definitions.
+- Move gameplay transactions out of `AdventureScene`.
+- Use one target-resolution path for clicking and hovering.
+- Remove small, proven UI duplication.
+- Align the documentation with the resulting architecture.
+
+## Out of scope
+
+- New v0.9 story content or ending screen
+- Save/load
+- JSON content loading
+- Quest engine, event bus, or entity-component system
+- Generic renderer or UI framework
+- Real assets, responsive UI, or inventory scrolling
+
+## Planned order
+
+| Order | ID | Task |
+|---:|---|---|
+| 1 | R081-00 | Freeze the v0.8 baseline |
+| 2 | R081-01 | Fix hotspot inspection fallback |
+| 3 | R081-02 | Add behavior and integration coverage |
+| 4 | R081-03 | Add Python content validation |
+| 5 | R081-04 | Centralize persistent world state |
+| 6 | R081-05 | Make item-use definitions stateless |
+| 7 | R081-06 | Extract recipe execution |
+| 8 | R081-07 | Extract world interaction handling |
+| 9 | R081-08 | Unify target resolution |
+| 10 | R081-09 | Deduplicate UI helpers |
+| 11 | R081-10 | Update documentation and scaffolding |
+| 12 | R081-11 | Verify and release v0.8.1 |
+
+---
+
+## R081-00 — Freeze the v0.8 baseline
+
+### Tasks
+
+- [x] Confirm the version is `0.8.0`.
+- [x] Run:
+
+```bash
+make check
+```
+
+- [x] Manually complete the current v0.7/v0.8 flow.
+- [x] Confirm item collection, combining, witch interaction, tower unlock, and demo-completion flag.
+- [x] Record any existing odd behavior before refactoring it.
+
+### Done when
+
+- Automated tests pass.
+- The current flow works manually.
+- Existing behavior is known before architecture changes begin.
+
+---
+
+## R081-01 — Fix hotspot inspection fallback
+
+### Problem
+
+`Hotspot.inspect_text_for()` can return `flagged_inspect_text`, including `None`, when the relevant flag is inactive. It should fall back to normal or completed inspection text.
+
+### Tests first
+
+- [ ] Default hotspot returns `inspect_text`.
+- [ ] Completed interaction returns `completed_text`.
+- [ ] Active matching flag returns `flagged_inspect_text`.
+- [ ] Inactive flag falls back correctly.
+- [ ] Priority is tested:
+
+```text
+matching flag text > completed text > default text
+```
+
+### Work
+
+- [ ] Correct `Hotspot.inspect_text_for()`.
+- [ ] Reuse `current_inspect_text` if it still expresses the intended fallback.
+- [ ] Avoid unrelated entity changes.
+
+### Manual check
+
+Inspect the notice board, old well, stump, and pedestal before their flags are active. Each must display meaningful text.
+
+### Done when
+
+- No inspection path returns `None`.
+- The new regression tests pass.
+- `make check` passes.
+
+---
+
+## R081-02 — Add behavior and integration coverage
+
+### A. Complete demo-flow test
+
+Use the real demo content rather than recreating it in the test.
+
+- [ ] Start in the expected scene.
+- [ ] Collect Empty Cup.
+- [ ] Move to Forest Path.
+- [ ] Confirm the tower is locked.
+- [ ] Collect Moon Herb.
+- [ ] Combine Empty Cup and Moon Herb.
+- [ ] Confirm ingredients are removed and Glowing Tea is added.
+- [ ] Return to the witch and give her the tea.
+- [ ] Confirm the tea is consumed.
+- [ ] Confirm `WITCH_RECEIVED_TEA` and `TOWER_UNLOCKED`.
+- [ ] Enter the tower.
+- [ ] Confirm the transition and `DEMO_COMPLETED`.
+
+### B. Collection behavior
+
+- [ ] Pickup adds an item.
+- [ ] A pickup cannot be collected repeatedly.
+- [ ] Collected state survives leaving and returning.
+- [ ] Duplicate-item behavior is explicitly tested.
+
+### C. Item-use behavior
+
+- [ ] Correct and incorrect item on an NPC.
+- [ ] Correct and incorrect item on a hotspot.
+- [ ] Success consumes the item only when configured.
+- [ ] Failure never consumes it.
+- [ ] Completed interactions return completed text/dialogue.
+- [ ] A target without item-use rules returns the generic response.
+- [ ] Selected-item behavior after success and failure is explicit.
+
+### D. Exit and input behavior
+
+- [ ] Locked exit does not transition or set completion flags.
+- [ ] Unlocked exit transitions and sets configured flags.
+- [ ] Active dialogue consumes advance input.
+- [ ] Advancing dialogue does not also trigger the object beneath the cursor.
+- [ ] Inventory clicks take precedence over world targets.
+
+### E. Recipe transaction behavior
+
+- [ ] Invalid pair leaves inventory unchanged.
+- [ ] Valid pair mutates inventory atomically.
+- [ ] Existing-result-item behavior is explicit.
+- [ ] Selection state after valid and invalid combinations is tested.
+
+### Suggested organization
+
+```text
+tests/
+├── integration/
+│   └── test_demo_flow.py
+└── ...existing focused tests
+```
+
+Add shared factories only when they remove meaningful duplication without hiding the gameplay story.
+
+### Done when
+
+- Important v0.8 behavior is protected before extraction begins.
+- Tests assert public outcomes and state rather than private helpers.
+- `make check` passes.
+
+---
+
+## R081-03 — Add Python content validation
+
+### Goal
+
+Detect broken content references during startup or tests.
+
+### Current issue
+
+The Suspicious Stump requires `missing_stump_item`, which does not exist. Its success branch is unreachable.
+
+### Validation rules
+
+- [ ] Starting scene exists.
+- [ ] Scene IDs are unique.
+- [ ] Every exit target exists.
+- [ ] Item IDs are unique.
+- [ ] Pickups reference known items.
+- [ ] Recipe ingredients and results reference known items.
+- [ ] Item-use requirements reference known items.
+- [ ] Stable pickup/interaction IDs are unique once introduced.
+
+### Work
+
+- [ ] Add a small validator, for example `game/content/validation.py`.
+- [ ] Validate the existing Python-created content objects.
+- [ ] Produce useful errors naming the invalid ID and its owner.
+- [ ] Remove the stump’s unreachable item-use rule unless an existing v0.8 item genuinely solves it.
+- [ ] Do not add a new story item merely to satisfy validation.
+
+### Tests
+
+- [ ] Valid demo content passes.
+- [ ] Unknown exit target fails clearly.
+- [ ] Unknown recipe item fails clearly.
+- [ ] Unknown required item fails clearly.
+- [ ] Duplicate stable ID fails clearly.
+
+### Done when
+
+- Shipped demo content passes validation.
+- Invalid references fail early and clearly.
+- No JSON schema or loader has been introduced.
+- `make check` passes.
+
+---
+
+## R081-04 — Centralize persistent world state
+
+### Goal
+
+Make `GameState` the authoritative owner of facts that must survive scene changes or scene reconstruction.
+
+### Persistent state
+
+- [ ] Inventory and selection
+- [ ] Progression flags
+- [ ] Collected pickup IDs
+- [ ] Completed interaction IDs when no semantic flag already represents completion
+
+### Transient state stays outside `GameState`
+
+- Hover target
+- Current message
+- Open dialogue page/index
+- Pygame fonts, surfaces, and layout rectangles
+
+### Stable pickup IDs
+
+- [ ] Add `pickup_id` to `ItemHotspot` definitions.
+- [ ] Do not use list position or coordinates as identity.
+- [ ] Do not assume `item_id` is globally unique in the world.
+- [ ] Record collected pickup IDs in `GameState`.
+- [ ] Hide/ignore collected pickups through state rather than relying only on removing them from a scene list.
+
+## R081-04 — Centralize persistent world state
+
+```python
+has_collected_pickup(pickup_id)
+collect_pickup(pickup_id)
+has_completed_interaction(interaction_id)
+complete_interaction(interaction_id)
+```
+
+### Tests
+
+- [ ] New state contains no collected pickups or completed interactions.
+- [ ] Repeated collection is idempotent.
+- [ ] A recreated scene still hides an already-collected pickup.
+- [ ] Completion survives scene transitions/reconstruction.
+
+### Done when
+
+- Persistence no longer depends on retaining one exact mutable scene instance.
+- A newly constructed scene can reproduce world state from `GameState`.
+- Save/load is not implemented yet.
+- `make check` passes.
+
+---
+
+## R081-05 — Make item-use definitions stateless
+
+### Goal
+
+Separate interaction rules from runtime completion.
+
+### Work
+
+- [ ] Give one-time interactions a stable `interaction_id` where needed.
+- [ ] Remove mutable `is_completed` from `ItemUseInteraction`.
+- [ ] Read and write completion through `GameState`.
+- [ ] Continue using semantic flags such as `WITCH_RECEIVED_TEA` and `TOWER_UNLOCKED` when other content depends on them.
+- [ ] Avoid representing the same fact twice without a reason.
+
+### Completion rule
+
+```text
+semantic world fact used elsewhere -> progression flag
+local one-time completion only      -> completed interaction ID
+```
+
+### Conditional content priority
+
+Use and test the same priority for NPCs and hotspots:
+
+```text
+matching progression flag > completed interaction > default content
+```
+
+### Tests
+
+- [ ] Recreating a definition does not reset completion.
+- [ ] Successful use records completion once.
+- [ ] Default/completed/flagged NPC dialogue priority is tested.
+- [ ] Default/completed/flagged hotspot text priority is tested.
+
+### Done when
+
+- Content definitions no longer contain hidden mutable completion state.
+- Completion is reproducible from shared state.
+- `make check` passes.
+
+---
+
+## R081-06 — Extract recipe execution
+
+### Goal
+
+Move inventory-combination rules and mutation out of `AdventureScene`.
+
+### Keep unchanged
+
+- Recipes combine exactly two distinct ingredients.
+- Ingredient order does not matter.
+- No crafting screen or general crafting engine is added.
+
+### Work
+
+- [ ] Create a small combination operation owned by the gameplay interaction layer.
+- [ ] Receive two selected item IDs.
+- [ ] Look up the recipe.
+- [ ] Validate the complete transaction before mutation.
+- [ ] Remove both ingredients and add the result atomically.
+- [ ] Return a small structured result such as success/message/result.
+- [ ] Move `RecipeBook` out of `GameState`; recipes are static rules, not player state.
+- [ ] Inject the recipe book into the operation/service.
+
+### Tests
+
+- [ ] Valid recipe succeeds.
+- [ ] Invalid recipe leaves inventory unchanged.
+- [ ] Missing ingredient cannot cause partial mutation.
+- [ ] Existing result-item policy is tested.
+- [ ] The operation can be tested without rendering.
+
+### Done when
+
+- `AdventureScene` no longer removes ingredients or adds recipe results directly.
+- `GameState` no longer owns static recipe definitions.
+- `make check` passes.
+
+---
+
+## R081-07 — Extract world interaction handling
+
+### Goal
+
+Make `AdventureScene` a Pygame adapter and presentation coordinator instead of the owner of gameplay transactions.
+
+### Introduce one focused service
+
+A suitable name is:
+
+```text
+AdventureInteractionService
+```
+
+Do not create a separate class for every click type.
+
+### Service responsibilities
+
+- [ ] Inventory selection/deselection rules
+- [ ] Item combination through the extracted operation
+- [ ] Item collection
+- [ ] Hotspot inspection
+- [ ] NPC dialogue outcomes
+- [ ] Using the selected item on NPCs/hotspots
+- [ ] Item consumption
+- [ ] Completion and flag updates
+- [ ] Locked/unlocked exit evaluation
+- [ ] Returning requested target scene IDs
+
+### `AdventureScene` responsibilities afterward
+
+- Receive Pygame events.
+- Convert them to high-level actions.
+- Resolve the clicked inventory/world target.
+- Call the interaction service.
+- Apply returned message/dialogue/transition information.
+- Own transient presentation state.
+- Draw the scene and UI.
+
+### Structured outcome
+
+Use one small result object with only currently needed fields, for example:
+
+```text
+consumed
+message
+speaker_name
+dialogue_lines
+target_scene_id
+```
+
+The service must not draw, import UI widgets, create fonts, or change `SceneManager` directly.
+
+### Tests
+
+- [ ] Service behavior covers pickup, inspect, item use, NPC dialogue, and exits.
+- [ ] State mutation and returned presentation outcome agree.
+- [ ] Full demo-flow integration test still passes.
+- [ ] Scene tests focus on event priority and applying outcomes.
+
+### Done when
+
+- Gameplay behavior can mostly be tested without a rendered scene.
+- `AdventureScene` no longer implements inventory transactions, item-use rules, or flag application directly.
+- No event bus or command hierarchy was added.
+- `make check` passes.
+
+---
+
+## R081-08 — Unify target resolution
+
+### Goal
+
+Make clicking and hovering use one world-target order.
+
+### World priority
+
+```text
+NPC > exit > item pickup > hotspot
+```
+
+Inventory remains a separate UI-first check:
+
+```text
+inventory UI > world target
+```
+
+### Work
+
+- [ ] Replace repeated `_find_*` collision loops with one resolver.
+- [ ] Return a small tagged target containing kind and entity.
+- [ ] Use the resolver for clicks.
+- [ ] Use the resolver for hover text/rendering.
+- [ ] Include exits in hover behavior.
+- [ ] Ignore collected pickups through `GameState`.
+- [ ] Keep priority in one obvious place.
+
+### Tests
+
+- [ ] Every target kind resolves correctly.
+- [ ] Empty space returns no target.
+- [ ] Overlapping targets follow documented priority.
+- [ ] Collected pickups do not resolve.
+- [ ] Click and hover resolve the same target at one position.
+- [ ] Inventory still wins over overlapping world targets.
+
+### Done when
+
+- Click and hover cannot disagree about a world target.
+- Exit hover feedback exists.
+- Repeated target-search helpers are removed.
+- `make check` passes.
+
+---
+
+## R081-09 — Deduplicate UI helpers
+
+### A. Shared text wrapping
+
+- [ ] Extract the duplicated `DialogueBox`/`MessageBox` wrapping algorithm into one pure helper.
+- [ ] Keep rendering, borders, padding, and box-specific behavior in each widget.
+- [ ] Test short text, wrapped text, and one long word according to the chosen policy.
+
+Possible placement:
+
+```text
+src/game/ui/text.py
+```
+
+### B. Shared `InventoryBar` layout result
+
+- [ ] Calculate panel rectangle and item rows together.
+- [ ] Use the same layout result for drawing and hit testing.
+- [ ] Keep the current fixed-window design.
+- [ ] Test visible rows, gaps, padding, empty inventory, and planned maximum inventory size.
+
+### Do not add
+
+- Generic layout engine
+- Widget inheritance framework
+- Responsive resizing
+- Scrolling or icon grid
+
+### Manual check
+
+- Long dialogue and messages still wrap readably.
+- Clicking each visible inventory row selects the matching item.
+
+### Done when
+
+- Text wrapping has one implementation.
+- `InventoryBar` drawing and hit testing share one geometry source.
+- `make check` passes.
+
+---
+
+## R081-10 — Update documentation and scaffolding
+
+### `docs/architecture.md`
+
+- [ ] Document `GameState` as persistent runtime state owner.
+- [ ] Separate static content/rules from runtime state.
+- [ ] Document the interaction service and target resolver.
+- [ ] Document transient scene/UI state.
+- [ ] Remove outdated planned modules or names.
+
+### `docs/testing-plan.md`
+
+- [ ] Replace placeholder-era text with current unit/integration/manual boundaries.
+- [ ] Document the full demo-flow test.
+- [ ] Add the v0.8.1 regression checklist.
+
+### `docs/roadmap.md`
+
+- [ ] Replace `Milestone v0.8 - refactor` with v0.8.1.
+- [ ] Keep v0.9 focused on the complete demo.
+- [ ] Add v0.9.1 as the post-demo refactor milestone.
+- [ ] Do not claim JSON was implemented in v0.8.1.
+
+### Resolve content-plan drift
+
+Choose and document one v0.9 flow:
+
+```text
+witch gets tea -> gives rusty key -> key unlocks tower
+```
+
+or:
+
+```text
+witch gets tea -> tower unlocks directly
+```
+
+Update `content-plan.md`, `mvp.md`, and related roadmap text consistently. Do not implement new v0.9 content in this documentation task.
+
+### Review misleading scaffolding
+
+```text
+src/data/item.json
+src/data/recipes.json
+src/data/dialogue/.gitkeep
+src/data/scenes/.gitkeep
+src/game/systems/quests.py
+```
+
+- [ ] Remove empty JSON files or clearly document that loading is deferred.
+- [ ] Resolve `item.json` versus documented `items.json`.
+- [ ] Remove empty `quests.py` if it has no current responsibility.
+- [ ] Do not add placeholder classes merely to keep empty files.
+
+### Done when
+
+- Documentation matches v0.8.1 code.
+- The intended v0.9 puzzle flow is unambiguous.
+- Empty scaffolding does not imply implemented functionality.
+- `make check` passes.
+
+---
+
+## R081-11 — Verify and release v0.8.1
+
+### Automated checks
+
+```bash
+make format
+make check
+```
+
+- [ ] Tests do not depend on execution order.
+- [ ] Full-flow test uses shipped content.
+- [ ] Content validation passes.
+
+### Manual regression
+
+- [ ] Inspect all base hotspots before flags change.
+- [ ] Collect Empty Cup and confirm it stays collected after travel.
+- [ ] Collect Moon Herb.
+- [ ] Try an invalid combination.
+- [ ] Create Glowing Tea.
+- [ ] Try the tea on an unrelated target.
+- [ ] Give the tea to the witch.
+- [ ] Confirm completed dialogue and tower unlock.
+- [ ] Confirm exit hover feedback.
+- [ ] Enter the tower and confirm demo completion.
+- [ ] Confirm messages/dialogue remain readable.
+
+### Architecture check
+
+- [ ] `AdventureScene` coordinates input, presentation, and rendering.
+- [ ] Interaction service owns gameplay transactions.
+- [ ] `GameState` owns persistent runtime state.
+- [ ] Static recipes/content are outside `GameState`.
+- [ ] Content definitions carry no mutable completion state.
+- [ ] Click and hover share one target resolver.
+- [ ] No JSON loader or unnecessary framework was introduced.
+
+### Release
+
+- [ ] Update `CHANGELOG.md`.
+- [ ] Bump version from `0.8.0` to `0.8.1`.
+- [ ] Tag/publish only after all checks pass.
+
+### Definition of done
+
+```text
+The complete v0.8 flow behaves the same or better,
+persistent state has one clear owner,
+AdventureScene no longer owns gameplay transactions,
+important behavior is protected by tests,
+and JSON remains intentionally deferred.
+```
+
+---
+
+# Part II — v0.9 implementation gate
+
+Do not begin the post-v0.9 refactor until all of these are true:
+
+- [ ] The complete three-scene demo is finalized.
+- [ ] Intended NPC and four-item flow are implemented.
+- [ ] One item-combination puzzle and one obstacle work.
+- [ ] Rusty-key versus direct-unlock design is resolved.
+- [ ] A clear ending screen/state exists.
+- [ ] A fresh game can be completed from start to ending.
+- [ ] Automated full-flow tests pass.
+- [ ] Manual start-to-ending test passes.
+
+During v0.9, add content through the v0.8.1 boundaries. Defer optional generalization until the content model stops moving.
+
+---
+
+# Part III — v0.9.1 post-demo refactor
+
+Status: implementation and verification complete; repository commit/tag operations remain external to this archive.
+
+## Goals
+
+- Guarantee a deterministic new-game/reset flow.
+- Fully separate reusable content from one running game session.
+- Prepare persistent state for save/load.
+- Make an evidence-based JSON decision.
+- Prepare rendering resources for the v0.10 polish pass.
+
+## Planned order
+
+| Order | ID | Task |
+|---:|---|---|
+| 1 | R091-00 | Freeze the complete v0.9 demo |
+| 2 | R091-01 | Add new-game/reset lifecycle |
+| 3 | R091-02 | Separate `GameContent` from session state |
+| 4 | R091-03 | Define scene lifecycle behavior |
+| 5 | R091-04 | Add serialization-ready state snapshots |
+| 6 | R091-05 | Pilot JSON for items and recipes |
+| 7 | R091-06 | Decide scene/dialogue content format |
+| 8 | R091-07 | Centralize UI resources |
+| 9 | R091-08 | Strengthen test layering and remove old paths |
+| 10 | R091-09 | Verify and release v0.9.1 |
+
+---
+
+## R091-00 — Freeze the complete v0.9 demo
+
+- [x] Finalize one real-content test from fresh state to ending.
+- [x] Verify every required item, interaction, flag, transition, and ending condition.
+- [x] Record expected state at important checkpoints.
+- [x] Create a matching manual demo checklist.
+- [x] Run `make check` and the full manual flow.
+
+### Done when
+
+The complete demo is protected independently of how content is constructed or loaded.
+
+---
+
+## R091-01 — Add new-game/reset lifecycle
+
+### Required behavior
+
+- [x] Fresh `GameState`
+- [x] Empty/reset inventory and selection
+- [x] Reset flags, collected pickups, and completed interactions
+- [x] Starting scene restored
+- [x] Messages, dialogue, hover, and ending state cleared
+- [x] Static content reused safely without mutation
+
+Prefer constructing a new session over manually clearing fields scattered across objects.
+
+A small `GameSession` object is acceptable only if it clarifies ownership:
+
+```text
+GameSession
+├── game_state
+├── current scene/session position
+└── other run-specific state
+```
+
+### Tests
+
+- [x] Partially progress, reset, and verify every fact is fresh.
+- [x] Complete the game, reset, and complete it again in the same process.
+- [x] Two sessions do not leak state into one another.
+
+### Done when
+
+A fresh game is deterministic without restarting Python.
+
+---
+
+## R091-02 — Separate `GameContent` from session state
+
+### Static content may include
+
+- Item, recipe, scene, NPC, hotspot, exit, and dialogue definitions
+- Starting scene ID
+- Validated ID registries
+
+### Runtime/session state includes
+
+- Inventory and selected item
+- Current scene
+- Flags
+- Collected pickups
+- Completed interactions
+- Ending state
+
+### Possible small composition object
 
 ```text
 GameContent
-- reusable item and recipe definitions
-- reusable scene builders and ID registries
-- starting scene ID
-- validation boundary
+├── items_by_id
+├── recipes
+├── scenes_by_id
+└── starting_scene_id
+```
 
-GameSession
-- fresh GameState
-- current SceneManager and scene instances
+### Tasks
 
-GameState
-- inventory and selected item
-- progression flags
-- collected pickup IDs
-- completed interaction IDs
-- ending state
+- [x] Make content definitions immutable by convention or frozen dataclasses where useful.
+- [x] Keep all runtime mutations in session/state objects.
+- [x] Validate content once during construction.
+- [x] Build scenes from definitions plus session state.
+- [x] Keep fonts and surfaces outside reusable content definitions.
 
-AdventureInteractionService
-- gameplay transactions and interaction outcomes
+### Tests
 
-AdventureScene
-- Pygame input adapter
-- target resolution
-- transient presentation state
-- rendering coordination
+- [x] Two sessions share content without sharing state.
+- [x] Resetting one session does not affect another.
+- [x] Full demo flow works through the new composition root.
 
+### Done when
+
+Every important object is clearly either reusable content or current-session state.
+
+---
+
+## R091-03 — Define scene lifecycle behavior
+
+First decide what should happen to:
+
+- Interaction messages when leaving and returning
+- Open dialogue during scene transition
+- Hover state during transition
+- Ending-state transition
+- Future scene-local timers
+
+Add minimal hooks such as `on_enter()` and `on_exit()` only if current behavior needs them.
+
+Final policy:
+
+- [x] Resolve hover from the current mouse position instead of storing it across transitions.
+- [x] Let modal dialogue prevent click-driven scene transitions rather than adding lifecycle hooks.
+- [x] Retain interaction messages per scene and document that they reappear when that scene is revisited.
+- [x] Never reset persistent world state during scene transitions.
+
+### Done when
+
+Scene transition behavior is explicit rather than an accident of persistent scene objects.
+
+---
+
+## R091-04 — Add serialization-ready state snapshots
+
+### Goal
+
+Prepare a clean save/load boundary without yet requiring a save menu or final file format.
+
+### Snapshot should contain plain values only
+
+```text
+save version
+current_scene_id
+inventory_item_ids
+selected_item_id or null
+flags
+collected_pickup_ids
+completed_interaction_ids
+ending state
+```
+
+### Tasks
+
+- [x] Add export/snapshot operation.
+- [x] Add restore/from-snapshot operation.
+- [x] Include a save-data version.
+- [x] Validate referenced IDs against `GameContent`.
+- [x] Exclude Pygame objects and content definitions.
+- [x] Do not use `pickle`.
+
+### Tests
+
+- [x] Fresh-state round trip.
+- [x] Mid-quest round trip.
+- [x] Completed-demo round trip.
+- [x] Invalid scene/item/interaction ID fails clearly.
+
+### Done when
+
+Runtime state round-trips through plain Python data with stable IDs.
+
+---
+
+## R091-05 — Pilot JSON for items and recipes
+
+### Decision gate
+
+Proceed only when the v0.9 schemas are stable and data files provide a clear benefit.
+
+Ask:
+
+- [x] Is content changing often enough to reduce code churn?
+- [x] Would someone reasonably edit it without touching Python?
+- [x] Are stable IDs and validation already reliable?
+- [x] Is the schema simpler than the Python definitions?
+
+If most answers are no, mark this task skipped and keep Python definitions.
+
+### If approved
+
+Start only with items and recipes because they have small schemas.
+
+- [x] Parse JSON into typed domain definitions.
+- [x] Validate required fields and value types.
+- [x] Reject duplicates and unknown references.
+- [x] Include useful file/path context in errors.
+- [x] Keep gameplay code away from raw dictionaries.
+- [x] Remove the duplicate Python source once migration is accepted.
+
+### Tests
+
+- [x] Valid files load.
+- [x] Missing/wrong fields fail clearly.
+- [x] Duplicate IDs fail.
+- [x] Unknown recipe references fail.
+- [x] Full demo works with the loaded definitions.
+
+### Done when
+
+The pilot demonstrably improves content editing and leaves only one authoritative source.
+
+---
+
+## R091-06 — Decide scene/dialogue content format
+
+Do not assume full-scene JSON is automatically better. Scene definitions include coordinates, entity types, conditions, flags, interactions, and exits.
+
+### Evaluate
+
+- [x] Are there enough scenes to justify a loader?
+- [x] Is the schema stable after v0.9?
+- [x] Can conditions remain declarative without creating a mini scripting language?
+- [x] Are loader errors clearer than Python/type errors?
+- [x] Will content authors edit the data directly?
+
+### Valid outcomes
+
+#### A. Keep scenes/dialogue in Python
+
+- [x] Document Python factories as the supported format.
+- [x] Keep immutable definitions and validation.
+- [x] Remove unused JSON scaffolding.
+
+#### B. Move dialogue text only
+
+- [ ] Load plain dialogue line arrays by stable ID.
+- [ ] Keep conditional wiring in Python.
+- [ ] Validate references.
+
+#### C. Move full scenes to data
+
+Only after one-scene pilot proves the schema is simpler.
+
+- [ ] Use a versioned schema.
+- [ ] Convert raw data to typed definitions.
+- [ ] Keep conditional operators intentionally small.
+- [ ] Never evaluate arbitrary code or expression strings.
+
+### Done when
+
+The chosen strategy is documented and Python/JSON are not both authoritative.
+
+---
+
+## R091-07 — Centralize UI resources
+
+### Goal
+
+Prepare for v0.10 polish without coupling domain logic to rendering resources.
+
+- [x] Move repeated font construction into a small UI resource owner/cache.
+- [x] Pass required resources to widgets/scenes.
+- [x] Keep interaction/state code free of Pygame resources.
+- [x] Define future image/audio lookup by stable asset IDs.
+- [x] Do not build a large asset pipeline before real assets exist.
+
+Possible small object:
+
+```text
 UIResources
-- shared/cached fonts
-- stable future image/audio lookup boundary
+├── title_font
+├── body_font
+├── small_font
+└── future asset lookup
 ```
 
-Content format decision:
+### Tests
+
+- [x] Pure logic tests no longer initialize fonts.
+- [x] UI tests initialize only what they need.
+- [x] Scene construction does not duplicate resources unnecessarily.
+
+### Done when
+
+Rendering-resource ownership is clear and small.
+
+---
+
+## R091-08 — Strengthen test layering and remove old paths
+
+### Test layers
 
 ```text
-Items: JSON
-Recipes: JSON
-Scenes: Python factories
-Dialogue: Python factories until dialogue choices stabilize
+pure unit tests     -> inventory, recipes, state, interactions, validation
+integration tests   -> demo flow, reset, state round trips, content loading
+Pygame adapter tests -> input translation, hit testing, modal UI behavior
+manual tests        -> readability, layout, hover feel, audio, ending presentation
 ```
 
-State snapshots already use plain values and stable IDs. Save-file I/O and menus are intentionally deferred to v0.11.
+### Tasks
+
+- [x] Keep Pygame-dependent tests a clearly identified minority.
+- [x] Avoid global mutable content in tests.
+- [x] Use narrow fixtures rather than one giant hidden setup.
+- [x] Keep the complete-demo test readable as a gameplay story.
+- [x] Remove obsolete mutable completion fields.
+- [x] Remove scene-list mutation retained only for compatibility.
+- [x] Remove duplicate recipe ownership and target helpers.
+- [x] Remove duplicate Python/JSON definitions.
+- [x] Remove deprecated constructors, temporary adapters, and empty modules.
+
+Verify usage before deleting anything.
+
+### Done when
+
+There is one clear path for state, content, interactions, and target resolution, and test failures point to the correct layer.
 
 ---
 
-# Future feature and refactor sequence
+## R091-09 — Verify and release v0.9.1
 
-The v0.9.1 refactor, reset lifecycle, snapshot boundary, JSON pilot, UI-resource cleanup, and release verification are complete. They are architecture baseline, not active backlog work.
+### Automated
 
-Refactor checkpoints should normally happen **after** the associated feature milestone has produced real requirements.
+```bash
+make format
+make check
+```
 
-## Optional pre-v0.10 cleanup — Scene transition lifecycle
+- [x] Full demo-flow test passes.
+- [x] New-game/reset tests pass.
+- [x] Snapshot round trips pass if implemented.
+- [x] JSON loader tests pass if the pilot was accepted.
 
-Do this only if manual testing reveals stale transient state when moving between scenes. New-game reset is already implemented and is not part of this task.
+### Manual
 
-### Possible symptoms
+- [x] Complete the demo from a fresh session.
+- [x] Start a second new game without restarting the process.
+- [x] Confirm no item, flag, dialogue, pickup, or ending state leaks.
+- [x] Confirm all scenes and UI still render correctly.
 
-- An old interaction message appears after returning to a scene.
-- Dialogue remains open across a transition.
-- Hover state survives after the target is no longer present.
-- Future scene-local timers continue after leaving a scene.
+### Documentation and release
 
-### Candidate work
+- [x] Update architecture, testing plan, roadmap, content plan, and changelog.
+- [x] Document the final JSON decision, including a decision to remain with Python.
+- [x] Bump `0.9.0` to `0.9.1`.
+- [ ] Tag/publish after committing these release files in the real Git repository.
 
-- [ ] Clear hover state on transition.
-- [ ] Close active dialogue on transition.
-- [ ] Clear ordinary interaction messages on scene entry.
-- [ ] Keep persistent inventory, flags, pickups, interactions, and ending state untouched.
-- [ ] Add minimal `on_enter()` / `on_exit()` hooks only if they clarify the policy.
-
-### Tests
-
-- [ ] Transition clears only transient presentation state.
-- [ ] Persistent world state survives transition and reconstruction.
-- [ ] `N` still creates a completely fresh session.
-
-### Skip when
-
-Skip this cleanup if current transition behavior is already intentional and no stale-state defect can be reproduced.
-
----
-
-# v0.10 — Polish and presentation
-
-## Feature goal
-
-Improve the existing complete demo without changing its puzzle structure.
-
-Possible feature work:
-
-- Improved colors, spacing, typography, and visual hierarchy.
-- Clearer selected-item and locked-exit feedback.
-- Better ending presentation.
-- Optional first real images or sound effects.
-- Accessibility review for text size and contrast.
-
-## Follow-up refactor: R101 — Presentation resource cleanup
-
-Run this after v0.10 only if real presentation work creates pressure.
-
-### Candidate tasks
-
-- [ ] Confirm `UIResources` remains the single font/resource owner.
-- [ ] Add an image cache only after images are actually loaded repeatedly.
-- [ ] Add a small audio resource/channel owner only after sound is implemented.
-- [ ] Move stable image/audio asset IDs into dedicated registries or a manifest.
-- [ ] Separate theme values from content-specific presentation values.
-- [ ] Remove temporary placeholder-rendering paths replaced by real assets.
-- [ ] Keep layout fixed unless v0.10 explicitly adds resizing.
-
-### Tests
-
-- [ ] Repeated asset lookup returns cached resources where appropriate.
-- [ ] Missing asset IDs fail clearly in development.
-- [ ] Pure interaction tests remain free of Pygame resources.
-- [ ] UI smoke tests cover the real resource path.
-
-### Skip when
-
-Skip R101 if v0.10 changes only colors/text and does not add meaningful asset-loading complexity.
-
----
-
-# v0.11 — Save/load
-
-## Feature goal
-
-Persist and restore a game using the existing state-snapshot boundary.
-
-### Decisions required before implementation
-
-- [?] One manual save slot or multiple slots?
-- [?] Save only from a menu, or allow a keyboard shortcut?
-- [?] Should completed games remain loadable?
-- [?] Where should save files live on each supported platform?
-
-Recommended first scope:
+### Definition of done
 
 ```text
-one save slot
-manual save
-manual load
-clear error messages
-no autosave yet
+The complete demo remains stable,
+a fresh game is deterministic,
+content and session state are clearly separated,
+runtime state is serialization-ready,
+and the project has made an evidence-based content-format decision.
 ```
 
-## Follow-up refactor: R111 — Save repository and migrations
-
-Run after the first real save/load feature works.
-
-### Candidate tasks
-
-- [ ] Introduce a small save repository responsible for filesystem I/O.
-- [ ] Keep snapshots independent from file paths and JSON encoding.
-- [ ] Add atomic write behavior to reduce corrupted saves.
-- [ ] Handle missing, unreadable, and invalid save files clearly.
-- [ ] Add explicit migration steps when `save_version` changes.
-- [ ] Keep old-save compatibility tests for supported versions.
-- [ ] Avoid coupling menus directly to filesystem operations.
-
-### Tests
-
-- [ ] Save then load reproduces mid-quest state.
-- [ ] Corrupted JSON fails without destroying the current session.
-- [ ] Unsupported future versions fail clearly.
-- [ ] Supported older versions migrate successfully.
-- [ ] Save/load after new-game reset behaves correctly.
-
 ---
 
-# v0.12 — Dialogue choices
+# Part IV — Deferred refactor candidates
 
-## Feature goal
+Reconsider these only when a concrete feature creates pressure.
 
-Add player choices without turning dialogue into arbitrary scripting.
+## During v0.10 polish
 
-### Decisions required before implementation
+- [ ] Asset cache after real images/audio exist.
+- [ ] More flexible scene layout after current positions become limiting.
+- [ ] Inventory scrolling only after content exceeds the visible panel.
+- [ ] UI scaling only with resizable-window support.
+- [ ] Specialized rendering after placeholder rectangles are replaced.
 
-- [?] Are unavailable choices hidden or shown disabled?
-- [?] Can a choice require an item, a flag, or both?
-- [?] Can choices set flags and give/take items?
-- [?] Can dialogue return to an earlier node?
-- [?] Is dialogue modal while a choice is open?
+## With real save/load
 
-Recommended first scope:
+- [ ] Save-file repository and filesystem error handling.
+- [ ] Save-data migrations.
+- [ ] Multiple slots and autosave checkpoints.
 
-```text
-stable dialogue node IDs
-2-3 choices per node
-small declarative conditions
-explicit next-node IDs
-explicit effects
-no arbitrary expressions
-```
+## With dialogue choices or quest journal
 
-## Follow-up refactor: R121 — Dialogue model and content-format review
+- [ ] Explicit quest definitions.
+- [ ] Dialogue-node IDs and branching conditions.
+- [ ] Player-facing objectives separate from internal flags.
 
-Run after real dialogue choices exist.
+## With larger scenes
 
-### Candidate tasks
+- [ ] Camera and world/screen coordinate separation.
+- [ ] Spatial indexing only when entity counts justify it.
 
-- [ ] Separate dialogue definitions from dialogue runtime position.
-- [ ] Introduce typed dialogue nodes and choices.
-- [ ] Keep current node/choice state in the session, not definitions.
-- [ ] Validate all next-node references.
-- [ ] Keep condition operators intentionally small.
-- [ ] Re-evaluate moving dialogue definitions to JSON.
-- [ ] Pilot one conversation in JSON before migrating all dialogue.
-- [ ] Ensure Python and JSON are never both authoritative for the same conversation.
-
-### JSON decision gate
-
-Move dialogue to JSON only if:
-
-- Authors benefit from editing dialogue outside Python.
-- The node/choice schema has stabilized.
-- Loader errors remain clearer than nested Python construction.
-- Conditions can stay declarative without a scripting language.
-
----
-
-# v0.13 — Quest journal and objective hints
-
-## Feature goal
-
-Show player-facing objectives without exposing internal implementation flags.
-
-### Decisions required before implementation
-
-- [?] Show one active objective or a full quest list?
-- [?] Can quests be optional?
-- [?] Should completed objectives remain visible?
-- [?] Are hints automatic or requested by the player?
-
-## Follow-up refactor: R131 — Separate quest definitions from flags
-
-Run after the first journal is playable.
-
-### Candidate tasks
-
-- [ ] Introduce stable quest and objective IDs.
-- [ ] Keep player-facing text separate from internal progression flags.
-- [ ] Define objective completion from existing semantic world facts.
-- [ ] Avoid duplicating the same completion fact in quest state and flags.
-- [ ] Add a small quest-evaluation service only if multiple objectives need it.
-- [ ] Keep journal rendering separate from quest evaluation.
-- [ ] Reconsider a quest JSON schema only after several quests exist.
-
-### Tests
-
-- [ ] Objectives update from real gameplay facts.
-- [ ] Reset and load restore journal state correctly.
-- [ ] Hidden/internal flags are not displayed directly.
-- [ ] Completing objectives in different valid orders works.
-
----
-
-# v0.14 — Larger scene and camera pilot
-
-## Feature goal
-
-Prove one scene larger than the fixed window.
-
-### Decisions required before implementation
-
-- [?] Horizontal-only scrolling or full two-dimensional camera?
-- [?] Camera follows the player or a selected focus point?
-- [?] Are interactions allowed outside the visible viewport?
-- [?] Do UI elements stay in screen coordinates?
-
-## Follow-up refactor: R141 — World and screen coordinate separation
-
-Run after one larger scene proves the camera requirements.
-
-### Candidate tasks
-
-- [ ] Define explicit world coordinates for scene entities.
-- [ ] Keep UI rectangles in screen coordinates.
-- [ ] Centralize world-to-screen and screen-to-world conversion.
-- [ ] Make hit testing use the correct coordinate space.
-- [ ] Keep target priority unchanged.
-- [ ] Add camera bounds based on scene dimensions.
-- [ ] Add spatial indexing only if measured entity counts justify it.
-- [ ] Remove assumptions that every scene equals window size.
-
-### Tests
-
-- [ ] A target resolves correctly after camera movement.
-- [ ] Inventory UI still wins over overlapping world targets.
-- [ ] Camera bounds prevent showing invalid space.
-- [ ] Scene transitions and snapshots remain stable.
-
----
-
-# v0.15 — Click-to-move character pilot
-
-## Feature goal
-
-Add a visible player character that moves before interacting.
-
-### Decisions required before implementation
-
-- [?] Instant movement or animated movement?
-- [?] Direct movement or pathfinding around obstacles?
-- [?] Does clicking a target mean move-then-interact?
-- [?] Can the player cancel movement with another click?
-- [?] How close must the player be to interact?
-
-Recommended first scope:
-
-```text
-simple direct movement
-move-then-interact
-small interaction radius
-no general pathfinding until obstacles require it
-```
-
-## Follow-up refactor: R151 — Navigation and interaction separation
-
-Run after the movement pilot works.
-
-### Candidate tasks
-
-- [ ] Separate player movement state from scene presentation state.
-- [ ] Represent pending interaction intent explicitly.
-- [ ] Keep `AdventureInteractionService` responsible for gameplay outcomes, not movement.
-- [ ] Add a small navigation component only for actual movement needs.
-- [ ] Keep input translation in the Pygame adapter.
-- [ ] Add pathfinding only after direct movement fails on real scene geometry.
-- [ ] Include player position and pending movement in snapshots only if saves require it.
-
-### Tests
-
-- [ ] Clicking a nearby target interacts correctly.
-- [ ] Clicking a distant target moves then interacts once.
-- [ ] A second click replaces or cancels pending intent according to policy.
-- [ ] Scene transition cancels stale movement.
-- [ ] Reset/load does not leak pending movement state.
-
----
-
-# v0.16 — Content and asset production pass
-
-## Feature goal
-
-Scale from the small demo toward a larger adventure using proven systems.
-
-Possible work:
-
-- More scenes, items, recipes, interactions, and dialogue.
-- Real visual/audio assets.
-- Content-authoring workflow improvements.
-- Packaging and distribution checks.
-- Performance baseline with representative content volume.
-
-## Follow-up refactor: R161 — Content pipeline and production hardening
-
-Run after representative v0.16 content exists.
-
-### Candidate tasks
-
-- [ ] Measure where content authoring is slow or error-prone.
-- [ ] Add asset manifests only if directory lookup becomes fragile.
-- [ ] Batch-validate all content and asset references.
-- [ ] Add development-only content diagnostics.
-- [ ] Re-evaluate full-scene JSON using one real scene pilot.
-- [ ] Add dialogue JSON only if the v0.12 schema proved stable.
-- [ ] Keep typed definitions between raw data and gameplay code.
-- [ ] Add packaging tests for JSON, images, audio, and fonts.
-- [ ] Establish load-time and memory baselines.
-- [ ] Add an editor only if manual file editing is a demonstrated bottleneck.
-
-### Full-scene JSON decision gate
-
-A scene-data pilot is justified only if:
-
-- There are enough scenes to reduce meaningful Python churn.
-- Entity and condition schemas have stabilized.
-- Data remains simpler than Python factories.
-- Error messages identify file, object, field, and invalid reference.
-- Conditions do not require arbitrary expression evaluation.
-- Content authors will actually edit the files.
-
----
-
-# Part III — Cross-milestone maintenance
-
-Apply these continuously rather than scheduling large cleanup releases.
-
-## After every feature milestone
-
-- [ ] Run the full automated suite.
-- [ ] Run the relevant manual gameplay path.
-- [ ] Update `CHANGELOG.md`.
-- [ ] Update architecture/testing docs when ownership changes.
-- [ ] Remove temporary adapters introduced during the feature.
-- [ ] Search for duplicate authoritative content definitions.
-- [ ] Confirm snapshots include every new persistent fact.
-- [ ] Confirm new transient UI state resets on new game and transitions.
-- [ ] Confirm stable IDs are validated and not derived from positions or list order.
-
-## Performance rule
-
-Do not optimize by architecture guesswork.
-
-Measure before adding:
-
-- Spatial indexes
-- Object pools
-- Background loading
-- Complex caches
-- Database storage
-- General pathfinding
-
-## Architecture rule
-
-Do not introduce without strong evidence:
+## Do not introduce without strong evidence
 
 - Generic event bus
 - Entity-component system
 - Service locator or dependency-injection framework
-- Scripting language for content conditions
-- Inheritance-heavy widget framework
-- Universal command hierarchy
-- Database for local built-in content
+- Scripting language for conditions
+- Inheritance-heavy widget toolkit
+- Universal command framework
+- Database for local prototype content
 
 ---
 
 # Decision log
 
-## D-001 — Persistent-state owner
+## D-001 — JSON during v0.8.1
 
-Status: implemented
+Status: decided
+
+```text
+Keep Python content factories during v0.8.1.
+Separate runtime state first and reconsider external data after v0.9.
+```
+
+## D-002 — Persistent-state owner
+
+Status: agreed scope
 
 ```text
 GameState owns inventory, flags, collected pickups,
-completed interactions, and ending state.
+and completed interactions. Static recipes/content do not belong to GameState.
 ```
 
-## D-002 — Content/session separation
+## D-003 — `AdventureScene` responsibility
 
-Status: implemented
-
-```text
-GameContent owns reusable content and validation registries.
-GameSession owns one running game's state and scene manager.
-```
-
-## D-003 — AdventureScene responsibility
-
-Status: implemented
+Status: agreed scope
 
 ```text
 AdventureScene translates Pygame input, resolves targets,
 applies presentation outcomes, and renders.
-AdventureInteractionService performs gameplay transactions.
+A focused interaction service performs gameplay transactions.
 ```
 
-## D-004 — Current JSON scope
+## D-004 — Post-v0.9 content format
 
-Status: implemented
-
-```text
-Items and recipes are loaded from JSON.
-Python item/recipe definitions are not a second authority.
-```
-
-## D-005 — Scene/dialogue format
-
-Status: decided for current milestones
+Status: open
 
 ```text
-Scenes remain Python factories.
-Dialogue remains Python until v0.12 choices stabilize.
-Re-evaluate dialogue JSON after v0.12.
-Re-evaluate full-scene JSON only after a representative later pilot.
-```
-
-## D-006 — Refactor timing
-
-Status: agreed direction
-
-```text
-Build the feature first.
-Refactor after real behavior reveals the required boundary.
-Skip refactors whose motivating complexity did not appear.
+Pilot items and recipes first.
+Move scenes/dialogue to data only if the resulting schema
+is simpler and more useful than Python factories.
 ```

@@ -25,7 +25,7 @@ from game.entities.exit_hotspot import ExitHotspot
 from game.entities.hotspot import Hotspot
 from game.entities.item_hotspot import ItemHotspot
 from game.entities.npc import NPC
-from game.game_session import GameSession, create_demo_game_session
+from game.game_session import GameSession, create_game_session
 from game.scenes.adventure_scene import AdventureScene
 from game.ui.resources import UIResources
 
@@ -52,9 +52,7 @@ def current_adventure_scene(session: GameSession) -> AdventureScene:
 
 def find_pickup(scene: AdventureScene, item_id: str) -> ItemHotspot:
     """Find a pickup by item ID."""
-    return next(
-        pickup for pickup in scene.item_hotspots if pickup.item.item_id == item_id
-    )
+    return next(pickup for pickup in scene.item_hotspots if pickup.item.item_id == item_id)
 
 
 def find_hotspot(scene: AdventureScene, label: str) -> Hotspot:
@@ -64,11 +62,7 @@ def find_hotspot(scene: AdventureScene, label: str) -> Hotspot:
 
 def find_exit(scene: AdventureScene, target_scene_id: str) -> ExitHotspot:
     """Find an exit by its target scene ID."""
-    return next(
-        exit_hotspot
-        for exit_hotspot in scene.exits
-        if exit_hotspot.target_scene_id == target_scene_id
-    )
+    return next(exit_hotspot for exit_hotspot in scene.exits if exit_hotspot.target_scene_id == target_scene_id)
 
 
 def find_npc(scene: AdventureScene, name: str) -> NPC:
@@ -83,9 +77,7 @@ def inventory_item_position(
     """Return the clickable inventory position for an item ID."""
     return next(
         row_rect.center
-        for item, row_rect in scene.inventory_bar.layout_for_items(
-            scene.game_state.inventory.items
-        ).item_rows
+        for item, row_rect in scene.inventory_bar.layout_for_items(scene.game_state.inventory.items).item_rows
         if item.item_id == item_id
     )
 
@@ -170,7 +162,7 @@ def assert_fresh_session(session: GameSession) -> None:
 
 def test_partially_progressed_game_can_reset_to_fresh_session() -> None:
     content = create_demo_content()
-    session = create_demo_game_session(content, UIResources())
+    session = create_game_session(content, UIResources())
     fill_cup_at_well(session)
 
     village = current_adventure_scene(session)
@@ -190,19 +182,19 @@ def test_partially_progressed_game_can_reset_to_fresh_session() -> None:
 
     assert forest.dialogue.is_active
 
-    reset_session = create_demo_game_session(content, UIResources())
+    reset_session = create_game_session(content, UIResources())
 
     assert_fresh_session(reset_session)
 
 
 def test_completed_game_can_reset_and_complete_again_in_same_process() -> None:
     content = create_demo_content()
-    first_session = create_demo_game_session(content, UIResources())
+    first_session = create_game_session(content, UIResources())
     complete_demo(first_session)
 
     assert first_session.game_state.has_flag(DEMO_COMPLETED)
 
-    second_session = create_demo_game_session(content, UIResources())
+    second_session = create_game_session(content, UIResources())
 
     assert_fresh_session(second_session)
 
@@ -213,8 +205,8 @@ def test_completed_game_can_reset_and_complete_again_in_same_process() -> None:
 
 def test_two_sessions_do_not_leak_runtime_state() -> None:
     content = create_demo_content()
-    first_session = create_demo_game_session(content, UIResources())
-    second_session = create_demo_game_session(content, UIResources())
+    first_session = create_game_session(content, UIResources())
+    second_session = create_game_session(content, UIResources())
 
     fill_cup_at_well(first_session)
 

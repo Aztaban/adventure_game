@@ -58,18 +58,12 @@ def create_forest_path(
                 label="Enter Tower",
                 required_flag=TOWER_UNLOCKED,
                 locked_label="Tower Gate (Locked)",
-                locked_text=(
-                    "The tower gate refuses to move. "
-                    "The old lock looks like it needs a key."
-                ),
+                locked_text=("The tower gate refuses to move. The old lock looks like it needs a key."),
                 completion_flag=DEMO_COMPLETED,
                 ends_game=True,
                 item_use=ItemUseInteraction(
                     required_item_id=RUSTY_KEY,
-                    success_text=(
-                        "The Rusty Key turns with a dramatic crunch. "
-                        "The tower gate unlocks."
-                    ),
+                    success_text=("The Rusty Key turns with a dramatic crunch. The tower gate unlocks."),
                     failure_text="That does not fit the tower gate lock.",
                     completed_text="The tower gate is already unlocked.",
                     consume_item=True,
@@ -92,10 +86,7 @@ def create_forest_path(
                 pickup_id=MOON_HERB_PICKUP,
                 rect=pygame.Rect(850, 350, 180, 100),
                 item=items_by_id[MOON_HERB],
-                pickup_text=(
-                    "You carefully collect the Moon Herb. "
-                    "It seems pleased with itself."
-                ),
+                pickup_text=("You carefully collect the Moon Herb. It seems pleased with itself."),
             )
         ],
         npcs=[

@@ -1,6 +1,6 @@
 # Testing Plan
 
-Status: current after R091-08 test-layering cleanup
+Status: current after the v0.9.1 foundation release
 
 ## Purpose
 
@@ -35,44 +35,26 @@ Run one focused test file:
 PYTHONPATH=src .venv/bin/python -m pytest tests/test_inventory.py
 ```
 
-## Test layers
+## Test boundaries
 
-Use the narrowest layer that can prove the behavior. Automated tests should focus on observable behavior and state changes.
+Automated tests should focus on observable behavior and state changes.
 
-### Pure unit tests
-
-Pure unit tests should avoid Pygame setup and real demo scenes when possible. Use them for:
+Good automated-test targets:
 
 - inventory behavior
-- recipe lookup and item-combination transactions
 - game state flags, collected pickups, completed interactions, and ending state
-- state snapshot validation helpers
-- item-use success/failure/completion behavior
-- interaction service outcomes that do not require rendered scenes
-- text wrapping and other pure UI helpers
-
-### Integration tests
-
-Integration tests use real demo content or multiple runtime objects together. Use them for:
-
-- complete demo-flow integration
 - session reset/new-game behavior
-- state snapshot export/restore round trips
-- world-state persistence across scene reconstruction
-- JSON item/recipe loading from files
-- content validation against real content
-
-### Pygame adapter tests
-
-Pygame-dependent tests should be a clearly identified minority. Use them for:
-
-- input translation
-- scene hit testing and target priority
-- modal dialogue behavior
-- hover text and render-adjacent behavior
-- widget layout and click geometry
-
-### Manual tests
+- state snapshot export/restore behavior
+- JSON item/recipe loading
+- content validation
+- recipe lookup and item-combination transactions
+- item-use success/failure/completion behavior
+- scene manager transitions
+- dialogue state
+- interaction service outcomes
+- target resolution priority
+- UI helper geometry and text wrapping
+- complete demo-flow integration
 
 Manual testing should cover:
 
@@ -87,6 +69,18 @@ Manual testing should cover:
 
 Do not over-test exact pixels unless the layout rule is important for behavior.
 
+## Test layers
+
+Use three practical layers even when files remain in the compact `tests/` tree:
+
+```txt
+pure unit tests      -> inventory, recipes, state, item use, snapshots, loaders, validation
+integration tests    -> real content flow, reset/isolation, snapshot restoration, world persistence
+Pygame adapter tests -> event translation, hit testing, target priority, modal UI, drawing resources
+```
+
+A test belongs at the lowest layer that can protect the behavior. Pure gameplay rules should not require display creation. Pygame-dependent tests should initialize only the modules they need.
+
 ## Current automated test groups
 
 ```txt
@@ -94,7 +88,6 @@ tests/
 ├── integration/
 │   ├── test_demo_flow.py
 │   ├── test_game_session_reset.py
-│   ├── test_json_content_loading.py
 │   ├── test_state_snapshot.py
 │   └── test_world_state_persistence.py
 ├── test_adventure_interaction_service.py
@@ -111,6 +104,7 @@ tests/
 ├── test_item_combination.py
 ├── test_item_hotspot.py
 ├── test_item_use.py
+├── test_json_content_loading.py
 ├── test_npc.py
 ├── test_quest_flags.py
 ├── test_recipe.py

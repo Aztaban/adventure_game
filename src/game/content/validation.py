@@ -166,16 +166,14 @@ def _validate_item_use_requirement(
 
     if item_use.required_item_id not in item_ids:
         errors.append(
-            f"Scene '{scene_id}' {owner_type} '{owner_name}' "
-            f"requires unknown item ID '{item_use.required_item_id}'."
+            f"Scene '{scene_id}' {owner_type} '{owner_name}' requires unknown item ID '{item_use.required_item_id}'."
         )
 
     if item_use.result_item is None or item_use.result_item.item_id in item_ids:
         return
 
     errors.append(
-        f"Scene '{scene_id}' {owner_type} '{owner_name}' "
-        f"creates unknown item ID '{item_use.result_item.item_id}'."
+        f"Scene '{scene_id}' {owner_type} '{owner_name}' creates unknown item ID '{item_use.result_item.item_id}'."
     )
 
 

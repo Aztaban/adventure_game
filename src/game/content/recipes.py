@@ -20,10 +20,7 @@ def create_demo_recipe_book(
     items_by_id: Mapping[str, Item] | None = None,
 ) -> RecipeBook:
     """Load all item-combination recipes for the demo."""
-    item_registry = items_by_id or {
-        item.item_id: item
-        for item in create_demo_items()
-    }
+    item_registry = items_by_id or {item.item_id: item for item in create_demo_items()}
 
     return load_recipe_book_from_json(
         path=DEFAULT_RECIPES_PATH,
@@ -41,9 +38,7 @@ def load_recipe_book_from_json(
     data = load_json_file(source_path)
 
     if not isinstance(data, list):
-        raise ContentLoadError(
-            f"{source_path}: expected top-level list of recipe definitions."
-        )
+        raise ContentLoadError(f"{source_path}: expected top-level list of recipe definitions.")
 
     recipes: list[Recipe] = []
     seen_keys: set[tuple[str, str]] = set()
@@ -63,10 +58,7 @@ def load_recipe_book_from_json(
         recipe_key = tuple(sorted((recipe.first_item_id, recipe.second_item_id)))
 
         if recipe_key in seen_keys:
-            raise ContentLoadError(
-                f"{context}: duplicate recipe for item pair "
-                f"'{recipe_key[0]}' + '{recipe_key[1]}'."
-            )
+            raise ContentLoadError(f"{context}: duplicate recipe for item pair '{recipe_key[0]}' + '{recipe_key[1]}'.")
 
         seen_keys.add(recipe_key)
         recipes.append(recipe)
@@ -127,7 +119,4 @@ def _validate_known_item(
     if item_id in items_by_id:
         return
 
-    raise ContentLoadError(
-        f"{context}: field '{field_name}' references unknown item ID "
-        f"'{item_id}'."
-    )
+    raise ContentLoadError(f"{context}: field '{field_name}' references unknown item ID '{item_id}'.")

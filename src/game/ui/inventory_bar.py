@@ -102,11 +102,7 @@ class InventoryBar:
 
         content_y += self.status_font.get_height() + self.SECTION_GAP
 
-        instruction = (
-            "Click another item to combine"
-            if selected_item is not None
-            else "Click an item to select"
-        )
+        instruction = "Click another item to combine" if selected_item is not None else "Click an item to select"
 
         instruction_surface = self.status_font.render(
             instruction,
@@ -134,10 +130,7 @@ class InventoryBar:
             return
 
         for item, row_rect in layout.item_rows:
-            is_selected = (
-                selected_item is not None
-                and selected_item.item_id == item.item_id
-            )
+            is_selected = selected_item is not None and selected_item.item_id == item.item_id
 
             if is_selected:
                 pygame.draw.rect(
@@ -190,9 +183,7 @@ class InventoryBar:
         content_rows = max(1, len(items))
         panel_height = max(
             self.MINIMUM_HEIGHT,
-            self._items_start_y()
-            + content_rows * self.ROW_HEIGHT
-            + self.INNER_PADDING,
+            self._items_start_y() + content_rows * self.ROW_HEIGHT + self.INNER_PADDING,
         )
         panel_rect = pygame.Rect(
             self.window_width - self.PANEL_WIDTH - self.PANEL_MARGIN,

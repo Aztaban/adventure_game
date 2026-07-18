@@ -163,9 +163,7 @@ class AdventureScene(BaseScene):
 
     def _handle_cancel(self) -> SceneEventResult:
         """Clear item selection before global cancel handling."""
-        return self._apply_interaction_outcome(
-            self.interaction_service.clear_selected_item()
-        )
+        return self._apply_interaction_outcome(self.interaction_service.clear_selected_item())
 
     def _handle_primary_action(
         self,
@@ -201,29 +199,21 @@ class AdventureScene(BaseScene):
         if target.kind is WorldTargetKind.NPC:
             assert isinstance(target.entity, NPC)
 
-            return self._apply_interaction_outcome(
-                self.interaction_service.interact_with_npc(target.entity)
-            )
+            return self._apply_interaction_outcome(self.interaction_service.interact_with_npc(target.entity))
 
         if target.kind is WorldTargetKind.EXIT:
             assert isinstance(target.entity, ExitHotspot)
 
-            return self._apply_interaction_outcome(
-                self.interaction_service.interact_with_exit(target.entity)
-            )
+            return self._apply_interaction_outcome(self.interaction_service.interact_with_exit(target.entity))
 
         if target.kind is WorldTargetKind.ITEM_PICKUP:
             assert isinstance(target.entity, ItemHotspot)
 
-            return self._apply_interaction_outcome(
-                self.interaction_service.collect_item(target.entity)
-            )
+            return self._apply_interaction_outcome(self.interaction_service.collect_item(target.entity))
 
         assert isinstance(target.entity, Hotspot)
 
-        return self._apply_interaction_outcome(
-            self.interaction_service.interact_with_hotspot(target.entity)
-        )
+        return self._apply_interaction_outcome(self.interaction_service.interact_with_hotspot(target.entity))
 
     def _apply_interaction_outcome(
         self,
@@ -323,10 +313,7 @@ class AdventureScene(BaseScene):
         for exit_hotspot in self.exits:
             required_flag = exit_hotspot.required_flag
 
-            is_locked = (
-                required_flag is not None
-                and not self.game_state.has_flag(required_flag)
-            )
+            is_locked = required_flag is not None and not self.game_state.has_flag(required_flag)
 
             exit_hotspot.draw(
                 surface,
@@ -402,10 +389,7 @@ class AdventureScene(BaseScene):
     ) -> str:
         """Return the exit label matching current locked state."""
         required_flag = exit_hotspot.required_flag
-        is_locked = (
-            required_flag is not None
-            and not self.game_state.has_flag(required_flag)
-        )
+        is_locked = required_flag is not None and not self.game_state.has_flag(required_flag)
 
         if is_locked and exit_hotspot.locked_label is not None:
             return exit_hotspot.locked_label
@@ -445,8 +429,4 @@ class AdventureScene(BaseScene):
         entity: NPC | ExitHotspot | ItemHotspot | Hotspot,
     ) -> bool:
         """Return whether an entity matches the resolved hovered target."""
-        return (
-            hovered_target is not None
-            and hovered_target.kind is target_kind
-            and hovered_target.entity is entity
-        )
+        return hovered_target is not None and hovered_target.kind is target_kind and hovered_target.entity is entity
