@@ -329,11 +329,13 @@ Support fullscreen and multiple window sizes without changing logical scene coor
 Planned scope:
 
 - keep `1280 x 720` as the logical game resolution
+- start in fullscreen desktop mode on every launch
+- support the approved `1280 x 720`, `1600 x 900`, and `1920 x 1080` windowed presets
 - render the game to a logical surface before presenting it to the physical window
-- scale uniformly with letterboxing or pillarboxing
+- scale uniformly with letterboxing or pillarboxing rather than stretching
 - convert physical mouse positions back into logical coordinates before hit testing
-- support fullscreen desktop and a small approved set of 16:9 windowed sizes
-- add a fullscreen toggle
+- use `F11` to toggle between fullscreen desktop and the last windowed preset used during the current session
+- use `1280 x 720` as the initial windowed fallback when no preset has yet been used
 - introduce semantic input actions for gameplay and menus
 - add a read-only Controls screen reachable from the title menu
 - derive displayed control labels from the same binding definitions used by input handling
@@ -342,6 +344,11 @@ Planned scope:
 Tests/checks:
 
 - logical drawing remains `1280 x 720`
+- every fresh application launch starts in fullscreen desktop mode
+- all three approved windowed presets work
+- `F11` uses `1280 x 720` as the initial windowed fallback
+- `F11` later returns to the last windowed preset used during the current session
+- display choices are not persisted between application launches
 - mouse hit testing works at every supported output size
 - letterbox areas do not activate game targets
 - fullscreen/windowed switching preserves the active session
@@ -349,13 +356,17 @@ Tests/checks:
 - Controls screen matches actual bindings
 - complete demo-flow integration remains unchanged
 
-Decision gates during the milestone:
+Confirmed display decisions:
 
-- Which windowed presets are supported initially?
-- Is arbitrary drag-resizing needed now, or are presets sufficient?
-- Should the game start windowed or in fullscreen desktop?
-- Should `F11` toggle fullscreen, and should another menu action expose the same behavior?
-- Should display choices persist now or wait for the settings milestone?
+- logical render resolution is `1280 x 720`
+- startup mode is fullscreen desktop
+- approved windowed presets are `1280 x 720`, `1600 x 900`, and `1920 x 1080`
+- arbitrary drag-resizing is deferred; v0.11 uses approved presets only
+- `F11` toggles fullscreen
+- returning to windowed mode uses the last preset selected during the current session
+- the initial windowed fallback is `1280 x 720`
+- display settings do not persist between launches during v0.11
+- persistent display settings and possible arbitrary drag-resizing are reconsidered in v0.19
 
 Detailed task list:
 
@@ -368,8 +379,9 @@ Avoid:
 - rewriting scene coordinates
 - camera/world-space work
 - editable key bindings
+- arbitrary drag-resizing
 - a general UI framework
-- persistent settings unless explicitly approved during the milestone
+- persistent display settings before v0.19
 
 ## Milestone v0.11.1 — Display/input refactor and regression hardening
 
@@ -638,10 +650,20 @@ Planned scope:
 
 - executable/package build
 - platform user-data and config paths
-- persisted display and audio settings
+- persist the selected fullscreen/windowed mode and last approved windowed preset
+- persist audio and other approved user settings separately from game-save data
+- evaluate whether arbitrary drag-resizing is useful beyond the approved 16:9 presets
+- if drag-resizing is approved, add aspect-preserving live resizing, minimum-size behavior, and reliable pointer conversion
 - logging and useful crash diagnostics
 - asset license/credit output
 - localization-readiness review
+
+Decision gates during the milestone:
+
+- Should the game continue to launch with the saved display mode, or provide a safe startup override?
+- Are the approved windowed presets sufficient for the target players and platforms?
+- If arbitrary drag-resizing is added, what minimum physical window size preserves readable text and usable controls?
+- Which display, audio, text, language, and accessibility settings belong in the first persisted configuration schema?
 
 ## Milestone v0.19.1 — Release architecture hardening
 
