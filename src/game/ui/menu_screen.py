@@ -5,6 +5,7 @@ from enum import Enum
 
 import pygame
 
+from game.input.bindings import InputAction, actions_for_event
 from game.theme import (
     BORDER_DEFAULT,
     MENU_BUTTON_BACKGROUND,
@@ -27,7 +28,7 @@ class MenuAction(Enum):
 
 @dataclass(frozen=True)
 class MenuButtonLayout:
-    """one menu action and its current button rectangle."""
+    """One menu action and its current button rectangle."""
 
     label: str
     action: MenuAction
@@ -69,6 +70,7 @@ class MenuScreen:
     ) -> MenuAction | None:
         """Handle keyboard or mouse menu input."""
         buttons = self.layout(surface_size)
+        actions = actions_for_event(event)
 
         if event.type == pygame.MOUSEMOTION:
             hovered_index = self._button_index_at(event.pos, buttons)
@@ -78,7 +80,7 @@ class MenuScreen:
 
             return None
 
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        if InputAction.PRIMARY in actions:
             clicked_index = self._button_index_at(event.pos, buttons)
 
             if clicked_index is None:
@@ -87,21 +89,18 @@ class MenuScreen:
             self.selected_index = clicked_index
             return buttons[clicked_index].action
 
-        if event.type != pygame.KEYDOWN:
-            return None
-
-        if event.key in {pygame.K_UP, pygame.K_w}:
+        if InputAction.MENU_UP in actions:
             self.selected_index = (self.selected_index - 1) % len(buttons)
             return None
 
-        if event.key in {pygame.K_DOWN, pygame.K_s}:
+        if InputAction.MENU_DOWN in actions:
             self.selected_index = (self.selected_index + 1) % len(buttons)
             return None
 
-        if event.key in {pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE}:
+        if InputAction.MENU_CONFIRM in actions:
             return buttons[self.selected_index].action
 
-        if event.key == pygame.K_ESCAPE:
+        if InputAction.CANCEL in actions:
             return MenuAction.QUIT
 
         return None
@@ -127,16 +126,28 @@ class MenuScreen:
             else:
                 surface.blit(background, (0, 0))
 
-        title_surface = resources.menu_title_font.render(self.title, True, TEXT_HIGHLIGHT)
-        title_rect = title_surface.get_rect(center=(surface.get_width() // 2, 190))
+        title_surface = resources.menu_title_font.render(
+            self.title,
+            True,
+            TEXT_HIGHLIGHT,
+        )
+        title_rect = title_surface.get_rect(
+            center=(surface.get_width() // 2, 190),
+        )
         surface.blit(title_surface, title_rect)
 
         subtitle_width = 760
         subtitle_y = title_rect.bottom + 28
 
         for line in wrap_text(resources.menu_subtitle_font, self.subtitle, subtitle_width):
-            line_surface = resources.menu_subtitle_font.render(line, True, TEXT_PRIMARY)
-            line_rect = line_surface.get_rect(center=(surface.get_width() // 2, subtitle_y))
+            line_surface = resources.menu_subtitle_font.render(
+                line,
+                True,
+                TEXT_PRIMARY,
+            )
+            line_rect = line_surface.get_rect(
+                center=(surface.get_width() // 2, subtitle_y),
+            )
             surface.blit(line_surface, line_rect)
             subtitle_y += resources.menu_subtitle_font.get_linesize() + 6
 
@@ -145,18 +156,38 @@ class MenuScreen:
             fill_color = MENU_BUTTON_HOVERED if is_selected else MENU_BUTTON_BACKGROUND
             border_color = TEXT_HIGHLIGHT if is_selected else BORDER_DEFAULT
 
-            pygame.draw.rect(surface, fill_color, button.rect, border_radius=10)
-            pygame.draw.rect(surface, border_color, button.rect, width=2, border_radius=10)
+            pygame.draw.rect(
+                surface,
+                fill_color,
+                button.rect,
+                border_radius=10,
+            )
+            pygame.draw.rect(
+                surface,
+                border_color,
+                button.rect,
+                width=2,
+                border_radius=10,
+            )
 
-            button_surface = resources.menu_button_font.render(button.label, True, TEXT_PRIMARY)
-            surface.blit(button_surface, button_surface.get_rect(center=button.rect.center))
+            button_surface = resources.menu_button_font.render(
+                button.label,
+                True,
+                TEXT_PRIMARY,
+            )
+            surface.blit(
+                button_surface,
+                button_surface.get_rect(center=button.rect.center),
+            )
 
         hint_surface = resources.hint_font.render(
             "Mouse or Arrow Keys | Enter to select | Esc to quit",
             True,
             TEXT_SECONDARY,
         )
-        hint_rect = hint_surface.get_rect(center=(surface.get_width() // 2, surface.get_height() - 52))
+        hint_rect = hint_surface.get_rect(
+            center=(surface.get_width() // 2, surface.get_height() - 52),
+        )
         surface.blit(hint_surface, hint_rect)
 
     def layout(self, surface_size: tuple[int, int]) -> tuple[MenuButtonLayout, ...]:

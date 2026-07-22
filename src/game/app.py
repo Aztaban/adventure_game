@@ -7,7 +7,7 @@ import pygame
 from game.asset_ids import SCENE_TRANSITION_SOUND, TITLE_BACKGROUND
 from game.content.demo_world import create_demo_content
 from game.game_session import GameSession, create_game_session
-from game.input.bindings import is_cancel, is_new_game
+from game.input.bindings import InputAction, actions_for_event
 from game.settings import (
     FPS,
     GAME_TITLE,
@@ -101,7 +101,9 @@ class GameApp:
                 self.is_running = False
                 continue
 
-            if is_new_game(event):
+            actions = actions_for_event(event)
+
+            if InputAction.NEW_GAME in actions:
                 self.start_new_game()
                 continue
 
@@ -126,7 +128,7 @@ class GameApp:
             if event_consumed:
                 continue
 
-            if is_cancel(event):
+            if InputAction.CANCEL in actions:
                 self.is_running = False
 
     def _handle_menu_event(

@@ -11,11 +11,7 @@ from game.entities.hotspot import Hotspot
 from game.entities.item_hotspot import ItemHotspot
 from game.entities.npc import NPC
 from game.game_state import GameState
-from game.input.bindings import (
-    is_cancel,
-    is_dialogue_advance,
-    is_primary_action,
-)
+from game.input.bindings import InputAction, actions_for_event
 from game.scene_event_result import SceneEventResult
 from game.scenes.base_scene import BaseScene
 from game.settings import WINDOW_WIDTH
@@ -114,13 +110,15 @@ class AdventureScene(BaseScene):
         event: pygame.event.Event,
     ) -> SceneEventResult:
         """Handle scene input."""
-        if self.dialogue.is_active:
-            return self._handle_dialogue_event(event)
+        actions = actions_for_event(event)
 
-        if is_cancel(event):
+        if self.dialogue.is_active:
+            return self._handle_dialogue_actions(actions)
+
+        if InputAction.CANCEL in actions:
             return self._handle_cancel()
 
-        if not is_primary_action(event):
+        if InputAction.PRIMARY not in actions:
             return SceneEventResult()
 
         return self._handle_primary_action(event.pos)
@@ -258,12 +256,12 @@ class AdventureScene(BaseScene):
             target_scene_id=outcome.target_scene_id,
         )
 
-    def _handle_dialogue_event(
+    def _handle_dialogue_actions(
         self,
-        event: pygame.event.Event,
+        actions: frozenset[InputAction],
     ) -> SceneEventResult:
-        """Advance or close the active dialogue."""
-        if is_primary_action(event) or is_dialogue_advance(event):
+        """Advance or close active dialogue from semantic input actions."""
+        if InputAction.PRIMARY in actions or InputAction.DIALOGUE_ADVANCE in actions:
             self.dialogue.advance()
 
             if self.dialogue.current_line is not None:
@@ -271,7 +269,7 @@ class AdventureScene(BaseScene):
 
             return SceneEventResult(consumed=True)
 
-        if is_cancel(event):
+        if InputAction.CANCEL in actions:
             self.dialogue.close()
 
             return SceneEventResult(consumed=True)

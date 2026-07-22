@@ -1,4 +1,5 @@
 import pygame
+import pytest
 
 from game.ui.menu_screen import MenuAction, MenuScreen
 
@@ -56,15 +57,42 @@ def test_menu_ignores_mouse_click_outside_fixed_resolution_buttons() -> None:
     assert menu.handle_event(event, FIXED_SURFACE_SIZE) is None
 
 
-def test_menu_quit_button_works_with_keyboard() -> None:
+@pytest.mark.parametrize("key", [pygame.K_DOWN, pygame.K_s])
+def test_menu_down_bindings_select_quit(key: int) -> None:
     menu = create_menu()
 
-    menu.handle_event(
-        pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN),
+    action = menu.handle_event(
+        pygame.event.Event(pygame.KEYDOWN, key=key),
         FIXED_SURFACE_SIZE,
     )
+
+    assert action is None
+    assert menu.selected_index == 1
+
+
+@pytest.mark.parametrize("key", [pygame.K_UP, pygame.K_w])
+def test_menu_up_bindings_wrap_to_quit(key: int) -> None:
+    menu = create_menu()
+
     action = menu.handle_event(
-        pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN),
+        pygame.event.Event(pygame.KEYDOWN, key=key),
+        FIXED_SURFACE_SIZE,
+    )
+
+    assert action is None
+    assert menu.selected_index == 1
+
+
+@pytest.mark.parametrize(
+    "key",
+    [pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE],
+)
+def test_menu_confirm_bindings_activate_selected_action(key: int) -> None:
+    menu = create_menu()
+    menu.selected_index = 1
+
+    action = menu.handle_event(
+        pygame.event.Event(pygame.KEYDOWN, key=key),
         FIXED_SURFACE_SIZE,
     )
 

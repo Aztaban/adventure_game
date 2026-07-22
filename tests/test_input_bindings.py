@@ -1,46 +1,115 @@
 import pygame
+import pytest
 
 from game.input.bindings import (
-    is_cancel,
-    is_dialogue_advance,
-    is_new_game,
-    is_primary_action,
+    INPUT_BINDINGS,
+    InputAction,
+    actions_for_event,
+    binding_for,
 )
 
 
-def test_primary_action_accepts_left_mouse_button() -> None:
-    event = pygame.event.Event(
-        pygame.MOUSEBUTTONDOWN,
-        button=1,
-        pos=(100, 100),
-    )
+@pytest.mark.parametrize(
+    ("event", "expected_actions"),
+    [
+        (
+            pygame.event.Event(
+                pygame.MOUSEBUTTONDOWN,
+                button=1,
+                pos=(100, 100),
+            ),
+            {InputAction.PRIMARY},
+        ),
+        (
+            pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE),
+            {InputAction.CANCEL},
+        ),
+        (
+            pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE),
+            {InputAction.DIALOGUE_ADVANCE, InputAction.MENU_CONFIRM},
+        ),
+        (
+            pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN),
+            {InputAction.DIALOGUE_ADVANCE, InputAction.MENU_CONFIRM},
+        ),
+        (
+            pygame.event.Event(pygame.KEYDOWN, key=pygame.K_KP_ENTER),
+            {InputAction.DIALOGUE_ADVANCE, InputAction.MENU_CONFIRM},
+        ),
+        (
+            pygame.event.Event(pygame.KEYDOWN, key=pygame.K_UP),
+            {InputAction.MENU_UP},
+        ),
+        (
+            pygame.event.Event(pygame.KEYDOWN, key=pygame.K_w),
+            {InputAction.MENU_UP},
+        ),
+        (
+            pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN),
+            {InputAction.MENU_DOWN},
+        ),
+        (
+            pygame.event.Event(pygame.KEYDOWN, key=pygame.K_s),
+            {InputAction.MENU_DOWN},
+        ),
+        (
+            pygame.event.Event(pygame.KEYDOWN, key=pygame.K_n),
+            {InputAction.NEW_GAME},
+        ),
+        (
+            pygame.event.Event(pygame.KEYDOWN, key=pygame.K_F11),
+            {InputAction.FULLSCREEN_TOGGLE},
+        ),
+    ],
+)
+def test_current_physical_inputs_translate_to_semantic_actions(
+    event: pygame.event.Event,
+    expected_actions: set[InputAction],
+) -> None:
+    assert actions_for_event(event) == frozenset(expected_actions)
 
-    assert is_primary_action(event)
 
-
-def test_primary_action_rejects_right_mouse_button() -> None:
+def test_unbound_input_translates_to_no_actions() -> None:
     event = pygame.event.Event(
         pygame.MOUSEBUTTONDOWN,
         button=3,
         pos=(100, 100),
     )
 
-    assert not is_primary_action(event)
+    assert actions_for_event(event) == frozenset()
 
 
-def test_dialogue_advance_accepts_space() -> None:
-    event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE)
-
-    assert is_dialogue_advance(event)
+def test_binding_catalog_covers_the_complete_action_vocabulary() -> None:
+    assert set(INPUT_BINDINGS) == set(InputAction)
 
 
-def test_cancel_accepts_escape() -> None:
-    event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)
+@pytest.mark.parametrize(
+    ("action", "display_name", "input_summary"),
+    [
+        (InputAction.PRIMARY, "Interact / select", "Left Click"),
+        (InputAction.CANCEL, "Cancel / back", "Esc"),
+        (
+            InputAction.DIALOGUE_ADVANCE,
+            "Advance dialogue",
+            "Space / Enter / Numpad Enter",
+        ),
+        (InputAction.MENU_UP, "Menu up", "Up Arrow / W"),
+        (InputAction.MENU_DOWN, "Menu down", "Down Arrow / S"),
+        (
+            InputAction.MENU_CONFIRM,
+            "Confirm menu",
+            "Enter / Numpad Enter / Space",
+        ),
+        (InputAction.NEW_GAME, "Start a fresh game", "N"),
+        (InputAction.FULLSCREEN_TOGGLE, "Toggle fullscreen", "F11"),
+    ],
+)
+def test_player_facing_control_text_comes_from_the_binding_catalog(
+    action: InputAction,
+    display_name: str,
+    input_summary: str,
+) -> None:
+    binding = binding_for(action)
 
-    assert is_cancel(event)
-
-
-def test_new_game_accepts_n() -> None:
-    event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_n)
-
-    assert is_new_game(event)
+    assert binding.display_name == display_name
+    assert binding.input_summary == input_summary
