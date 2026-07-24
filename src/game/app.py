@@ -6,14 +6,15 @@ import pygame
 
 from game.asset_ids import SCENE_TRANSITION_SOUND, TITLE_BACKGROUND
 from game.content.demo_world import create_demo_content
+from game.display import LETTERBOX_COLOR, present_logical_surface
 from game.game_session import GameSession, create_game_session
 from game.input.bindings import InputAction, actions_for_event
 from game.settings import (
     FPS,
     GAME_TITLE,
+    LOGICAL_HEIGHT,
+    LOGICAL_SIZE,
     SHOW_DEBUG_OVERLAY,
-    WINDOW_HEIGHT,
-    WINDOW_WIDTH,
 )
 from game.theme import TEXT_SECONDARY
 from game.ui.menu_screen import MenuAction, MenuScreen
@@ -34,7 +35,8 @@ class GameApp:
     def __init__(self) -> None:
         pygame.init()
 
-        self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+        self.screen = pygame.display.set_mode(LOGICAL_SIZE)
+        self.logical_surface = pygame.Surface(LOGICAL_SIZE)
         pygame.display.set_caption(GAME_TITLE)
 
         self.clock = pygame.time.Clock()
@@ -137,7 +139,7 @@ class GameApp:
         event: pygame.event.Event,
     ) -> None:
         """Apply a title or ending menu action."""
-        action = menu.handle_event(event, self.screen.get_size())
+        action = menu.handle_event(event, self.logical_surface.get_size())
 
         if action is MenuAction.PRIMARY:
             self.start_new_game()
@@ -145,21 +147,24 @@ class GameApp:
             self.is_running = False
 
     def _draw(self) -> None:
-        """Draw the active top-level presentation mode."""
+        """Draw one logical frame and present it to the physical display."""
+        self.logical_surface.fill(LETTERBOX_COLOR)
+
         if self.mode is AppMode.TITLE:
-            self.title_screen.draw(self.screen, self.ui_resources)
+            self.title_screen.draw(self.logical_surface, self.ui_resources)
         else:
-            self.session.scene_manager.draw(self.screen)
+            self.session.scene_manager.draw(self.logical_surface)
 
             if self.mode is AppMode.ENDING:
-                self.ending_screen.draw(self.screen, self.ui_resources)
+                self.ending_screen.draw(self.logical_surface, self.ui_resources)
             elif SHOW_DEBUG_OVERLAY:
-                self._draw_debug_overlay()
+                self._draw_debug_overlay(self.logical_surface)
 
+        present_logical_surface(self.logical_surface, self.screen)
         pygame.display.flip()
 
-    def _draw_debug_overlay(self) -> None:
-        """Draw optional scene and FPS diagnostics."""
+    def _draw_debug_overlay(self, surface: pygame.Surface) -> None:
+        """Draw optional scene and FPS diagnostics onto the logical frame."""
         fps = int(self.clock.get_fps())
         scene_id = self.session.scene_manager.current_scene_id
         debug_text = f"Scene: {scene_id} | FPS: {fps}"
@@ -169,4 +174,4 @@ class GameApp:
             TEXT_SECONDARY,
         )
 
-        self.screen.blit(debug_surface, (20, WINDOW_HEIGHT - 35))
+        surface.blit(debug_surface, (20, LOGICAL_HEIGHT - 35))

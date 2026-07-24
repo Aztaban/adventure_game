@@ -8,6 +8,7 @@ from game.content.item_ids import EMPTY_CUP
 from game.content.scene_ids import STARTING_SCENE_ID
 from game.game_session import create_game_session
 from game.game_state import GameState
+from game.settings import LOGICAL_SIZE
 from game.ui.menu_screen import MenuScreen
 from game.ui.resources import UIResources
 
@@ -55,7 +56,8 @@ class RecordingResources:
 def create_menu_test_app() -> GameApp:
     """Create an app instance without opening a display window."""
     app = object.__new__(GameApp)
-    app.screen = pygame.Surface((1280, 720))
+    app.screen = pygame.Surface(LOGICAL_SIZE)
+    app.logical_surface = pygame.Surface(LOGICAL_SIZE)
     app.is_running = True
     app.ui_resources = UIResources()
     app.content = create_demo_content(app.ui_resources)
@@ -183,7 +185,8 @@ def test_gameplay_transition_plays_sound_and_opens_ending(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     app = object.__new__(GameApp)
-    app.screen = pygame.Surface((1280, 720))
+    app.screen = pygame.Surface(LOGICAL_SIZE)
+    app.logical_surface = pygame.Surface(LOGICAL_SIZE)
     app.is_running = True
     app.mode = AppMode.PLAYING
     app.session = DummySession()

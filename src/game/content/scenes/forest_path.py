@@ -28,7 +28,7 @@ from game.entities.item_hotspot import ItemHotspot
 from game.entities.npc import NPC
 from game.game_state import GameState
 from game.scenes.adventure_scene import AdventureScene
-from game.settings import WINDOW_HEIGHT, WINDOW_WIDTH
+from game.settings import LOGICAL_HEIGHT, LOGICAL_WIDTH
 from game.systems.item_use import ItemUseInteraction
 from game.systems.recipe import RecipeBook
 from game.ui.resources import UIResources
@@ -49,7 +49,7 @@ def create_forest_path(
             ExitHotspot(
                 rect=pygame.Rect(
                     50,
-                    WINDOW_HEIGHT // 2 - 50,
+                    LOGICAL_HEIGHT // 2 - 50,
                     190,
                     100,
                 ),
@@ -59,8 +59,8 @@ def create_forest_path(
             ),
             ExitHotspot(
                 rect=pygame.Rect(
-                    WINDOW_WIDTH - 270,
-                    WINDOW_HEIGHT - 170,
+                    LOGICAL_WIDTH - 270,
+                    LOGICAL_HEIGHT - 170,
                     220,
                     100,
                 ),

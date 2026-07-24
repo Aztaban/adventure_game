@@ -14,7 +14,7 @@ from game.game_state import GameState
 from game.input.bindings import InputAction, actions_for_event
 from game.scene_event_result import SceneEventResult
 from game.scenes.base_scene import BaseScene
-from game.settings import WINDOW_WIDTH
+from game.settings import LOGICAL_WIDTH
 from game.systems.adventure_interaction_service import (
     AdventureInteractionOutcome,
     AdventureInteractionService,
@@ -91,7 +91,7 @@ class AdventureScene(BaseScene):
             hint_font=ui_resources.hint_font,
         )
         self.inventory_bar = InventoryBar(
-            window_width=WINDOW_WIDTH,
+            window_width=LOGICAL_WIDTH,
             title_font=ui_resources.inventory_title_font,
             item_font=ui_resources.inventory_item_font,
             status_font=ui_resources.inventory_status_font,

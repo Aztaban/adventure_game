@@ -14,7 +14,7 @@ from game.entities.hotspot import Hotspot
 from game.entities.item import Item
 from game.game_state import GameState
 from game.scenes.adventure_scene import AdventureScene
-from game.settings import WINDOW_HEIGHT
+from game.settings import LOGICAL_HEIGHT
 from game.systems.recipe import RecipeBook
 from game.ui.resources import UIResources
 
@@ -36,7 +36,7 @@ def create_tower_interior(
             ExitHotspot(
                 rect=pygame.Rect(
                     50,
-                    WINDOW_HEIGHT // 2 - 50,
+                    LOGICAL_HEIGHT // 2 - 50,
                     190,
                     100,
                 ),

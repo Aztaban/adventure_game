@@ -1,7 +1,7 @@
 import pygame
 
 from game.entities.item import Item
-from game.settings import WINDOW_HEIGHT, WINDOW_WIDTH
+from game.settings import LOGICAL_HEIGHT, LOGICAL_WIDTH
 from game.ui.inventory_bar import InventoryBar
 from game.ui.resources import UIResources
 
@@ -15,7 +15,7 @@ def create_inventory_bar() -> InventoryBar:
     resources = UIResources()
 
     return InventoryBar(
-        window_width=WINDOW_WIDTH,
+        window_width=LOGICAL_WIDTH,
         title_font=resources.inventory_title_font,
         item_font=resources.inventory_item_font,
         status_font=resources.inventory_status_font,
@@ -47,7 +47,7 @@ def create_items(count: int) -> tuple[Item, ...]:
 
 def test_inventory_bar_draws_empty_inventory() -> None:
     inventory_bar = create_inventory_bar()
-    surface = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+    surface = pygame.Surface((LOGICAL_WIDTH, LOGICAL_HEIGHT))
 
     inventory_bar.draw(
         surface=surface,
@@ -135,4 +135,4 @@ def test_planned_maximum_inventory_size_fits_inside_window() -> None:
     layout = inventory_bar.layout_for_items(items)
 
     assert len(layout.item_rows) == PLANNED_MAXIMUM_VISIBLE_ITEMS
-    assert layout.panel_rect.bottom <= WINDOW_HEIGHT
+    assert layout.panel_rect.bottom <= LOGICAL_HEIGHT
