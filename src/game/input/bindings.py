@@ -40,7 +40,11 @@ class InputTrigger:
         if self.kind is InputTriggerKind.KEY:
             return event.type == pygame.KEYDOWN and event.key == self.code
 
-        return event.type == pygame.MOUSEBUTTONDOWN and event.button == self.code
+        return (
+            event.type == pygame.MOUSEBUTTONDOWN
+            and event.button == self.code
+            and getattr(event, "pos", None) is not None
+        )
 
 
 @dataclass(frozen=True)

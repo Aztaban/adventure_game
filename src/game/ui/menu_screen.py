@@ -220,10 +220,13 @@ class MenuScreen:
 
     @staticmethod
     def _button_index_at(
-        position: tuple[int, int],
+        position: tuple[int, int] | None,
         buttons: tuple[MenuButtonLayout, ...],
     ) -> int | None:
         """Return the button index under a position."""
+        if position is None:
+            return None
+
         for index, button in enumerate(buttons):
             if button.rect.collidepoint(position):
                 return index

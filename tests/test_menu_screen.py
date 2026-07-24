@@ -104,3 +104,14 @@ def test_menu_escape_quits() -> None:
     event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)
 
     assert menu.handle_event(event, FIXED_SURFACE_SIZE) is MenuAction.QUIT
+
+
+def test_menu_ignores_non_interactive_pointer_click() -> None:
+    menu = create_menu()
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        button=1,
+        pos=None,
+    )
+
+    assert menu.handle_event(event, FIXED_SURFACE_SIZE) is None

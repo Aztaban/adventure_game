@@ -83,6 +83,7 @@ class AdventureScene(BaseScene):
         )
         self.interaction_text: str | None = None
         self.active_speaker_name = ""
+        self.pointer_position: tuple[int, int] | None = None
         self.ui_resources = ui_resources
 
         self.dialogue = Dialogue()
@@ -110,6 +111,9 @@ class AdventureScene(BaseScene):
         event: pygame.event.Event,
     ) -> SceneEventResult:
         """Handle scene input."""
+        if event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP):
+            self.pointer_position = event.pos
+
         actions = actions_for_event(event)
 
         if self.dialogue.is_active:
@@ -141,7 +145,7 @@ class AdventureScene(BaseScene):
 
         self._draw_scene_header(surface)
 
-        hovered_target = self._resolve_world_target(pygame.mouse.get_pos())
+        hovered_target = self._resolve_world_target(self.pointer_position)
 
         self._draw_scene_entities(
             surface=surface,
@@ -189,9 +193,12 @@ class AdventureScene(BaseScene):
 
     def _handle_primary_action(
         self,
-        position: tuple[int, int],
+        position: tuple[int, int] | None,
     ) -> SceneEventResult:
         """Handle a primary click based on its target."""
+        if position is None:
+            return SceneEventResult()
+
         inventory = self.game_state.inventory
 
         inventory_item = self.inventory_bar.item_at_position(
@@ -476,9 +483,12 @@ class AdventureScene(BaseScene):
 
     def _resolve_world_target(
         self,
-        position: tuple[int, int],
+        position: tuple[int, int] | None,
     ) -> WorldTarget | None:
         """Return the highest-priority world target at a position."""
+        if position is None:
+            return None
+
         for npc in self.npcs:
             if npc.contains_point(position):
                 return WorldTarget(WorldTargetKind.NPC, npc)

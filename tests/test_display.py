@@ -4,6 +4,8 @@ import pytest
 from game.display import (
     LETTERBOX_COLOR,
     calculate_destination_rect,
+    convert_pointer_event,
+    physical_to_logical_position,
     present_logical_surface,
 )
 from game.settings import LOGICAL_SIZE
@@ -105,3 +107,99 @@ def test_scaled_presentation_clears_letterbox_space_and_uses_one_scaled_frame(
     assert output_surface.fill_calls == [LETTERBOX_COLOR]
     assert scale_calls == [(logical_surface, destination_rect.size)]
     assert output_surface.blit_calls == [(scaled_surface, destination_rect)]
+
+
+@pytest.mark.parametrize(
+    ("output_size", "physical_position", "expected_position"),
+    [
+        ((1280, 720), (640, 360), (640, 360)),
+        ((1600, 900), (800, 450), (640, 360)),
+        ((1600, 900), (0, 0), (0, 0)),
+        ((1600, 900), (1599, 899), (1279, 719)),
+        ((3440, 1440), (440, 0), (0, 0)),
+        ((3440, 1440), (2999, 1439), (1279, 719)),
+        ((1024, 768), (512, 384), (640, 360)),
+    ],
+)
+def test_physical_positions_map_into_logical_frame(
+    output_size: tuple[int, int],
+    physical_position: tuple[int, int],
+    expected_position: tuple[int, int],
+) -> None:
+    destination_rect = calculate_destination_rect(LOGICAL_SIZE, output_size)
+
+    assert (
+        physical_to_logical_position(
+            physical_position,
+            LOGICAL_SIZE,
+            destination_rect,
+        )
+        == expected_position
+    )
+
+
+@pytest.mark.parametrize(
+    "physical_position",
+    [
+        (512, 95),
+        (512, 672),
+        (-1, 384),
+        (1024, 384),
+    ],
+)
+def test_physical_positions_outside_letterboxed_frame_are_rejected(
+    physical_position: tuple[int, int],
+) -> None:
+    destination_rect = calculate_destination_rect(LOGICAL_SIZE, (1024, 768))
+
+    assert (
+        physical_to_logical_position(
+            physical_position,
+            LOGICAL_SIZE,
+            destination_rect,
+        )
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    "event_type",
+    [pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP],
+)
+def test_pointer_events_share_the_same_coordinate_conversion(event_type: int) -> None:
+    attributes: dict[str, object] = {"pos": (800, 450)}
+
+    if event_type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP):
+        attributes["button"] = 1
+
+    event = pygame.event.Event(event_type, attributes)
+    converted_event = convert_pointer_event(
+        event,
+        LOGICAL_SIZE,
+        calculate_destination_rect(LOGICAL_SIZE, (1600, 900)),
+    )
+
+    assert converted_event.pos == (640, 360)
+    assert event.pos == (800, 450)
+
+
+@pytest.mark.parametrize(
+    "event_type",
+    [pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN],
+)
+def test_pointer_events_in_letterbox_space_receive_no_logical_position(
+    event_type: int,
+) -> None:
+    attributes: dict[str, object] = {"pos": (500, 100)}
+
+    if event_type == pygame.MOUSEBUTTONDOWN:
+        attributes["button"] = 1
+
+    event = pygame.event.Event(event_type, attributes)
+    converted_event = convert_pointer_event(
+        event,
+        LOGICAL_SIZE,
+        calculate_destination_rect(LOGICAL_SIZE, (1000, 1000)),
+    )
+
+    assert converted_event.pos is None

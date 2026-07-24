@@ -20,13 +20,14 @@ class DummySceneManager:
 
     def __init__(self) -> None:
         self.handled_events = 0
+        self.handled_event_positions: list[tuple[int, int] | None] = []
         self.current_scene_id = "first"
         self.transition_on_handle = False
 
     def handle_event(self, event: pygame.event.Event) -> bool:
         """Record scene event handling and optionally transition."""
-        del event
         self.handled_events += 1
+        self.handled_event_positions.append(getattr(event, "pos", None))
 
         if self.transition_on_handle:
             self.current_scene_id = "second"
@@ -206,3 +207,100 @@ def test_gameplay_transition_plays_sound_and_opens_ending(
 
     assert app.mode is AppMode.ENDING
     assert app.ui_resources.played_sound_ids == [SCENE_TRANSITION_SOUND]
+
+
+def test_scaled_title_mouse_click_is_converted_before_menu_hit_testing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_menu_test_app()
+    app.screen = pygame.Surface((1600, 900))
+    old_session = app.session
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        button=1,
+        pos=(800, 578),
+    )
+    monkeypatch.setattr(pygame.event, "get", lambda: [event])
+
+    app._handle_events()
+
+    assert app.mode is AppMode.PLAYING
+    assert app.session is not old_session
+
+
+def test_letterbox_click_does_not_activate_title_menu(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_menu_test_app()
+    app.screen = pygame.Surface((1000, 1000))
+    old_session = app.session
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        button=1,
+        pos=(500, 100),
+    )
+    monkeypatch.setattr(pygame.event, "get", lambda: [event])
+
+    app._handle_events()
+
+    assert app.mode is AppMode.TITLE
+    assert app.session is old_session
+    assert app.is_running
+
+
+def test_gameplay_receives_logical_pointer_coordinates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = object.__new__(GameApp)
+    app.screen = pygame.Surface((1600, 900))
+    app.logical_surface = pygame.Surface(LOGICAL_SIZE)
+    app.is_running = True
+    app.mode = AppMode.PLAYING
+    app.session = DummySession()
+    app.ui_resources = RecordingResources()
+    app.ending_screen = MenuScreen(
+        title="Complete",
+        subtitle="Done.",
+        primary_label="Play Again",
+        overlay_gameplay=True,
+    )
+    event = pygame.event.Event(
+        pygame.MOUSEMOTION,
+        pos=(800, 450),
+        rel=(0, 0),
+        buttons=(0, 0, 0),
+    )
+    monkeypatch.setattr(pygame.event, "get", lambda: [event])
+
+    app._handle_events()
+
+    assert app.session.scene_manager.handled_event_positions == [(640, 360)]
+
+
+def test_gameplay_receives_non_interactive_pointer_outside_frame(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = object.__new__(GameApp)
+    app.screen = pygame.Surface((1000, 1000))
+    app.logical_surface = pygame.Surface(LOGICAL_SIZE)
+    app.is_running = True
+    app.mode = AppMode.PLAYING
+    app.session = DummySession()
+    app.ui_resources = RecordingResources()
+    app.ending_screen = MenuScreen(
+        title="Complete",
+        subtitle="Done.",
+        primary_label="Play Again",
+        overlay_gameplay=True,
+    )
+    event = pygame.event.Event(
+        pygame.MOUSEMOTION,
+        pos=(500, 100),
+        rel=(0, 0),
+        buttons=(0, 0, 0),
+    )
+    monkeypatch.setattr(pygame.event, "get", lambda: [event])
+
+    app._handle_events()
+
+    assert app.session.scene_manager.handled_event_positions == [None]

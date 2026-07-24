@@ -113,3 +113,13 @@ def test_player_facing_control_text_comes_from_the_binding_catalog(
 
     assert binding.display_name == display_name
     assert binding.input_summary == input_summary
+
+
+def test_primary_action_ignores_non_interactive_pointer_position() -> None:
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        button=1,
+        pos=None,
+    )
+
+    assert actions_for_event(event) == frozenset()

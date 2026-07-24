@@ -950,3 +950,79 @@ def test_scene_plays_dialogue_sound_for_open_and_next_line() -> None:
     scene.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE))
 
     assert resources.played_sound_ids == [DIALOGUE_SOUND, DIALOGUE_SOUND]
+
+
+def test_mouse_motion_updates_scene_pointer_position() -> None:
+    scene = create_test_scene(GameState())
+    event = pygame.event.Event(
+        pygame.MOUSEMOTION,
+        pos=(640, 360),
+        rel=(0, 0),
+        buttons=(0, 0, 0),
+    )
+
+    result = scene.handle_event(event)
+
+    assert not result.consumed
+    assert scene.pointer_position == (640, 360)
+
+
+def test_non_interactive_pointer_position_clears_scene_hover() -> None:
+    scene = create_test_scene(GameState())
+    scene.pointer_position = (640, 360)
+    event = pygame.event.Event(
+        pygame.MOUSEMOTION,
+        pos=None,
+        rel=(0, 0),
+        buttons=(0, 0, 0),
+    )
+
+    result = scene.handle_event(event)
+
+    assert not result.consumed
+    assert scene.pointer_position is None
+    assert scene._resolve_world_target(scene.pointer_position) is None
+
+
+def test_non_interactive_pointer_click_does_not_trigger_inventory_or_world() -> None:
+    game_state = GameState()
+    item = create_item("inventory_item", "Inventory Item")
+    game_state.inventory.add(item)
+    hotspot = Hotspot(
+        rect=pygame.Rect(100, 100, 120, 120),
+        label="World Hotspot",
+        inspect_text="World interaction triggered.",
+    )
+    scene = create_test_scene(game_state, hotspots=[hotspot])
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        button=1,
+        pos=None,
+    )
+
+    result = scene.handle_event(event)
+
+    assert not result.consumed
+    assert game_state.inventory.selected_item is None
+    assert scene.interaction_text is None
+
+
+def test_non_interactive_pointer_click_does_not_advance_dialogue() -> None:
+    game_state = GameState()
+    npc = NPC(
+        rect=pygame.Rect(100, 100, 120, 120),
+        name="Test NPC",
+        dialogue_lines=("First line.", "Second line."),
+    )
+    scene = create_test_scene(game_state, npcs=[npc])
+    scene.handle_event(create_primary_click(npc.rect.center))
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        button=1,
+        pos=None,
+    )
+
+    result = scene.handle_event(event)
+
+    assert not result.consumed
+    assert scene.dialogue.current_line == "First line."

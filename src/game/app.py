@@ -6,7 +6,13 @@ import pygame
 
 from game.asset_ids import SCENE_TRANSITION_SOUND, TITLE_BACKGROUND
 from game.content.demo_world import create_demo_content
-from game.display import LETTERBOX_COLOR, present_logical_surface
+from game.display import (
+    LETTERBOX_COLOR,
+    POINTER_EVENT_TYPES,
+    calculate_destination_rect,
+    convert_pointer_event,
+    present_logical_surface,
+)
 from game.game_session import GameSession, create_game_session
 from game.input.bindings import InputAction, actions_for_event
 from game.settings import (
@@ -103,6 +109,7 @@ class GameApp:
                 self.is_running = False
                 continue
 
+            event = self._convert_pointer_event(event)
             actions = actions_for_event(event)
 
             if InputAction.NEW_GAME in actions:
@@ -132,6 +139,24 @@ class GameApp:
 
             if InputAction.CANCEL in actions:
                 self.is_running = False
+
+    def _convert_pointer_event(
+        self,
+        event: pygame.event.Event,
+    ) -> pygame.event.Event:
+        """Translate physical pointer coordinates into the logical frame."""
+        if event.type not in POINTER_EVENT_TYPES:
+            return event
+
+        destination_rect = calculate_destination_rect(
+            self.logical_surface.get_size(),
+            self.screen.get_size(),
+        )
+        return convert_pointer_event(
+            event,
+            self.logical_surface.get_size(),
+            destination_rect,
+        )
 
     def _handle_menu_event(
         self,
