@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from enum import Enum
 
 import pygame
@@ -9,21 +10,27 @@ from game.content.demo_world import create_demo_content
 from game.display import (
     LETTERBOX_COLOR,
     POINTER_EVENT_TYPES,
+    DisplayModeChangeError,
     calculate_destination_rect,
     convert_pointer_event,
+    create_display_surface,
     present_logical_surface,
+    primary_desktop_size,
 )
 from game.game_session import GameSession, create_game_session
 from game.input.bindings import InputAction, actions_for_event
 from game.settings import (
+    DEFAULT_WINDOWED_SIZE,
     FPS,
     GAME_TITLE,
     LOGICAL_HEIGHT,
     LOGICAL_SIZE,
     SHOW_DEBUG_OVERLAY,
+    WINDOWED_PRESETS,
 )
 from game.theme import TEXT_SECONDARY
 from game.ui.menu_screen import MenuAction, MenuScreen
+from game.ui.message_box import MessageBox
 from game.ui.resources import UIResources
 
 
@@ -41,8 +48,18 @@ class GameApp:
     def __init__(self) -> None:
         pygame.init()
 
-        self.screen = pygame.display.set_mode(LOGICAL_SIZE)
         self.logical_surface = pygame.Surface(LOGICAL_SIZE)
+        self.is_fullscreen = True
+        self.last_windowed_preset = DEFAULT_WINDOWED_SIZE
+        self.display_error_message: str | None = None
+        self.screen = create_display_surface(
+            primary_desktop_size(),
+            fullscreen=True,
+        )
+        self.presentation_rect = calculate_destination_rect(
+            self.logical_surface.get_size(),
+            self.screen.get_size(),
+        )
         pygame.display.set_caption(GAME_TITLE)
 
         self.clock = pygame.time.Clock()
@@ -87,6 +104,71 @@ class GameApp:
         if hasattr(self, "ending_screen"):
             self.ending_screen.reset_selection()
 
+    def set_windowed_preset(self, size: tuple[int, int]) -> bool:
+        """Switch to one approved windowed size for the current session."""
+        if size not in WINDOWED_PRESETS:
+            approved_sizes = ", ".join(
+                f"{width} x {height}" for width, height in WINDOWED_PRESETS
+            )
+            raise ValueError(
+                f"Unsupported windowed size {size!r}. Approved sizes: {approved_sizes}."
+            )
+
+        return self._change_display_mode(
+            size,
+            fullscreen=False,
+            windowed_preset=size,
+        )
+
+    def toggle_fullscreen(self) -> bool:
+        """Toggle fullscreen while remembering the current-session windowed preset."""
+        if self.is_fullscreen:
+            return self.set_windowed_preset(self.last_windowed_preset)
+
+        try:
+            desktop_size = primary_desktop_size()
+        except DisplayModeChangeError as error:
+            self._report_display_error(str(error))
+            return False
+
+        return self._change_display_mode(desktop_size, fullscreen=True)
+
+    def _change_display_mode(
+        self,
+        size: tuple[int, int],
+        *,
+        fullscreen: bool,
+        windowed_preset: tuple[int, int] | None = None,
+    ) -> bool:
+        """Recreate only the physical display while preserving gameplay state."""
+        try:
+            new_screen = create_display_surface(size, fullscreen=fullscreen)
+        except DisplayModeChangeError as error:
+            self._report_display_error(str(error))
+            return False
+
+        self.screen = new_screen
+        self.is_fullscreen = fullscreen
+
+        if windowed_preset is not None:
+            self.last_windowed_preset = windowed_preset
+
+        self._recalculate_presentation_rect()
+        self.display_error_message = None
+        return True
+
+    def _recalculate_presentation_rect(self) -> None:
+        """Refresh physical-to-logical viewport geometry after mode changes."""
+        self.presentation_rect = calculate_destination_rect(
+            self.logical_surface.get_size(),
+            self.screen.get_size(),
+        )
+
+    def _report_display_error(self, message: str) -> None:
+        """Keep the current session alive and expose a clear display error."""
+        self.display_error_message = message
+        print(message, file=sys.stderr)
+
     def run(self) -> None:
         """Run the main game loop."""
         try:
@@ -111,6 +193,10 @@ class GameApp:
 
             event = self._convert_pointer_event(event)
             actions = actions_for_event(event)
+
+            if InputAction.FULLSCREEN_TOGGLE in actions:
+                self.toggle_fullscreen()
+                continue
 
             if InputAction.NEW_GAME in actions:
                 self.start_new_game()
@@ -148,10 +234,12 @@ class GameApp:
         if event.type not in POINTER_EVENT_TYPES:
             return event
 
-        destination_rect = calculate_destination_rect(
-            self.logical_surface.get_size(),
-            self.screen.get_size(),
-        )
+        destination_rect = getattr(self, "presentation_rect", None)
+
+        if destination_rect is None:
+            self._recalculate_presentation_rect()
+            destination_rect = self.presentation_rect
+
         return convert_pointer_event(
             event,
             self.logical_surface.get_size(),
@@ -184,6 +272,15 @@ class GameApp:
                 self.ending_screen.draw(self.logical_surface, self.ui_resources)
             elif SHOW_DEBUG_OVERLAY:
                 self._draw_debug_overlay(self.logical_surface)
+
+        display_error_message = getattr(self, "display_error_message", None)
+
+        if display_error_message:
+            MessageBox(self.ui_resources.small_font).draw(
+                self.logical_surface,
+                display_error_message,
+                available_rect=pygame.Rect(0, 0, *LOGICAL_SIZE),
+            )
 
         present_logical_surface(self.logical_surface, self.screen)
         pygame.display.flip()

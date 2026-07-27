@@ -12,6 +12,49 @@ POINTER_EVENT_TYPES = frozenset(
 )
 
 
+class DisplayModeChangeError(RuntimeError):
+    """Raised when Pygame cannot create an approved display mode."""
+
+
+def primary_desktop_size() -> tuple[int, int]:
+    """Return the configured size of the primary desktop."""
+    try:
+        desktop_sizes = pygame.display.get_desktop_sizes()
+    except pygame.error as error:
+        raise DisplayModeChangeError(
+            f"Could not read the desktop display size: {error}"
+        ) from error
+
+    if not desktop_sizes:
+        raise DisplayModeChangeError("Pygame did not report an available desktop display.")
+
+    width, height = desktop_sizes[0]
+
+    if width <= 0 or height <= 0:
+        raise DisplayModeChangeError(
+            f"Pygame reported an invalid desktop display size: {width} x {height}."
+        )
+
+    return int(width), int(height)
+
+
+def create_display_surface(
+    size: tuple[int, int],
+    *,
+    fullscreen: bool,
+) -> pygame.Surface:
+    """Create one fullscreen-desktop or approved windowed display surface."""
+    flags = pygame.FULLSCREEN if fullscreen else 0
+    mode_name = "fullscreen desktop" if fullscreen else f"{size[0]} x {size[1]} windowed"
+
+    try:
+        return pygame.display.set_mode(size, flags)
+    except pygame.error as error:
+        raise DisplayModeChangeError(
+            f"Could not switch to {mode_name} mode: {error}"
+        ) from error
+
+
 def calculate_destination_rect(
     logical_size: tuple[int, int],
     output_size: tuple[int, int],

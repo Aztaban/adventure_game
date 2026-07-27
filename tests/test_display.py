@@ -3,10 +3,13 @@ import pytest
 
 from game.display import (
     LETTERBOX_COLOR,
+    DisplayModeChangeError,
     calculate_destination_rect,
     convert_pointer_event,
+    create_display_surface,
     physical_to_logical_position,
     present_logical_surface,
+    primary_desktop_size,
 )
 from game.settings import LOGICAL_SIZE
 
@@ -203,3 +206,64 @@ def test_pointer_events_in_letterbox_space_receive_no_logical_position(
     )
 
     assert converted_event.pos is None
+
+
+def test_primary_desktop_size_uses_first_configured_desktop(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        pygame.display,
+        "get_desktop_sizes",
+        lambda: [(2560, 1440), (1920, 1080)],
+    )
+
+    assert primary_desktop_size() == (2560, 1440)
+
+
+def test_primary_desktop_size_rejects_missing_desktop(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(pygame.display, "get_desktop_sizes", lambda: [])
+
+    with pytest.raises(DisplayModeChangeError, match="available desktop"):
+        primary_desktop_size()
+
+
+@pytest.mark.parametrize(
+    ("fullscreen", "expected_flags"),
+    [(True, pygame.FULLSCREEN), (False, 0)],
+)
+def test_display_surface_creation_uses_expected_pygame_flags(
+    fullscreen: bool,
+    expected_flags: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expected_surface = pygame.Surface((1600, 900))
+    calls: list[tuple[tuple[int, int], int]] = []
+
+    def record_set_mode(
+        size: tuple[int, int],
+        flags: int,
+    ) -> pygame.Surface:
+        calls.append((size, flags))
+        return expected_surface
+
+    monkeypatch.setattr(pygame.display, "set_mode", record_set_mode)
+
+    result = create_display_surface((1600, 900), fullscreen=fullscreen)
+
+    assert result is expected_surface
+    assert calls == [((1600, 900), expected_flags)]
+
+
+def test_display_surface_creation_wraps_pygame_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_set_mode(size: tuple[int, int], flags: int) -> pygame.Surface:
+        del size, flags
+        raise pygame.error("video mode unavailable")
+
+    monkeypatch.setattr(pygame.display, "set_mode", fail_set_mode)
+
+    with pytest.raises(DisplayModeChangeError, match="1600 x 900 windowed"):
+        create_display_surface((1600, 900), fullscreen=False)
