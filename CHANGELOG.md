@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.11.0 - 2026-07-27
+
+### Added
+
+- Added a fixed `1280 x 720` logical render surface used by title, Controls, gameplay, ending, and debug presentation.
+- Added aspect-preserving output scaling with centered letterboxing or pillarboxing for non-16:9 physical displays.
+- Added fullscreen-desktop startup and `F11` switching between fullscreen and the current-session windowed preset.
+- Added approved `1280 x 720`, `1600 x 900`, and `1920 x 1080` windowed display modes.
+- Added physical-to-logical pointer conversion for mouse motion and mouse button events, including rejection of letterbox input.
+- Added a semantic input-action catalog for primary action, cancel, dialogue advance, menu navigation, menu confirmation, new game, and fullscreen toggle.
+- Added a read-only Controls screen opened from the title menu and populated from the active binding catalog.
+- Added focused display-contract, viewport-math, pointer-conversion, display-mode, input-binding, Controls-screen, and application-flow tests.
+
+### Changed
+
+- Updated the title menu to offer Start Game, Controls, and Quit.
+- Routed title, Controls, gameplay, dialogue, and ending input through the shared semantic action vocabulary.
+- Kept inventory hit testing ahead of world-target hit testing after coordinate conversion.
+- Made display-mode changes presentation-only so they preserve the current `GameSession`, scene, dialogue, inventory selection, progress, and application mode.
+- Made failed display recreation non-destructive and visible without replacing the active gameplay session.
+- Updated README, architecture, testing, asset, roadmap, milestone, and refactor-planning documentation for the implemented display and controls foundation.
+- Updated the package version to `0.11.0`.
+
+### Notes
+
+- Every fresh launch starts in fullscreen desktop mode.
+- The first `F11` windowed fallback is `1280 x 720`; later toggles return to the last approved windowed preset used during the current process.
+- Display choices are not persisted between launches.
+- Arbitrary drag-resizing, editable bindings, and a general screen framework were not added.
+- A player-facing selector for the larger approved windowed presets remains deferred to a future options/settings surface.
+- The complete demo puzzle flow and persistent gameplay behavior remain unchanged.
+
 ## 0.10.0 - 2026-07-18
 
 ### Added
