@@ -1,6 +1,6 @@
 # Testing Plan
 
-Status: current for the v0.10 presentation milestone
+Status: current for the v0.11 display and controls milestone
 
 ## Purpose
 
@@ -13,15 +13,19 @@ The project uses pytest for automated tests and manual checks for game feel, vis
 Use the Makefile:
 
 ```bash
+make format
 make check
 ```
 
-This runs:
+This runs the configured formatter first, then lint and tests:
 
 ```bash
+python -m ruff format src tests
 python -m ruff check src tests
 python -m pytest
 ```
+
+Use `python -m ruff format --check src tests` when the goal is to verify formatting without changing files.
 
 Run tests directly when debugging:
 
@@ -54,13 +58,21 @@ Good automated-test targets:
 - interaction service outcomes
 - target resolution priority
 - UI helper geometry and text wrapping
+- logical-to-physical viewport calculations
+- physical-to-logical pointer conversion and letterbox rejection
+- semantic input bindings and player-facing labels
+- title, Controls, gameplay, and ending application routing
+- fullscreen/windowed session-state preservation
 - complete demo-flow integration
 
 Manual testing should cover:
 
 - title screen opens before gameplay
-- Start Game and Quit work with mouse and keyboard
-- window opens and closes correctly
+- Start Game, Controls, Back, and Quit work with mouse and keyboard
+- every fresh launch begins in fullscreen desktop mode
+- `F11` toggles fullscreen without changing game/menu state
+- approved window sizes scale the complete logical frame uniformly
+- letterbox/pillarbox space does not highlight or activate targets
 - `N` starts a fresh game from Village Square
 - hover/click feel
 - readability of hover prompts, dialogue, message boxes, title, and ending overlay
@@ -92,17 +104,22 @@ tests/
 ├── integration/
 │   ├── test_demo_flow.py
 │   ├── test_game_session_reset.py
-│   ├── test_json_content_loading.py
 │   ├── test_state_snapshot.py
 │   └── test_world_state_persistence.py
 ├── test_adventure_interaction_service.py
 ├── test_adventure_scene.py
 ├── test_content_validation.py
+├── test_controls_screen.py
+├── test_display.py
+├── test_display_contract.py
+├── test_display_modes.py
 ├── test_game_app.py
 ├── test_game_content.py
 ├── test_game_state.py
+├── test_input_bindings.py
 ├── test_inventory*.py
 ├── test_item*.py
+├── test_json_content_loading.py
 ├── test_menu_screen.py
 ├── test_scene_manager.py
 ├── test_ui_resources.py
@@ -177,6 +194,51 @@ Village Square
 ```
 
 This test reflects the v0.9 implementation: the witch gives a Rusty Key, and the key unlocks the tower gate.
+
+
+## v0.11 display and controls regression checklist
+
+### Logical rendering and presentation
+
+- all title, Controls, gameplay, ending, and debug drawing targets the `1280 x 720` logical surface
+- the completed logical frame is scaled once into a centered destination rectangle
+- non-16:9 output sizes create letterbox or pillarbox space instead of non-uniform stretching
+- destination-rectangle calculations are covered without requiring a live display
+
+### Pointer conversion
+
+- mouse motion, button-down, and button-up positions use one physical-to-logical conversion
+- native-size and scaled center/edge positions map correctly
+- letterbox and pillarbox positions become non-interactive
+- menu hit testing, inventory hit testing, world-target resolution, and hover state use logical coordinates
+- inventory remains higher priority than overlapping world targets
+
+### Semantic actions and Controls screen
+
+- current physical keys/buttons translate into the shared semantic action vocabulary
+- player-facing binding labels are derived from the same catalog
+- title and ending menus use menu navigation/confirmation actions rather than local raw-key checks
+- Controls opens from the title menu and returns through `ControlsResult.BACK`
+- `Esc`, keyboard confirm, and left-click Back return from Controls
+- global `N` and `F11` remain active while Controls is open
+
+### Display modes
+
+- fresh `GameApp` startup requests fullscreen at the primary desktop size
+- the first fullscreen exit uses the `1280 x 720` windowed fallback
+- approved presets are validated and remembered for the current process only
+- repeated fullscreen/windowed changes recalculate presentation geometry
+- display changes preserve `GameSession`, current scene, dialogue, selection, flags, ending state, and `AppMode`
+- display recreation failures retain the previous display and gameplay state and expose a clear error
+- no display setting is read from or written to persistent storage during v0.11
+
+### Required manual coverage
+
+- complete the demo from title to ending at a non-native output size
+- repeat representative title, Controls, dialogue, inventory, world, and ending interactions in fullscreen
+- compare the Controls screen with actual input behavior
+- confirm text, circles, rectangles, and images retain one shared aspect ratio
+- confirm letterbox/pillarbox space never highlights or activates content
 
 ## v0.10 presentation regression checklist
 
@@ -327,7 +389,7 @@ NPC > exit > item pickup > hotspot
 
 - shared text wrapping handles short text, wrapped text, blank text, and long words
 - `InventoryBar` drawing and hit testing use the same layout result
-- planned maximum visible inventory size remains inside the fixed-window layout
+- planned maximum visible inventory size remains inside the logical `1280 x 720` layout
 
 ## Manual test checklist
 

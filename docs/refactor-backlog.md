@@ -1,9 +1,9 @@
 # Refactor Backlog
 
-Project: Adventure Game  
-Current baseline: v0.10 presentation milestone  
-Next feature milestone: v0.11 display and controls foundation  
-Next planned refactor milestone: v0.11.1 display/input hardening
+Project: Adventure Game
+Current baseline: v0.11 display and controls implementation; manual acceptance pending
+Next planned milestone: v0.11.1 display/input hardening
+Next feature milestone after hardening: v0.12 pause, save/load, and menu foundation
 
 ## Purpose
 
@@ -30,38 +30,43 @@ It is not release history. Completed refactors belong in `CHANGELOG.md`, and sta
 Trigger:
 
 ```txt
-v0.11 has proven fullscreen/window scaling, logical mouse conversion, semantic actions, and a Controls screen.
+v0.11 has implemented fullscreen/window scaling, logical pointer conversion, semantic actions, and a Controls screen.
 ```
 
-Planned outcomes:
+Observed pressure after implementation:
 
-- keep all logical-to-physical scaling and letterbox calculations in one authoritative boundary
-- keep physical-to-logical pointer conversion in the same boundary
-- centralize semantic actions, actual bindings, and player-facing binding labels
-- remove duplicate raw-key handling from title, ending, controls, and gameplay paths
-- clarify display configuration ownership without building a general settings framework
-- preserve `1280 x 720` scene/UI coordinates and existing gameplay behavior
+- `game/display.py` already contains the authoritative geometry, presentation, pointer-conversion, and display-creation functions.
+- `GameApp` still owns the correct high-level state: logical surface, physical display surface, current fullscreen flag, last session-only preset, and top-level navigation.
+- `GameApp` now coordinates four modes plus global `N`/`F11` actions; the branching remains readable, but v0.12 pause/save/load screens may create the first real navigation pressure.
+- Actual bindings and player-facing physical labels already share one catalog; v0.11.1 should verify drift protection rather than redesign the input system.
+- `ControlsScreen` is reusable and emits a semantic Back result without depending on `AppMode`.
+- No duplicated scale/offset formula or duplicate raw-key menu path was observed after D110-07.
+- Display errors are currently a transient application-level message. Keep this unless v0.12 introduces a reusable error/dialog surface.
 
-Evidence checks before extraction:
+Primary v0.11.1 focus:
 
-- Is display math duplicated across event handling and drawing?
-- Does `GameApp` have more than one reason to understand scale/offset calculations?
-- Can the Controls screen obtain labels directly from binding data?
-- Are menu and gameplay actions translated consistently?
-- Did a new screen make `AppMode` branching meaningfully harder to read?
+- audit and harden the completed boundaries rather than automatically extracting new classes
+- confirm `GameApp` remains understandable before pause/save/load adds more screens
+- keep display math and physical-to-logical conversion in one tested module
+- keep semantic bindings and displayed labels synchronized
+- verify all display changes preserve application and gameplay state
+- document skipped refactors when the existing boundary is already coherent
 
-Possible boundaries, only if justified:
+Likely outcomes:
 
-- a focused viewport/display component
-- an `InputAction` enum or equivalent semantic-action catalog
-- a binding description/catalog object
+- keep the current `display.py` function boundary unless the audit finds stateful duplication
+- keep `AppMode` for v0.11.1 when four modes remain clearer than a screen protocol
+- add only missing regression tests or small ownership clarifications
+- carry a screen-navigation decision into v0.12.1 if pause/save/load creates concrete duplication
 
 Do not add during this refactor:
 
 - editable bindings
 - a widget hierarchy
+- pause/save/load features
 - camera/world coordinates
-- persistent settings unless separately approved
+- persistent display settings
+- a general screen stack without demonstrated duplication
 
 ## Planned refactor milestones
 

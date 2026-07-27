@@ -1,6 +1,6 @@
 # Roadmap
 
-Status: v0.10 implementation complete; v0.11 display and controls planning next
+Status: v0.11 implementation complete; automated dependency and manual display acceptance pending
 
 ## Development principle
 
@@ -326,7 +326,7 @@ Goal:
 Support fullscreen and multiple window sizes without changing logical scene coordinates or breaking mouse interaction.
 ```
 
-Planned scope:
+Implemented scope:
 
 - keep `1280 x 720` as the logical game resolution
 - start in fullscreen desktop mode on every launch
@@ -391,20 +391,20 @@ Goal:
 Consolidate the boundaries proven by v0.11 without changing player behavior.
 ```
 
-Expected refactor focus:
+Observed refactor focus:
 
-- isolate logical-to-physical display conversion behind one focused boundary if v0.11 leaves it spread across `GameApp`
-- centralize semantic actions, key/button bindings, and player-facing binding labels
-- remove remaining raw key checks from menus and gameplay adapters where practical
-- keep logical mouse conversion in one authoritative path
-- clarify ownership of display configuration without creating a settings framework prematurely
-- expand regression tests for display and input invariants
+- audit the existing `display.py` boundary before adding any new viewport class; geometry, presentation, display creation, and pointer conversion are already centralized
+- verify the current semantic action/binding catalog and Controls labels cannot drift
+- harden display-mode state preservation and failure behavior
+- review whether `GameApp` remains understandable with four modes and global actions before v0.12 adds pause/save/load screens
+- clarify ownership through tests and documentation before extracting classes
 
 Decision gates during the milestone:
 
-- Did v0.11 create enough display logic to justify a `DisplayViewport`-style component?
-- Is an enum-based `InputAction` catalog clearer than the implemented binding helpers?
-- Does `GameApp` remain understandable, or did the new Controls screen expose a need for a small screen abstraction?
+- Is the current function-based display boundary already coherent enough to keep?
+- Does `GameApp` remain clearer with `AppMode`, or has concrete event/draw duplication appeared?
+- Are any remaining changes true refactors, or only missing regression tests/documentation?
+- Should the larger navigation decision wait for v0.12.1, when pause/save/load provides stronger evidence?
 
 Detailed task list:
 

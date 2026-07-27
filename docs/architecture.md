@@ -1,14 +1,15 @@
 # Architecture
 
-Status: current for the v0.10 presentation milestone
+Status: current for the v0.11 display and controls milestone
 
 ## Goal
 
-Keep the game architecture small enough to understand while separating five things that should not own each other's work:
+Keep the game architecture small enough to understand while separating six things that should not own each other's work:
 
 ```txt
-Application flow      -> title, gameplay, ending, global quit/new game
-Pygame presentation   -> event handling, drawing, UI state, optional asset playback
+Application flow      -> title, Controls, gameplay, ending, global actions
+Display presentation  -> logical drawing, physical scaling, fullscreen/window switching
+Pygame presentation   -> event translation, drawing, UI state, optional asset playback
 Gameplay rules        -> interactions, item use, recipes, exits
 Reusable content      -> item/recipe data, scene factories, IDs, validation
 Persistent state      -> inventory, scene position, flags, pickups, completions, ending
@@ -24,6 +25,7 @@ src/
 └── game/
     ├── app.py
     ├── asset_ids.py
+    ├── display.py
     ├── game_content.py
     ├── game_session.py
     ├── game_state.py
@@ -70,6 +72,7 @@ src/
     │   └── recipe.py
     └── ui/
         ├── asset_panel.py
+        ├── controls_screen.py
         ├── dialogue_box.py
         ├── interaction_prompt.py
         ├── inventory_bar.py
@@ -89,8 +92,11 @@ Current startup/session ownership:
 
 ```txt
 GameApp
-├── AppMode                     title, playing, or ending
+├── AppMode                     title, Controls, playing, or ending
+├── logical Surface             fixed 1280 x 720 drawing target
+├── physical display Surface    fullscreen desktop or approved window preset
 ├── MenuScreen                  title and ending presentation
+├── ControlsScreen              read-only binding presentation and local Back result
 ├── UIResources                 shared font/image/sound caches
 ├── GameContent                 reusable content and rules
 └── GameSession                 one current playable run
@@ -115,18 +121,69 @@ Responsibilities:
 Responsibilities:
 
 - initialize Pygame
-- create the window and clock
+- create the logical surface, physical display, and clock
+- start in fullscreen desktop mode
+- remember the last approved windowed preset for the current process only
 - load/create reusable `GameContent`
 - create a fresh `GameSession`
-- own the title, playing, and ending application modes
+- own the title, Controls, playing, and ending application modes
+- own top-level navigation and the Controls return mode
 - own the main loop
-- delegate gameplay events, updates, and drawing
+- translate physical pointer events into logical coordinates before delegation
+- delegate gameplay events, updates, and logical-surface drawing
+- present the completed logical frame through one aspect-preserving output path
 - draw the ending menu as an overlay over the entered tower scene
+- handle global fullscreen and new-game actions
 - handle global quit behavior
-- handle global new-game/reset input
 - play scene-transition presentation cues
+- keep display recreation failures non-destructive to gameplay state
 
 `GameApp` composes the application. It should not implement item-use, recipe, quest, or save/load logic.
+
+## Display and input boundaries
+
+### `game/display.py`
+
+The display module owns the Pygame-light geometry and event-conversion operations used by `GameApp`:
+
+```txt
+logical frame: 1280 x 720
+physical output: fullscreen desktop or an approved 16:9 window
+presentation: one centered uniform scale
+unused output: black letterbox/pillarbox space
+pointer input: physical coordinates converted back into logical coordinates
+```
+
+Current responsibilities:
+
+- read the primary desktop size
+- create fullscreen or windowed display surfaces
+- calculate the aspect-preserving destination rectangle
+- scale and present the complete logical frame
+- convert mouse motion and mouse button positions into logical coordinates
+- reject pointer positions outside the presented logical rectangle
+- wrap display recreation failures in `DisplayModeChangeError`
+
+Scene, inventory, dialogue, and menu geometry remain expressed in logical `1280 x 720` coordinates. The display module does not own `GameSession`, application navigation, save data, or persistent settings.
+
+### `game/input/bindings.py`
+
+The input catalog is the authoritative mapping from Pygame events to semantic actions:
+
+```txt
+PRIMARY
+CANCEL
+DIALOGUE_ADVANCE
+MENU_UP
+MENU_DOWN
+MENU_CONFIRM
+NEW_GAME
+FULLSCREEN_TOGGLE
+```
+
+Physical bindings and player-facing binding labels come from the same catalog. Overlapping keys are intentional: context decides whether `Space`/`Enter` advances dialogue or confirms a menu. Pointer hover remains presentation state rather than a semantic command action.
+
+`GameApp` handles global actions before delegating local events. Menus and gameplay consume the same action vocabulary instead of maintaining separate raw-key checks.
 
 ## Reusable content
 
@@ -478,7 +535,8 @@ Some entities contain static interaction definitions, but runtime completion is 
 
 Current focused UI components:
 
-- `MenuScreen` for the two-button title and ending menus
+- `MenuScreen` for title and ending menus
+- `ControlsScreen` for the read-only binding list and semantic Back result
 - `InteractionPrompt` for hover action and input guidance
 - `InventoryBar`
 - `DialogueBox`
@@ -487,7 +545,7 @@ Current focused UI components:
 
 `game/ui/text.py` contains shared text wrapping.
 
-`InventoryBar` and `MenuScreen` each calculate one layout result used by both drawing and hit testing.
+`InventoryBar`, `MenuScreen`, and `ControlsScreen` calculate logical-resolution geometry used by both drawing and hit testing.
 
 ### `game/ui/resources.py`
 
@@ -511,7 +569,7 @@ Rules:
 
 The exact replacement contract is documented in `docs/asset-guide.md`.
 
-The current design remains fixed-window and intentionally simple. Do not add a generic layout engine, widget inheritance framework, scrolling, responsive UI, or broad asset pipeline yet.
+The current design uses a fixed logical resolution with a scalable physical output. Runtime assets and all UI geometry remain authored for `1280 x 720`; the complete frame is scaled uniformly after drawing. Do not add a generic layout engine, widget inheritance framework, arbitrary drag-resizing, responsive per-widget scaling, or a broad asset pipeline yet.
 
 ## Future content direction
 
