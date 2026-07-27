@@ -189,10 +189,12 @@ def test_new_app_display_state_does_not_reuse_previous_session_choice() -> None:
     assert fresh_app.last_windowed_preset == DEFAULT_WINDOWED_SIZE
 
 
-def test_f11_is_global_and_does_not_reach_gameplay(
+@pytest.mark.parametrize("mode", [AppMode.CONTROLS, AppMode.PLAYING])
+def test_f11_is_global_and_preserves_the_active_mode(
+    mode: AppMode,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    app = create_display_test_app(mode=AppMode.PLAYING)
+    app = create_display_test_app(mode=mode)
     display_factory = DisplaySurfaceFactory()
     session = app.session
     monkeypatch.setattr(app_module, "create_display_surface", display_factory)
@@ -206,11 +208,14 @@ def test_f11_is_global_and_does_not_reach_gameplay(
 
     assert display_factory.calls == [(DEFAULT_WINDOWED_SIZE, False)]
     assert app.session is session
-    assert app.mode is AppMode.PLAYING
+    assert app.mode is mode
     assert app.session.scene_manager.handled_events == 0
 
 
-@pytest.mark.parametrize("mode", [AppMode.TITLE, AppMode.PLAYING, AppMode.ENDING])
+@pytest.mark.parametrize(
+    "mode",
+    [AppMode.TITLE, AppMode.CONTROLS, AppMode.PLAYING, AppMode.ENDING],
+)
 def test_repeated_mode_changes_preserve_top_level_mode_and_session(
     mode: AppMode,
     monkeypatch: pytest.MonkeyPatch,

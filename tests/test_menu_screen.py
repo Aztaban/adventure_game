@@ -115,3 +115,38 @@ def test_menu_ignores_non_interactive_pointer_click() -> None:
     )
 
     assert menu.handle_event(event, FIXED_SURFACE_SIZE) is None
+
+
+def test_title_menu_layout_includes_controls_without_changing_two_button_layout() -> None:
+    menu = MenuScreen(
+        title="Title",
+        subtitle="Choose an action.",
+        primary_label="Start Game",
+        secondary_label="Controls",
+    )
+
+    start, controls, quit_button = menu.layout(FIXED_SURFACE_SIZE)
+
+    assert start.action is MenuAction.PRIMARY
+    assert start.rect == pygame.Rect(470, 390, 340, 64)
+    assert controls.action is MenuAction.CONTROLS
+    assert controls.rect == pygame.Rect(470, 472, 340, 64)
+    assert quit_button.action is MenuAction.QUIT
+    assert quit_button.rect == pygame.Rect(470, 554, 340, 64)
+
+
+def test_title_controls_button_works_with_mouse() -> None:
+    menu = MenuScreen(
+        title="Title",
+        subtitle="Choose an action.",
+        primary_label="Start Game",
+        secondary_label="Controls",
+    )
+    controls = menu.layout(FIXED_SURFACE_SIZE)[1]
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        button=1,
+        pos=controls.rect.center,
+    )
+
+    assert menu.handle_event(event, FIXED_SURFACE_SIZE) is MenuAction.CONTROLS

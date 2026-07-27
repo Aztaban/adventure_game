@@ -29,6 +29,7 @@ from game.settings import (
     WINDOWED_PRESETS,
 )
 from game.theme import TEXT_SECONDARY
+from game.ui.controls_screen import ControlsResult, ControlsScreen
 from game.ui.menu_screen import MenuAction, MenuScreen
 from game.ui.message_box import MessageBox
 from game.ui.resources import UIResources
@@ -38,6 +39,7 @@ class AppMode(Enum):
     """Top-level presentation modes outside one gameplay session."""
 
     TITLE = "title"
+    CONTROLS = "controls"
     PLAYING = "playing"
     ENDING = "ending"
 
@@ -77,8 +79,11 @@ class GameApp:
                 "retired magic, and one very important cup of tea."
             ),
             primary_label="Start Game",
+            secondary_label="Controls",
             background_asset_id=TITLE_BACKGROUND,
         )
+        self.controls_screen = ControlsScreen(background_asset_id=TITLE_BACKGROUND)
+        self.controls_return_mode = AppMode.TITLE
         self.ending_screen = MenuScreen(
             title="Demo Complete",
             subtitle=(
@@ -103,6 +108,9 @@ class GameApp:
 
         if hasattr(self, "ending_screen"):
             self.ending_screen.reset_selection()
+
+        if hasattr(self, "controls_screen"):
+            self.controls_screen.reset_selection()
 
     def set_windowed_preset(self, size: tuple[int, int]) -> bool:
         """Switch to one approved windowed size for the current session."""
@@ -206,6 +214,10 @@ class GameApp:
                 self._handle_menu_event(self.title_screen, event)
                 continue
 
+            if self.mode is AppMode.CONTROLS:
+                self._handle_controls_event(event)
+                continue
+
             if self.mode is AppMode.ENDING:
                 self._handle_menu_event(self.ending_screen, event)
                 continue
@@ -256,8 +268,22 @@ class GameApp:
 
         if action is MenuAction.PRIMARY:
             self.start_new_game()
+        elif action is MenuAction.CONTROLS:
+            self.controls_return_mode = self.mode
+            self.controls_screen.reset_selection()
+            self.mode = AppMode.CONTROLS
         elif action is MenuAction.QUIT:
             self.is_running = False
+
+    def _handle_controls_event(self, event: pygame.event.Event) -> None:
+        """Apply one local Controls-screen result through app-owned navigation."""
+        result = self.controls_screen.handle_event(
+            event,
+            self.logical_surface.get_size(),
+        )
+
+        if result is ControlsResult.BACK:
+            self.mode = self.controls_return_mode
 
     def _draw(self) -> None:
         """Draw one logical frame and present it to the physical display."""
@@ -265,6 +291,8 @@ class GameApp:
 
         if self.mode is AppMode.TITLE:
             self.title_screen.draw(self.logical_surface, self.ui_resources)
+        elif self.mode is AppMode.CONTROLS:
+            self.controls_screen.draw(self.logical_surface, self.ui_resources)
         else:
             self.session.scene_manager.draw(self.logical_surface)
 

@@ -23,6 +23,7 @@ class MenuAction(Enum):
     """Actions emitted by the small title and ending menus."""
 
     PRIMARY = "primary"
+    CONTROLS = "controls"
     QUIT = "quit"
 
 
@@ -36,7 +37,7 @@ class MenuButtonLayout:
 
 
 class MenuScreen:
-    """A focused two-button screen used for title and ending presentation."""
+    """A focused action menu used for title and ending presentation."""
 
     BUTTON_WIDTH = 340
     BUTTON_HEIGHT = 64
@@ -49,12 +50,14 @@ class MenuScreen:
         title: str,
         subtitle: str,
         primary_label: str,
+        secondary_label: str | None = None,
         background_asset_id: str | None = None,
         overlay_gameplay: bool = False,
     ) -> None:
         self.title = title
         self.subtitle = subtitle
         self.primary_label = primary_label
+        self.secondary_label = secondary_label
         self.background_asset_id = background_asset_id
         self.overlay_gameplay = overlay_gameplay
         self.selected_index = 0
@@ -194,28 +197,26 @@ class MenuScreen:
         """Return deterministic button geometry for drawing and hit testing."""
         width, _ = surface_size
         button_x = width // 2 - self.BUTTON_WIDTH // 2
+        button_specs = [(self.primary_label, MenuAction.PRIMARY)]
 
-        return (
+        if self.secondary_label is not None:
+            button_specs.append((self.secondary_label, MenuAction.CONTROLS))
+
+        button_specs.append(("Quit", MenuAction.QUIT))
+        start_y = self.BUTTON_START_Y if len(button_specs) == 2 else 390
+
+        return tuple(
             MenuButtonLayout(
-                label=self.primary_label,
-                action=MenuAction.PRIMARY,
+                label=label,
+                action=action,
                 rect=pygame.Rect(
                     button_x,
-                    self.BUTTON_START_Y,
+                    start_y + index * (self.BUTTON_HEIGHT + self.BUTTON_GAP),
                     self.BUTTON_WIDTH,
                     self.BUTTON_HEIGHT,
                 ),
-            ),
-            MenuButtonLayout(
-                label="Quit",
-                action=MenuAction.QUIT,
-                rect=pygame.Rect(
-                    button_x,
-                    self.BUTTON_START_Y + self.BUTTON_HEIGHT + self.BUTTON_GAP,
-                    self.BUTTON_WIDTH,
-                    self.BUTTON_HEIGHT,
-                ),
-            ),
+            )
+            for index, (label, action) in enumerate(button_specs)
         )
 
     @staticmethod

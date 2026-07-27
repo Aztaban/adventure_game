@@ -9,6 +9,7 @@ from game.content.scene_ids import STARTING_SCENE_ID
 from game.game_session import create_game_session
 from game.game_state import GameState
 from game.settings import LOGICAL_SIZE
+from game.ui.controls_screen import ControlsScreen
 from game.ui.menu_screen import MenuScreen
 from game.ui.resources import UIResources
 
@@ -68,7 +69,10 @@ def create_menu_test_app() -> GameApp:
         title="Title",
         subtitle="Start the game.",
         primary_label="Start Game",
+        secondary_label="Controls",
     )
+    app.controls_screen = ControlsScreen()
+    app.controls_return_mode = AppMode.TITLE
     app.ending_screen = MenuScreen(
         title="Complete",
         subtitle="Play again.",
@@ -135,6 +139,72 @@ def test_title_primary_action_starts_game(monkeypatch: pytest.MonkeyPatch) -> No
     app = create_menu_test_app()
     old_session = app.session
     event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)
+    monkeypatch.setattr(pygame.event, "get", lambda: [event])
+
+    app._handle_events()
+
+    assert app.mode is AppMode.PLAYING
+    assert app.session is not old_session
+
+
+def test_title_controls_action_opens_reusable_controls_screen(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_menu_test_app()
+    events = [
+        pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN),
+        pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN),
+    ]
+    monkeypatch.setattr(pygame.event, "get", lambda: events)
+
+    app._handle_events()
+
+    assert app.mode is AppMode.CONTROLS
+    assert app.controls_return_mode is AppMode.TITLE
+
+
+def test_controls_escape_returns_to_opening_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_menu_test_app()
+    app.mode = AppMode.CONTROLS
+    app.controls_return_mode = AppMode.TITLE
+    event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)
+    monkeypatch.setattr(pygame.event, "get", lambda: [event])
+
+    app._handle_events()
+
+    assert app.mode is AppMode.TITLE
+    assert app.is_running
+
+
+def test_controls_back_click_returns_to_opening_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_menu_test_app()
+    app.mode = AppMode.CONTROLS
+    app.controls_return_mode = AppMode.TITLE
+    back_rect = app.controls_screen.back_button_rect(LOGICAL_SIZE)
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        button=1,
+        pos=back_rect.center,
+    )
+    monkeypatch.setattr(pygame.event, "get", lambda: [event])
+
+    app._handle_events()
+
+    assert app.mode is AppMode.TITLE
+    assert app.is_running
+
+
+def test_global_new_game_action_still_works_from_controls(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_menu_test_app()
+    app.mode = AppMode.CONTROLS
+    old_session = app.session
+    event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_n)
     monkeypatch.setattr(pygame.event, "get", lambda: [event])
 
     app._handle_events()
@@ -218,7 +288,7 @@ def test_scaled_title_mouse_click_is_converted_before_menu_hit_testing(
     event = pygame.event.Event(
         pygame.MOUSEBUTTONDOWN,
         button=1,
-        pos=(800, 578),
+        pos=(800, 528),
     )
     monkeypatch.setattr(pygame.event, "get", lambda: [event])
 

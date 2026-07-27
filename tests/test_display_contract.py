@@ -34,6 +34,7 @@ def create_draw_test_app(
 
     draw_calls: list[tuple[str, object]] = []
     app.title_screen = RecordingDrawTarget("title", draw_calls)
+    app.controls_screen = RecordingDrawTarget("controls", draw_calls)
     app.ending_screen = RecordingDrawTarget("ending", draw_calls)
     app.session = SimpleNamespace(
         scene_manager=RecordingDrawTarget("gameplay", draw_calls),
@@ -49,6 +50,7 @@ def test_logical_resolution_contract_is_1280_by_720() -> None:
     ("mode", "expected_presenters"),
     [
         (AppMode.TITLE, ["title"]),
+        (AppMode.CONTROLS, ["controls"]),
         (AppMode.PLAYING, ["gameplay"]),
         (AppMode.ENDING, ["gameplay", "ending"]),
     ],
