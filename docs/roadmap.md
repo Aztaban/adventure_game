@@ -420,58 +420,103 @@ Goal:
 Save and restore the current demo through clear player-facing menus.
 ```
 
-Planned scope:
+Confirmed player behavior:
 
-- add a pause menu
-- add title-menu Continue/Load behavior when a valid save exists
-- write and restore the existing plain-data snapshot format
-- use an operating-system user-data location instead of the project directory
-- write save files atomically
-- show useful errors for missing, invalid, corrupt, or unsupported saves
-- preserve current scene, inventory, selection, flags, pickups, completions, and ending state
-- close transient dialogue, messages, hover, and menu selection state after load unless the milestone proves a better rule
-- change unconsumed gameplay `Escape` from immediate quit to pause
-- provide explicit quit and new-game confirmation where destructive behavior requires it
+- use one manual save slot during v0.12
+- defer autosave until a larger content milestone provides meaningful authored checkpoints
+- title menu: New Game, Continue when the manual save is valid, Controls, Exit
+- pause menu: Resume, Save Game, Load Game, Controls, Return to Title, Exit Game
+- ending menu: Title Menu and Exit Game; do not start a fresh game directly from the ending
+- remove the global `N` new-game shortcut and its Controls-screen entry
+- `Escape` never quits the application directly
+- gameplay `Escape` closes dialogue first, clears inventory selection next, and otherwise opens pause
+- paused `Escape` resumes gameplay; Controls and confirmation dialogs keep their local Back/Cancel behavior
+- keep `F11` global without closing menus, confirmations, dialogue, or changing gameplay state
+- New Game does not delete the existing manual save
+- restore a completed save directly into the ending presentation over its restored final scene
+- restore persistent snapshot facts and clear transient dialogue, messages, hover, menu selection, pause, and confirmation state
+- keep settings/configuration persistence separate and deferred
+
+Persistence scope:
+
+- store the manual save in an operating-system user-data directory resolved with `platformdirs`
+- keep filesystem paths out of menus, `GameState`, and gameplay rules
+- wrap the existing plain-data snapshot in a versioned save-file envelope
+- write UTF-8 JSON atomically through a temporary file in the same directory and `os.replace()`
+- preserve the last valid save when a new write fails
+- distinguish missing, invalid JSON, invalid shape, unsupported version, invalid snapshot, unreadable, and write-failure cases clearly
+- do not add migration infrastructure before a second save-file version exists
+
+Confirmation behavior:
+
+- confirm overwriting an existing valid manual save
+- confirm replacing the active session when loading from pause
+- confirm Return to Title and Exit Game from pause
+- title New Game requires no confirmation because it starts from a non-playing surface and leaves the manual save intact
+- ending Title Menu and Exit Game are direct actions after completion
 
 Tests/checks:
 
 - fresh, mid-quest, and completed-demo save/load
-- title Continue visibility follows save validity
-- pause Save/Load/Resume/Quit flow works
-- corrupt and unknown-version saves fail safely
+- title Continue visibility follows actual save validity
+- missing, corrupt, unsupported, and invalid-snapshot saves fail safely
+- pause Resume/Save/Load/Controls/Return to Title/Exit flow
+- overwrite, load, return-to-title, and exit confirmations are modal
 - failed save writes do not destroy the last valid save
-- loading creates a valid session without stale transient UI
+- failed loads do not replace the active session
+- loading creates a fresh valid session without stale transient UI
+- loading preserves scene, inventory, selection, flags, pickups, completed interactions, and ending state
+- `N` is no longer accepted or displayed
+- unconsumed `Escape` pauses/resumes and never exits directly
+- full demo-flow integration remains unchanged
 
-Decision gates during the milestone:
+Remaining decision checkpoints during the milestone:
 
-- One manual slot, one autosave slot, or both?
-- Which menu surfaces expose Save and Load?
-- Does `N` remain a development shortcut, require confirmation, or disappear from release controls?
-- Is a separate settings/config file needed yet?
-- Should loading a completed save show the ending immediately or enter the final scene first?
+- choose stable `platformdirs` application/author identifiers and the manual-save filename before creating files
+- decide whether unavailable Pause Load remains visible-but-disabled with a reason or is hidden; title Continue remains hidden unless valid
+- decide the exact player-facing wording for save/load errors and confirmation prompts
+- decide the smallest change needed for dynamic title/pause/ending menu options without introducing a general screen framework
+
+Detailed task list:
+
+```txt
+docs/milestones/v0.12-pause-save-load.md
+```
 
 Avoid:
 
-- multiple-profile management
+- autosave before authored checkpoint behavior exists
+- multiple slots or profile management
 - cloud saves
-- save thumbnails unless needed by the chosen menu
-- migration infrastructure before a second supported save version exists
+- save thumbnails
+- settings/configuration persistence
+- save migration machinery before version 2 exists
+- a repository abstraction for one local slot
+- a general screen framework during the feature milestone
 
 ## Milestone v0.12.1 — Persistence/menu refactor and hardening
 
 Goal:
 
 ```txt
-Separate proven file persistence and menu responsibilities after the save/load workflow works.
+Audit and harden the proven save/load and menu flow without changing player behavior or save compatibility.
 ```
 
-Expected refactor focus:
+Expected audit focus:
 
-- isolate filesystem access from snapshot creation and session restoration
-- centralize save-path resolution and atomic writes
-- evaluate a small app-screen or screen-stack boundary if title, controls, pause, save/load, ending, and confirmations make `AppMode` branching cumbersome
-- keep gameplay rules independent from menu and filesystem code
-- add migration handling only if more than one save version must be supported
+- trace path resolution, envelope validation, atomic writing, snapshot restoration, and application-mode transitions
+- verify filesystem access is isolated from snapshot creation, gameplay rules, and screen objects
+- identify duplicated save-validity checks, error translation, confirmation state, or menu navigation
+- evaluate whether `GameApp` remains understandable with title, Controls, gameplay, pause, ending, and confirmation behavior
+- keep the current concrete-screen/AppMode design when it remains clearer than a new abstraction
+- introduce a small screen contract or stack only if v0.12 creates concrete duplicated navigation/event/draw logic
+- keep migrations deferred until more than one save-file version is supported
+
+Detailed task list:
+
+```txt
+docs/milestones/v0.12.1-persistence-menu-refactor.md
+```
 
 ## Milestone v0.13 — Dialogue choices
 
@@ -683,6 +728,8 @@ Build enough connected content to test whether authoring and runtime systems sca
 
 Decision gates during the milestone:
 
+- Are there stable authored checkpoints that justify one autosave slot?
+- If autosave is approved, which scene entries or progression completions trigger it without interrupting play?
 - Are Python scene factories still efficient to author and review?
 - Is content validation sufficient for the larger chapter?
 - Is lightweight tooling needed?

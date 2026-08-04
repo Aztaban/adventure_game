@@ -1,9 +1,9 @@
 # Refactor Backlog
 
 Project: Adventure Game
-Current baseline: v0.11 display and controls implementation; manual acceptance pending
-Next planned milestone: v0.11.1 display/input hardening
-Next feature milestone after hardening: v0.12 pause, save/load, and menu foundation
+Current baseline: v0.11.1 display/input hardening implemented; real-Pygame transition verification pending
+Next planned feature milestone: v0.12 pause, save/load, and menu foundation
+Next planned refactor milestone: v0.12.1 persistence/menu hardening
 
 ## Purpose
 
@@ -23,62 +23,22 @@ It is not release history. Completed refactors belong in `CHANGELOG.md`, and sta
 - Remove completed entries after they are recorded in `CHANGELOG.md`.
 - Avoid generic engine systems without a demonstrated game need.
 
-## Highest-priority refactor focus
-
-### v0.11.1 — Display/input refactor and hardening
-
-Trigger:
-
-```txt
-v0.11 has implemented fullscreen/window scaling, logical pointer conversion, semantic actions, and a Controls screen.
-```
-
-Observed pressure after implementation:
-
-- `game/display.py` already contains the authoritative geometry, presentation, pointer-conversion, and display-creation functions.
-- `GameApp` still owns the correct high-level state: logical surface, physical display surface, current fullscreen flag, last session-only preset, and top-level navigation.
-- `GameApp` now coordinates four modes plus global `N`/`F11` actions; the branching remains readable, but v0.12 pause/save/load screens may create the first real navigation pressure.
-- Actual bindings and player-facing physical labels already share one catalog; v0.11.1 should verify drift protection rather than redesign the input system.
-- `ControlsScreen` is reusable and emits a semantic Back result without depending on `AppMode`.
-- No duplicated scale/offset formula or duplicate raw-key menu path was observed after D110-07.
-- Display errors are currently a transient application-level message. Keep this unless v0.12 introduces a reusable error/dialog surface.
-
-Primary v0.11.1 focus:
-
-- audit and harden the completed boundaries rather than automatically extracting new classes
-- confirm `GameApp` remains understandable before pause/save/load adds more screens
-- keep display math and physical-to-logical conversion in one tested module
-- keep semantic bindings and displayed labels synchronized
-- verify all display changes preserve application and gameplay state
-- document skipped refactors when the existing boundary is already coherent
-
-Likely outcomes:
-
-- keep the current `display.py` function boundary unless the audit finds stateful duplication
-- keep `AppMode` for v0.11.1 when four modes remain clearer than a screen protocol
-- add only missing regression tests or small ownership clarifications
-- carry a screen-navigation decision into v0.12.1 if pause/save/load creates concrete duplication
-
-Do not add during this refactor:
-
-- editable bindings
-- a widget hierarchy
-- pause/save/load features
-- camera/world coordinates
-- persistent display settings
-- a general screen stack without demonstrated duplication
-
 ## Planned refactor milestones
 
 ### v0.12.1 — Persistence/menu refactor
 
-After the real save/load flow is working:
+After the real one-slot save/load and pause flow is working, audit before extracting anything:
 
-- isolate filesystem access from snapshot creation and restoration
-- centralize user-data/save path resolution and atomic writes
-- evaluate a small screen or screen-stack boundary if menu-mode branching has become cumbersome
-- add save migrations only when a second supported save format exists
-- keep transient presentation state intentionally separate from persistent game state
+- trace one Save request from a screen result through snapshot creation, envelope creation, path resolution, and atomic replacement
+- trace one Load request through status/validation, session restoration, transient-state reset, and final application mode
+- verify filesystem access remains outside `GameState`, gameplay rules, and concrete screen objects
+- consolidate save validity/status parsing only if title Continue and pause Load duplicate it
+- consolidate error translation only if filesystem, JSON, envelope, and snapshot failures leak into multiple callers
+- evaluate a small screen contract or stack only if title, Controls, pause, ending, and confirmation branching has become cumbersome
+- keep `AppMode` and concrete screen objects when they remain explicit and smaller than the abstraction
+- do not introduce a repository pattern for one manual slot
+- do not add migrations until a second save-file version must be supported
+- preserve the v0.12 save format and player behavior during refactoring
 
 ### v0.13.1 — Dialogue model/content refactor
 
@@ -141,6 +101,7 @@ After packaging and settings are functional:
 - centralize application resource, save, config, log, and credit paths
 - remove development-current-directory assumptions
 - validate packaged startup and failure diagnostics
+- compare regular fullscreen and borderless desktop behavior on supported target platforms only when real-Pygame evidence shows the current transition remains unacceptable
 
 ### v0.20.1 — Content-authoring refactor
 
