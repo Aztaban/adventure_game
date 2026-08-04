@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import pygame
 
+from game.input.bindings import InputAction, input_summary_for
 from game.theme import (
     DIALOGUE_BACKGROUND,
     DIALOGUE_BORDER,
+    TEXT_HIGHLIGHT,
     TEXT_PRIMARY,
     TEXT_SECONDARY,
 )
@@ -28,6 +30,14 @@ class DialogueBox:
     ) -> None:
         self.text_font = text_font
         self.hint_font = hint_font
+
+    @staticmethod
+    def input_hint() -> str:
+        """Return dialogue controls derived from the binding catalog."""
+        advance = input_summary_for(InputAction.PRIMARY, InputAction.DIALOGUE_ADVANCE)
+        cancel = input_summary_for(InputAction.CANCEL)
+
+        return f"{advance} to continue  •  {cancel} to close"
 
     def draw(
         self,
@@ -60,7 +70,7 @@ class DialogueBox:
         speaker_surface = self.text_font.render(
             speaker_name,
             True,
-            TEXT_PRIMARY,
+            TEXT_HIGHLIGHT,
         )
         surface.blit(
             speaker_surface,
@@ -98,7 +108,7 @@ class DialogueBox:
             text_y += self.text_font.get_linesize() + self.LINE_SPACING
 
         hint_surface = self.hint_font.render(
-            "Click, Space or Enter to continue | Esc to close",
+            self.input_hint(),
             True,
             TEXT_SECONDARY,
         )

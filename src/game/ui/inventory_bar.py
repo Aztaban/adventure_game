@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import pygame
 
 from game.entities.item import Item
+from game.input.bindings import InputAction, input_summary_for
 from game.theme import (
     BORDER_DEFAULT,
     INVENTORY_SELECTION_BACKGROUND,
@@ -102,7 +103,7 @@ class InventoryBar:
 
         content_y += self.status_font.get_height() + self.SECTION_GAP
 
-        instruction = "Click another item to combine" if selected_item is not None else "Click an item to select"
+        instruction = self.instruction_for(selected_item)
 
         instruction_surface = self.status_font.render(
             instruction,
@@ -162,6 +163,16 @@ class InventoryBar:
             )
 
             surface.blit(item_surface, item_rect)
+
+    @staticmethod
+    def instruction_for(selected_item: Item | None) -> str:
+        """Return the inventory instruction for the primary-action binding."""
+        primary = input_summary_for(InputAction.PRIMARY)
+
+        if selected_item is not None:
+            return f"Combine items: {primary}"
+
+        return f"Select item: {primary}"
 
     def item_at_position(
         self,

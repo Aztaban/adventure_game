@@ -64,7 +64,7 @@ class AdventureInteractionService:
 
             return AdventureInteractionOutcome(
                 consumed=True,
-                message=f"Selected {clicked_item.name}. Click another item to combine them.",
+                message=f"Selected {clicked_item.name}. Select another item to combine them.",
             )
 
         if selected_item.item_id == clicked_item.item_id:

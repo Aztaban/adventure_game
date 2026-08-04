@@ -139,3 +139,14 @@ def actions_for_event(event: pygame.event.Event) -> frozenset[InputAction]:
 def binding_for(action: InputAction) -> ActionBinding:
     """Return the authoritative binding metadata for an action."""
     return INPUT_BINDINGS[action]
+
+def input_summary_for(*actions: InputAction) -> str:
+    """Return unique player-facing input labels for one or more actions."""
+    labels: list[str] = []
+
+    for action in actions:
+        for label in binding_for(action).input_labels:
+            if label not in labels:
+                labels.append(label)
+
+    return " / ".join(labels)

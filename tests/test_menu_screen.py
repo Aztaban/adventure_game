@@ -1,6 +1,7 @@
 import pygame
 import pytest
 
+from game.input.bindings import InputAction, input_summary_for
 from game.ui.menu_screen import MenuAction, MenuScreen
 
 FIXED_SURFACE_SIZE = (1280, 720)
@@ -150,3 +151,13 @@ def test_title_controls_button_works_with_mouse() -> None:
     )
 
     assert menu.handle_event(event, FIXED_SURFACE_SIZE) is MenuAction.CONTROLS
+
+
+def test_menu_runtime_hint_is_derived_from_binding_catalog() -> None:
+    expected = (
+        f"Navigate: {input_summary_for(InputAction.MENU_UP, InputAction.MENU_DOWN)}"
+        f" | Select: {input_summary_for(InputAction.PRIMARY, InputAction.MENU_CONFIRM)}"
+        f" | Quit: {input_summary_for(InputAction.CANCEL)}"
+    )
+
+    assert MenuScreen.input_hint() == expected
