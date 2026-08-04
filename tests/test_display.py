@@ -1,9 +1,11 @@
 import pygame
 import pytest
 
+import game.display as display_module
 from game.display import (
     LETTERBOX_COLOR,
     DisplayModeChangeError,
+    DisplayViewport,
     calculate_destination_rect,
     convert_pointer_event,
     create_display_surface,
@@ -80,9 +82,10 @@ def test_native_presentation_clears_output_and_blits_logical_surface(
 
     monkeypatch.setattr(pygame.transform, "smoothscale", fail_if_scaled)
 
-    destination_rect = present_logical_surface(logical_surface, output_surface)
+    destination_rect = pygame.Rect(0, 0, *LOGICAL_SIZE)
 
-    assert destination_rect == pygame.Rect(0, 0, *LOGICAL_SIZE)
+    present_logical_surface(logical_surface, output_surface, destination_rect)
+
     assert output_surface.fill_calls == [LETTERBOX_COLOR]
     assert output_surface.blit_calls == [(logical_surface, destination_rect)]
 
@@ -104,9 +107,10 @@ def test_scaled_presentation_clears_letterbox_space_and_uses_one_scaled_frame(
 
     monkeypatch.setattr(pygame.transform, "smoothscale", record_scale)
 
-    destination_rect = present_logical_surface(logical_surface, output_surface)
+    destination_rect = pygame.Rect(0, 219, 1000, 562)
 
-    assert destination_rect == pygame.Rect(0, 219, 1000, 562)
+    present_logical_surface(logical_surface, output_surface, destination_rect)
+
     assert output_surface.fill_calls == [LETTERBOX_COLOR]
     assert scale_calls == [(logical_surface, destination_rect.size)]
     assert output_surface.blit_calls == [(scaled_surface, destination_rect)]
@@ -267,3 +271,88 @@ def test_display_surface_creation_wraps_pygame_error(
 
     with pytest.raises(DisplayModeChangeError, match="1600 x 900 windowed"):
         create_display_surface((1600, 900), fullscreen=False)
+
+
+def test_viewport_uses_one_destination_rect_for_presentation_and_pointer_conversion(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_surface = RecordingOutputSurface((1000, 1000))
+    viewport = DisplayViewport(LOGICAL_SIZE, output_surface)
+    expected_rect = pygame.Rect(0, 219, 1000, 562)
+
+    def fail_recalculation(*args: object) -> pygame.Rect:
+        del args
+        raise AssertionError("Viewport geometry must not be recalculated during use.")
+
+    monkeypatch.setattr(display_module, "calculate_destination_rect", fail_recalculation)
+    monkeypatch.setattr(pygame.display, "flip", lambda: None)
+
+    converted_event = viewport.convert_pointer_event(
+        pygame.event.Event(
+            pygame.MOUSEMOTION,
+            pos=(500, 500),
+            rel=(0, 0),
+            buttons=(0, 0, 0),
+        )
+    )
+    viewport.present()
+
+    assert viewport.destination_rect == expected_rect
+    assert converted_event.pos == (640, 360)
+    assert output_surface.blit_calls[-1][1] == expected_rect
+
+
+def test_viewport_recalculates_geometry_only_after_successful_recreation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_output = pygame.Surface(LOGICAL_SIZE)
+    viewport = DisplayViewport(LOGICAL_SIZE, original_output)
+    original_rect = viewport.destination_rect
+    calculation_calls: list[tuple[tuple[int, int], tuple[int, int]]] = []
+
+    def fail_creation(
+        size: tuple[int, int],
+        *,
+        fullscreen: bool,
+    ) -> pygame.Surface:
+        del size, fullscreen
+        raise DisplayModeChangeError("mode unavailable")
+
+    def record_calculation(
+        logical_size: tuple[int, int],
+        output_size: tuple[int, int],
+    ) -> pygame.Rect:
+        calculation_calls.append((logical_size, output_size))
+        return pygame.Rect(0, 96, 1024, 576)
+
+    monkeypatch.setattr(display_module, "create_display_surface", fail_creation)
+    monkeypatch.setattr(display_module, "calculate_destination_rect", record_calculation)
+
+    with pytest.raises(DisplayModeChangeError, match="mode unavailable"):
+        viewport.recreate_output((1024, 768), fullscreen=False)
+
+    assert viewport.output_surface is original_output
+    assert viewport.destination_rect == original_rect
+    assert calculation_calls == []
+
+    new_output = pygame.Surface((1024, 768))
+    monkeypatch.setattr(
+        display_module,
+        "create_display_surface",
+        lambda size, *, fullscreen: new_output,
+    )
+
+    viewport.recreate_output((1024, 768), fullscreen=False)
+
+    assert viewport.output_surface is new_output
+    assert viewport.destination_rect == pygame.Rect(0, 96, 1024, 576)
+    assert calculation_calls == [(LOGICAL_SIZE, (1024, 768))]
+
+
+def test_viewport_destination_rect_is_not_mutable_by_callers() -> None:
+    viewport = DisplayViewport(LOGICAL_SIZE, pygame.Surface((1000, 1000)))
+
+    external_rect = viewport.destination_rect
+    external_rect.x = 123
+
+    assert viewport.destination_rect == pygame.Rect(0, 219, 1000, 562)

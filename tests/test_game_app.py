@@ -6,6 +6,7 @@ from game.asset_ids import SCENE_TRANSITION_SOUND
 from game.content.demo_world import create_demo_content
 from game.content.item_ids import EMPTY_CUP
 from game.content.scene_ids import STARTING_SCENE_ID
+from game.display import DisplayViewport
 from game.game_session import create_game_session
 from game.game_state import GameState
 from game.settings import LOGICAL_SIZE
@@ -58,8 +59,7 @@ class RecordingResources:
 def create_menu_test_app() -> GameApp:
     """Create an app instance without opening a display window."""
     app = object.__new__(GameApp)
-    app.screen = pygame.Surface(LOGICAL_SIZE)
-    app.logical_surface = pygame.Surface(LOGICAL_SIZE)
+    app.viewport = DisplayViewport(LOGICAL_SIZE, pygame.Surface(LOGICAL_SIZE))
     app.is_running = True
     app.ui_resources = UIResources()
     app.content = create_demo_content(app.ui_resources)
@@ -96,6 +96,7 @@ def test_app_new_game_event_replaces_session_before_scene_handling(
         app.session = new_session
 
     app.is_running = True
+    app.viewport = DisplayViewport(LOGICAL_SIZE, pygame.Surface(LOGICAL_SIZE))
     app.session = old_session
     app.start_new_game = start_new_game
 
@@ -256,8 +257,7 @@ def test_gameplay_transition_plays_sound_and_opens_ending(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     app = object.__new__(GameApp)
-    app.screen = pygame.Surface(LOGICAL_SIZE)
-    app.logical_surface = pygame.Surface(LOGICAL_SIZE)
+    app.viewport = DisplayViewport(LOGICAL_SIZE, pygame.Surface(LOGICAL_SIZE))
     app.is_running = True
     app.mode = AppMode.PLAYING
     app.session = DummySession()
@@ -283,7 +283,7 @@ def test_scaled_title_mouse_click_is_converted_before_menu_hit_testing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     app = create_menu_test_app()
-    app.screen = pygame.Surface((1600, 900))
+    app.viewport = DisplayViewport(LOGICAL_SIZE, pygame.Surface((1600, 900)))
     old_session = app.session
     event = pygame.event.Event(
         pygame.MOUSEBUTTONDOWN,
@@ -302,7 +302,7 @@ def test_letterbox_click_does_not_activate_title_menu(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     app = create_menu_test_app()
-    app.screen = pygame.Surface((1000, 1000))
+    app.viewport = DisplayViewport(LOGICAL_SIZE, pygame.Surface((1000, 1000)))
     old_session = app.session
     event = pygame.event.Event(
         pygame.MOUSEBUTTONDOWN,
@@ -322,8 +322,7 @@ def test_gameplay_receives_logical_pointer_coordinates(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     app = object.__new__(GameApp)
-    app.screen = pygame.Surface((1600, 900))
-    app.logical_surface = pygame.Surface(LOGICAL_SIZE)
+    app.viewport = DisplayViewport(LOGICAL_SIZE, pygame.Surface((1600, 900)))
     app.is_running = True
     app.mode = AppMode.PLAYING
     app.session = DummySession()
@@ -351,8 +350,7 @@ def test_gameplay_receives_non_interactive_pointer_outside_frame(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     app = object.__new__(GameApp)
-    app.screen = pygame.Surface((1000, 1000))
-    app.logical_surface = pygame.Surface(LOGICAL_SIZE)
+    app.viewport = DisplayViewport(LOGICAL_SIZE, pygame.Surface((1000, 1000)))
     app.is_running = True
     app.mode = AppMode.PLAYING
     app.session = DummySession()

@@ -6,8 +6,9 @@ import pygame
 import pytest
 
 import game.app as app_module
+import game.display as display_module
 from game.app import AppMode, GameApp
-from game.display import DisplayModeChangeError, calculate_destination_rect
+from game.display import DisplayModeChangeError, DisplayViewport
 from game.settings import (
     DEFAULT_WINDOWED_SIZE,
     LOGICAL_SIZE,
@@ -59,9 +60,7 @@ def create_display_test_app(
 ) -> GameApp:
     """Create an app shell with display state but no real window."""
     app = object.__new__(GameApp)
-    app.logical_surface = pygame.Surface(LOGICAL_SIZE)
-    app.screen = pygame.Surface(output_size)
-    app.presentation_rect = calculate_destination_rect(LOGICAL_SIZE, output_size)
+    app.viewport = DisplayViewport(LOGICAL_SIZE, pygame.Surface(output_size))
     app.is_fullscreen = fullscreen
     app.last_windowed_preset = DEFAULT_WINDOWED_SIZE
     app.display_error_message = None
@@ -72,6 +71,7 @@ def create_display_test_app(
         scene_manager=RecordingSceneManager(),
         game_state=SimpleNamespace(ending_reached=False),
     )
+    app._draw = lambda: None
     return app
 
 
@@ -90,11 +90,17 @@ def test_fresh_app_starts_at_primary_desktop_size_in_fullscreen(
     display_factory = DisplaySurfaceFactory()
     dummy_content = object()
     dummy_session = object()
+    draw_calls = 0
+
+    def record_draw(app: GameApp) -> None:
+        nonlocal draw_calls
+        del app
+        draw_calls += 1
 
     monkeypatch.setattr(pygame, "init", lambda: None)
     monkeypatch.setattr(pygame.display, "set_caption", lambda title: None)
     monkeypatch.setattr(app_module, "primary_desktop_size", lambda: (2560, 1440))
-    monkeypatch.setattr(app_module, "create_display_surface", display_factory)
+    monkeypatch.setattr(display_module, "create_display_surface", display_factory)
     monkeypatch.setattr(app_module, "UIResources", lambda: object())
     monkeypatch.setattr(app_module, "create_demo_content", lambda resources: dummy_content)
     monkeypatch.setattr(
@@ -102,16 +108,18 @@ def test_fresh_app_starts_at_primary_desktop_size_in_fullscreen(
         "create_game_session",
         lambda content, resources: dummy_session,
     )
+    monkeypatch.setattr(GameApp, "_draw", record_draw)
 
     app = GameApp()
 
     assert display_factory.calls == [((2560, 1440), True)]
-    assert app.screen.get_size() == (2560, 1440)
+    assert app.viewport.output_size == (2560, 1440)
     assert app.is_fullscreen
     assert app.last_windowed_preset == DEFAULT_WINDOWED_SIZE
-    assert app.presentation_rect == pygame.Rect(0, 0, 2560, 1440)
+    assert app.viewport.destination_rect == pygame.Rect(0, 0, 2560, 1440)
     assert app.content is dummy_content
     assert app.session is dummy_session
+    assert draw_calls == 1
 
 
 def test_leaving_fullscreen_uses_initial_1280_by_720_fallback(
@@ -121,16 +129,16 @@ def test_leaving_fullscreen_uses_initial_1280_by_720_fallback(
     display_factory = DisplaySurfaceFactory()
     session = app.session
     mode = app.mode
-    monkeypatch.setattr(app_module, "create_display_surface", display_factory)
+    monkeypatch.setattr(display_module, "create_display_surface", display_factory)
 
     changed = app.toggle_fullscreen()
 
     assert changed
     assert display_factory.calls == [(DEFAULT_WINDOWED_SIZE, False)]
     assert not app.is_fullscreen
-    assert app.screen.get_size() == DEFAULT_WINDOWED_SIZE
+    assert app.viewport.output_size == DEFAULT_WINDOWED_SIZE
     assert app.last_windowed_preset == DEFAULT_WINDOWED_SIZE
-    assert app.presentation_rect == pygame.Rect(0, 0, *DEFAULT_WINDOWED_SIZE)
+    assert app.viewport.destination_rect == pygame.Rect(0, 0, *DEFAULT_WINDOWED_SIZE)
     assert app.session is session
     assert app.mode is mode
 
@@ -143,17 +151,62 @@ def test_approved_windowed_presets_can_be_selected_without_resetting_game(
     app = create_display_test_app(mode=AppMode.PLAYING)
     display_factory = DisplaySurfaceFactory()
     session = app.session
-    monkeypatch.setattr(app_module, "create_display_surface", display_factory)
+    monkeypatch.setattr(display_module, "create_display_surface", display_factory)
 
     changed = app.set_windowed_preset(preset)
 
     assert changed
     assert display_factory.calls == [(preset, False)]
-    assert app.screen.get_size() == preset
+    assert app.viewport.output_size == preset
     assert not app.is_fullscreen
     assert app.last_windowed_preset == preset
     assert app.session is session
     assert app.mode is AppMode.PLAYING
+
+
+def test_reselecting_active_windowed_preset_skips_display_recreation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_display_test_app(
+        fullscreen=False,
+        output_size=(1600, 900),
+    )
+    app.last_windowed_preset = (1600, 900)
+    display_factory = DisplaySurfaceFactory()
+    draw_calls = 0
+
+    def record_draw() -> None:
+        nonlocal draw_calls
+        draw_calls += 1
+
+    app._draw = record_draw
+    monkeypatch.setattr(display_module, "create_display_surface", display_factory)
+
+    assert app.set_windowed_preset((1600, 900))
+
+    assert display_factory.calls == []
+    assert draw_calls == 0
+    assert not app.is_fullscreen
+    assert app.last_windowed_preset == (1600, 900)
+
+
+def test_successful_mode_change_draws_complete_frame_immediately(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_display_test_app()
+    display_factory = DisplaySurfaceFactory()
+    observed_output_sizes: list[tuple[int, int]] = []
+
+    def record_draw() -> None:
+        observed_output_sizes.append(app.viewport.output_size)
+
+    app._draw = record_draw
+    monkeypatch.setattr(display_module, "create_display_surface", display_factory)
+
+    assert app.toggle_fullscreen()
+
+    assert display_factory.calls == [(DEFAULT_WINDOWED_SIZE, False)]
+    assert observed_output_sizes == [DEFAULT_WINDOWED_SIZE]
 
 
 def test_fullscreen_toggle_restores_last_session_windowed_preset(
@@ -161,7 +214,7 @@ def test_fullscreen_toggle_restores_last_session_windowed_preset(
 ) -> None:
     app = create_display_test_app()
     display_factory = DisplaySurfaceFactory()
-    monkeypatch.setattr(app_module, "create_display_surface", display_factory)
+    monkeypatch.setattr(display_module, "create_display_surface", display_factory)
     monkeypatch.setattr(app_module, "primary_desktop_size", lambda: (3440, 1440))
 
     assert app.set_windowed_preset((1600, 900))
@@ -175,7 +228,7 @@ def test_fullscreen_toggle_restores_last_session_windowed_preset(
     ]
     assert not app.is_fullscreen
     assert app.last_windowed_preset == (1600, 900)
-    assert app.screen.get_size() == (1600, 900)
+    assert app.viewport.output_size == (1600, 900)
 
 
 def test_new_app_display_state_does_not_reuse_previous_session_choice() -> None:
@@ -197,7 +250,7 @@ def test_f11_is_global_and_preserves_the_active_mode(
     app = create_display_test_app(mode=mode)
     display_factory = DisplaySurfaceFactory()
     session = app.session
-    monkeypatch.setattr(app_module, "create_display_surface", display_factory)
+    monkeypatch.setattr(display_module, "create_display_surface", display_factory)
     monkeypatch.setattr(
         pygame.event,
         "get",
@@ -223,7 +276,7 @@ def test_repeated_mode_changes_preserve_top_level_mode_and_session(
     app = create_display_test_app(mode=mode)
     display_factory = DisplaySurfaceFactory()
     session = app.session
-    monkeypatch.setattr(app_module, "create_display_surface", display_factory)
+    monkeypatch.setattr(display_module, "create_display_surface", display_factory)
     monkeypatch.setattr(app_module, "primary_desktop_size", lambda: (1920, 1200))
 
     for _ in range(3):
@@ -233,7 +286,7 @@ def test_repeated_mode_changes_preserve_top_level_mode_and_session(
     assert app.session is session
     assert app.mode is mode
     assert app.is_fullscreen
-    assert app.presentation_rect == pygame.Rect(0, 60, 1920, 1080)
+    assert app.viewport.destination_rect == pygame.Rect(0, 60, 1920, 1080)
 
 
 def test_mode_change_preserves_scene_dialogue_and_inventory_selection(
@@ -246,7 +299,7 @@ def test_mode_change_preserves_scene_dialogue_and_inventory_selection(
     active_scene = SimpleNamespace(dialogue=dialogue)
     app.session.scene_manager.current_scene = active_scene
     app.session.game_state.inventory = SimpleNamespace(selected_item=selected_item)
-    monkeypatch.setattr(app_module, "create_display_surface", display_factory)
+    monkeypatch.setattr(display_module, "create_display_surface", display_factory)
 
     assert app.toggle_fullscreen()
 
@@ -262,8 +315,8 @@ def test_display_recreation_error_keeps_existing_presentation_and_game_state(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     app = create_display_test_app(mode=AppMode.PLAYING)
-    original_screen = app.screen
-    original_rect = app.presentation_rect.copy()
+    original_output = app.viewport.output_surface
+    original_rect = app.viewport.destination_rect
     session = app.session
 
     def fail_display_change(
@@ -274,13 +327,13 @@ def test_display_recreation_error_keeps_existing_presentation_and_game_state(
         del size, fullscreen
         raise DisplayModeChangeError("Could not switch display mode.")
 
-    monkeypatch.setattr(app_module, "create_display_surface", fail_display_change)
+    monkeypatch.setattr(display_module, "create_display_surface", fail_display_change)
 
     changed = app.toggle_fullscreen()
 
     assert not changed
-    assert app.screen is original_screen
-    assert app.presentation_rect == original_rect
+    assert app.viewport.output_surface is original_output
+    assert app.viewport.destination_rect == original_rect
     assert app.is_fullscreen
     assert app.last_windowed_preset == DEFAULT_WINDOWED_SIZE
     assert app.session is session
@@ -295,7 +348,7 @@ def test_successful_display_change_clears_previous_error(
     app = create_display_test_app()
     app.display_error_message = "Previous display error."
     monkeypatch.setattr(
-        app_module,
+        display_module,
         "create_display_surface",
         DisplaySurfaceFactory(),
     )
@@ -309,7 +362,7 @@ def test_unapproved_windowed_size_is_rejected_before_display_recreation(
 ) -> None:
     app = create_display_test_app()
     display_factory = DisplaySurfaceFactory()
-    monkeypatch.setattr(app_module, "create_display_surface", display_factory)
+    monkeypatch.setattr(display_module, "create_display_surface", display_factory)
 
     with pytest.raises(ValueError, match="Unsupported windowed size"):
         app.set_windowed_preset((1024, 768))
