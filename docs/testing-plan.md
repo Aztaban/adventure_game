@@ -1,6 +1,6 @@
 # Testing Plan
 
-Status: current for the v0.11 display and controls milestone
+Status: current through v0.12 D120-03 user-data path resolution
 
 ## Purpose
 
@@ -49,6 +49,7 @@ Good automated-test targets:
 - game state flags, collected pickups, completed interactions, and ending state
 - session reset/new-game behavior
 - state snapshot export/restore behavior
+- operating-system user-data and manual-save path resolution without file creation
 - JSON item/recipe loading
 - content validation
 - recipe lookup and item-combination transactions
@@ -121,12 +122,28 @@ tests/
 ├── test_item*.py
 ├── test_json_content_loading.py
 ├── test_menu_screen.py
+├── test_save_paths.py
 ├── test_scene_manager.py
 ├── test_ui_resources.py
 └── other focused unit and Pygame-adapter tests
 ```
 
 Add new test files only when they describe a real boundary.
+
+## Save-path testing strategy
+
+`tests/test_save_paths.py` protects the operating-system path boundary without touching the real user-data location.
+
+It covers:
+
+- the approved `Mysterious Forest` application identity and omitted author directory
+- `save.json` under the resolved user-data directory
+- `ensure_exists=False` so lookup creates no directory or file
+- temporary-directory injection that bypasses platform lookup
+- `platformdirs` as a locked runtime dependency rather than a development-only dependency
+- no settings/configuration path during v0.12
+
+These tests are dependency-light pure unit/configuration checks and require no Pygame display.
 
 ## Content-format testing strategy
 

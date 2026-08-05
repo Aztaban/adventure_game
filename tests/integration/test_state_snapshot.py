@@ -154,6 +154,9 @@ def test_fresh_state_snapshot_round_trip() -> None:
     session = create_game_session(content, UIResources())
 
     snapshot = create_state_snapshot(session)
+
+    assert SAVE_DATA_VERSION == 1
+
     restored_session = restore_session_from_snapshot(
         content=content,
         snapshot=snapshot,
@@ -171,6 +174,25 @@ def test_fresh_state_snapshot_round_trip() -> None:
         "ending_reached": False,
     }
     assert create_state_snapshot(restored_session) == snapshot
+
+
+def test_changed_scene_state_snapshot_round_trip() -> None:
+    content = create_demo_content()
+    session = create_game_session(content, UIResources())
+    session.scene_manager.change_scene(FOREST_PATH)
+
+    snapshot = create_state_snapshot(session)
+    restored_session = restore_session_from_snapshot(
+        content=content,
+        snapshot=snapshot,
+        ui_resources=UIResources(),
+    )
+
+    assert snapshot["current_scene_id"] == FOREST_PATH
+    assert snapshot["inventory_item_ids"] == []
+    assert snapshot["flags"] == []
+    assert create_state_snapshot(restored_session) == snapshot
+    assert restored_session.scene_manager.current_scene_id == FOREST_PATH
 
 
 def test_mid_quest_state_snapshot_round_trip() -> None:
@@ -256,6 +278,40 @@ def test_selected_item_snapshot_round_trip() -> None:
     assert restored_session.game_state.inventory.selected_item_id == EMPTY_CUP
 
 
+def test_snapshot_restore_builds_fresh_scenes_without_transient_state() -> None:
+    content = create_demo_content()
+    session = create_game_session(content, UIResources())
+    snapshot = create_state_snapshot(session)
+    original_scenes: dict[str, AdventureScene] = {}
+
+    for scene_id in content.scenes_by_id:
+        session.scene_manager.change_scene(scene_id)
+        original_scene = current_adventure_scene(session)
+        original_scenes[scene_id] = original_scene
+        original_scene.interaction_text = "Stale interaction text."
+        original_scene.active_speaker_name = "Stale speaker"
+        original_scene.pointer_position = (321, 123)
+        original_scene.dialogue.start(("Stale dialogue.",))
+
+    restored_session = restore_session_from_snapshot(
+        content=content,
+        snapshot=snapshot,
+        ui_resources=UIResources(),
+    )
+
+    assert restored_session.scene_manager.current_scene_id == STARTING_SCENE_ID
+
+    for scene_id, original_scene in original_scenes.items():
+        restored_session.scene_manager.change_scene(scene_id)
+        restored_scene = current_adventure_scene(restored_session)
+
+        assert restored_scene is not original_scene
+        assert restored_scene.interaction_text is None
+        assert restored_scene.active_speaker_name == ""
+        assert restored_scene.pointer_position is None
+        assert not restored_scene.dialogue.is_active
+
+
 def test_snapshot_with_unknown_scene_id_fails_clearly() -> None:
     content = create_demo_content()
     snapshot = create_state_snapshot(create_game_session(content, UIResources()))
@@ -334,3 +390,111 @@ def test_snapshot_with_selected_item_not_in_inventory_fails_clearly() -> None:
             snapshot=snapshot,
             ui_resources=UIResources(),
         )
+
+
+def test_snapshot_with_unsupported_version_fails_clearly() -> None:
+    content = create_demo_content()
+    snapshot = create_state_snapshot(create_game_session(content, UIResources()))
+    snapshot["save_version"] = SAVE_DATA_VERSION + 1
+
+    with pytest.raises(
+        SnapshotValidationError,
+        match="Unsupported save version '2'. Expected '1'",
+    ):
+        restore_session_from_snapshot(
+            content=content,
+            snapshot=snapshot,
+            ui_resources=UIResources(),
+        )
+
+
+@pytest.mark.parametrize(
+    ("field_name", "invalid_value", "error_message"),
+    [
+        ("current_scene_id", None, "must be a string"),
+        ("inventory_item_ids", EMPTY_CUP, "must be a list of strings"),
+        ("selected_item_id", 1, "must be a string or null"),
+        ("flags", [1], "must contain only strings"),
+        ("collected_pickup_ids", None, "must be a list of strings"),
+        ("completed_interaction_ids", [None], "must contain only strings"),
+        ("ending_reached", 1, "must be a bool"),
+    ],
+)
+def test_snapshot_with_invalid_field_shape_fails_clearly(
+    field_name: str,
+    invalid_value: object,
+    error_message: str,
+) -> None:
+    content = create_demo_content()
+    snapshot = create_state_snapshot(create_game_session(content, UIResources()))
+    snapshot[field_name] = invalid_value
+
+    with pytest.raises(SnapshotValidationError, match=error_message):
+        restore_session_from_snapshot(
+            content=content,
+            snapshot=snapshot,
+            ui_resources=UIResources(),
+        )
+
+
+@pytest.mark.parametrize(
+    ("field_name", "duplicate_id", "id_type"),
+    [
+        ("inventory_item_ids", EMPTY_CUP, "inventory item"),
+        ("flags", TOWER_UNLOCKED, "flag"),
+        ("collected_pickup_ids", EMPTY_CUP_PICKUP, "collected pickup"),
+        ("completed_interaction_ids", OLD_WELL_INTERACTION, "completed interaction"),
+    ],
+)
+def test_snapshot_with_duplicate_persistent_id_fails_clearly(
+    field_name: str,
+    duplicate_id: str,
+    id_type: str,
+) -> None:
+    content = create_demo_content()
+    snapshot = create_state_snapshot(create_game_session(content, UIResources()))
+    snapshot[field_name] = [duplicate_id, duplicate_id]
+
+    with pytest.raises(
+        SnapshotValidationError,
+        match=f"Duplicate {id_type} ID '{duplicate_id}'",
+    ):
+        restore_session_from_snapshot(
+            content=content,
+            snapshot=snapshot,
+            ui_resources=UIResources(),
+        )
+
+
+def test_snapshot_with_unknown_pickup_id_fails_clearly() -> None:
+    content = create_demo_content()
+    snapshot = create_state_snapshot(create_game_session(content, UIResources()))
+    snapshot["collected_pickup_ids"] = ["missing_pickup"]
+
+    with pytest.raises(
+        SnapshotValidationError,
+        match="Unknown collected pickup ID 'missing_pickup'",
+    ):
+        restore_session_from_snapshot(
+            content=content,
+            snapshot=snapshot,
+            ui_resources=UIResources(),
+        )
+
+
+def test_snapshot_with_unknown_selected_item_id_fails_clearly() -> None:
+    content = create_demo_content()
+    snapshot = create_state_snapshot(create_game_session(content, UIResources()))
+    snapshot["inventory_item_ids"] = [EMPTY_CUP]
+    snapshot["selected_item_id"] = "missing_item"
+
+    with pytest.raises(
+        SnapshotValidationError,
+        match="Unknown selected item ID 'missing_item'",
+    ):
+        restore_session_from_snapshot(
+            content=content,
+            snapshot=snapshot,
+            ui_resources=UIResources(),
+        )
+

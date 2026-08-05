@@ -166,6 +166,31 @@ def test_dialogue_cancel_takes_priority_over_inventory_cancel() -> None:
     assert game_state.inventory.selected_item is selected_item
 
 
+def test_escape_priority_is_dialogue_then_inventory_then_app_handling() -> None:
+    game_state = GameState()
+    selected_item = create_item("selected_item")
+    game_state.inventory.add(selected_item)
+    game_state.inventory.select(selected_item.item_id)
+    scene = create_test_scene(game_state)
+    scene.dialogue.start(("Active dialogue.",))
+    escape_event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)
+
+    dialogue_result = scene.handle_event(escape_event)
+
+    assert dialogue_result.consumed
+    assert not scene.dialogue.is_active
+    assert game_state.inventory.selected_item is selected_item
+
+    inventory_result = scene.handle_event(escape_event)
+
+    assert inventory_result.consumed
+    assert game_state.inventory.selected_item is None
+
+    app_result = scene.handle_event(escape_event)
+
+    assert not app_result.consumed
+
+
 def test_wrong_item_does_not_complete_hotspot_interaction() -> None:
     game_state = GameState()
     wrong_item = create_item("wrong_item")

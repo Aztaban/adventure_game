@@ -1,6 +1,6 @@
 # Architecture
 
-Status: current for the v0.11 display and controls milestone
+Status: current through v0.12 D120-03 user-data path resolution
 
 ## Goal
 
@@ -13,6 +13,7 @@ Pygame presentation   -> event translation, drawing, UI state, optional asset pl
 Gameplay rules        -> interactions, item use, recipes, exits
 Reusable content      -> item/recipe data, scene factories, IDs, validation
 Persistent state      -> inventory, scene position, flags, pickups, completions, ending
+Save path resolution  -> operating-system user-data directory and manual-save filename
 ```
 
 The project is still a prototype. Avoid large engine patterns unless the game actually needs them.
@@ -31,6 +32,7 @@ src/
     ├── game_state.py
     ├── scene_event_result.py
     ├── scene_manager.py
+    ├── save_paths.py
     ├── settings.py
     ├── state_snapshot.py
     ├── theme.py
@@ -435,6 +437,24 @@ Do not store these in `GameState`:
 - Pygame fonts
 - Pygame surfaces
 - layout rectangles
+
+## Save path boundary
+
+### `game/save_paths.py`
+
+`resolve_save_paths()` is the single current boundary for save-file locations.
+
+Rules:
+
+- use `platformdirs.user_data_path()` with application name `Mysterious Forest`
+- pass `appauthor=False` so no separate publisher/author directory is introduced
+- keep `ensure_exists=False`; path lookup does not create a directory or file
+- expose only the user-data directory and `save.json` manual-save path
+- accept an injected user-data directory for tests and future composition
+- keep paths out of `GameState`, snapshots, gameplay services, and screen objects
+- do not define or create settings/configuration paths during v0.12
+
+Directory creation belongs to the later save-write boundary, only when a write requires it.
 
 ## Snapshot boundary
 
