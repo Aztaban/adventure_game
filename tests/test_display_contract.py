@@ -22,17 +22,32 @@ class RecordingDrawTarget:
         self.draw_calls.append((self.name, surface))
 
 
+class RecordingViewport:
+    """Record logical presentation without opening a physical display."""
+
+    def __init__(self, draw_calls: list[tuple[str, object]]) -> None:
+        self.logical_surface = pygame.Surface(LOGICAL_SIZE)
+        self.logical_size = LOGICAL_SIZE
+        self.output_surface = pygame.Surface(PHYSICAL_SIZE)
+        self.draw_calls = draw_calls
+
+    def present(self) -> None:
+        self.draw_calls.append(
+            ("present", (self.logical_surface, self.output_surface))
+        )
+
+
 def create_draw_test_app(
     mode: AppMode,
 ) -> tuple[GameApp, list[tuple[str, object]]]:
     """Create the smallest app shell needed to protect draw routing."""
     app = object.__new__(GameApp)
-    app.screen = pygame.Surface(PHYSICAL_SIZE)
-    app.logical_surface = pygame.Surface(LOGICAL_SIZE)
+    draw_calls: list[tuple[str, object]] = []
+    app.viewport = RecordingViewport(draw_calls)
     app.mode = mode
     app.ui_resources = object()
+    app.display_error_message = None
 
-    draw_calls: list[tuple[str, object]] = []
     app.title_screen = RecordingDrawTarget("title", draw_calls)
     app.controls_screen = RecordingDrawTarget("controls", draw_calls)
     app.ending_screen = RecordingDrawTarget("ending", draw_calls)
@@ -58,31 +73,23 @@ def test_logical_resolution_contract_is_1280_by_720() -> None:
 def test_top_level_modes_draw_to_logical_surface_before_presentation(
     mode: AppMode,
     expected_presenters: list[str],
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     app, draw_calls = create_draw_test_app(mode)
-
-    def record_presentation(
-        logical_surface: pygame.Surface,
-        output_surface: pygame.Surface,
-    ) -> pygame.Rect:
-        draw_calls.append(("present", (logical_surface, output_surface)))
-        return pygame.Rect(0, 0, *output_surface.get_size())
-
-    monkeypatch.setattr(app_module, "present_logical_surface", record_presentation)
-    monkeypatch.setattr(pygame.display, "flip", lambda: None)
 
     app._draw()
 
     assert [name for name, _ in draw_calls] == [*expected_presenters, "present"]
     assert all(
-        surface is app.logical_surface
+        surface is app.viewport.logical_surface
         for name, surface in draw_calls
         if name != "present"
     )
-    assert draw_calls[-1][1] == (app.logical_surface, app.screen)
-    assert app.logical_surface.get_size() == LOGICAL_SIZE
-    assert app.screen.get_size() == PHYSICAL_SIZE
+    assert draw_calls[-1][1] == (
+        app.viewport.logical_surface,
+        app.viewport.output_surface,
+    )
+    assert app.viewport.logical_surface.get_size() == LOGICAL_SIZE
+    assert app.viewport.output_surface.get_size() == PHYSICAL_SIZE
 
 
 def test_debug_overlay_draws_to_logical_surface(
@@ -93,19 +100,10 @@ def test_debug_overlay_draws_to_logical_surface(
     def record_debug(surface: pygame.Surface) -> None:
         draw_calls.append(("debug", surface))
 
-    def record_presentation(
-        logical_surface: pygame.Surface,
-        output_surface: pygame.Surface,
-    ) -> pygame.Rect:
-        draw_calls.append(("present", (logical_surface, output_surface)))
-        return pygame.Rect(0, 0, *output_surface.get_size())
-
     app._draw_debug_overlay = record_debug
     monkeypatch.setattr(app_module, "SHOW_DEBUG_OVERLAY", True)
-    monkeypatch.setattr(app_module, "present_logical_surface", record_presentation)
-    monkeypatch.setattr(pygame.display, "flip", lambda: None)
 
     app._draw()
 
     assert [name for name, _ in draw_calls] == ["gameplay", "debug", "present"]
-    assert draw_calls[1][1] is app.logical_surface
+    assert draw_calls[1][1] is app.viewport.logical_surface

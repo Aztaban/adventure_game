@@ -137,13 +137,9 @@ def convert_pointer_event(
 def present_logical_surface(
     logical_surface: pygame.Surface,
     output_surface: pygame.Surface,
-) -> pygame.Rect:
-    """Scale one logical frame into the physical output with black unused space."""
-    destination_rect = calculate_destination_rect(
-        logical_surface.get_size(),
-        output_surface.get_size(),
-    )
-
+    destination_rect: pygame.Rect,
+) -> None:
+    """Present one logical frame using already-calculated viewport geometry."""
     output_surface.fill(LETTERBOX_COLOR)
 
     if destination_rect.size == logical_surface.get_size():
@@ -155,4 +151,82 @@ def present_logical_surface(
         )
 
     output_surface.blit(presented_surface, destination_rect)
-    return destination_rect
+
+class DisplayViewport:
+    """Own logical rendering, physical presentation and pointer conversion."""
+
+    def __init__(
+        self,
+        logical_size: tuple[int, int],
+        output_surface: pygame.Surface,
+    ) -> None:
+        self.logical_surface = pygame.Surface(logical_size)
+        self.logical_surface.fill(LETTERBOX_COLOR)
+        self._output_surface = output_surface
+        self._destination_rect = calculate_destination_rect(logical_size, output_surface.get_size())
+
+    @classmethod
+    def create(
+        cls,
+        logical_size: tuple[int, int],
+        output_size: tuple[int, int],
+        *,
+        fullscreen: bool,
+    ) -> DisplayViewport:
+        """Create the physical display and its authoritative logical viewport."""
+        return cls(
+            logical_size,
+            create_display_surface(output_size, fullscreen=fullscreen)
+        )
+
+    @property
+    def logical_size(self) -> tuple[int, int]:
+        """Return fixed logical drawing size."""
+        return self.logical_surface.get_size()
+
+    @property
+    def output_surface(self) -> pygame.Surface:
+        """Return the active physical display surface."""
+        return self._output_surface
+
+    @property
+    def output_size(self) -> tuple[int, int]:
+        """Return the active physical output size."""
+        return self._output_surface.get_size()
+
+    @property
+    def destination_rect(self) -> pygame.Rect:
+        """Return a copy of the authoritative physical presentation rectangle."""
+        return self._destination_rect.copy()
+
+    def recreate_output(
+        self,
+        size: tuple[int, int],
+        *,
+        fullscreen: bool,
+    ) -> None:
+        """Replace the physical display after succesful creation only."""
+        new_output_surface = create_display_surface(size, fullscreen=fullscreen)
+        new_destination_rect = calculate_destination_rect(
+            self.logical_size,
+            new_output_surface.get_size(),
+        )
+        self._output_surface = new_output_surface
+        self._destination_rect = new_destination_rect
+
+    def convert_pointer_event(self, event: pygame.event.Event) -> pygame.event.Event:
+        """Translate a physical pointer event through this viewport."""
+        return convert_pointer_event(
+            event,
+            self.logical_size,
+            self._destination_rect,
+        )
+
+    def present(self) -> None:
+        """Scale and flip the current logical frame through this viewport."""
+        present_logical_surface(
+            self.logical_surface,
+            self._output_surface,
+            self._destination_rect,
+        )
+        pygame.display.flip()

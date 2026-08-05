@@ -11,7 +11,7 @@ from game.entities.hotspot import Hotspot
 from game.entities.item_hotspot import ItemHotspot
 from game.entities.npc import NPC
 from game.game_state import GameState
-from game.input.bindings import InputAction, actions_for_event
+from game.input.bindings import InputAction, actions_for_event, input_summary_for
 from game.scene_event_result import SceneEventResult
 from game.scenes.base_scene import BaseScene
 from game.settings import LOGICAL_WIDTH
@@ -451,20 +451,22 @@ class AdventureScene(BaseScene):
 
         selected_item = self.game_state.inventory.selected_item
 
+        primary = input_summary_for(InputAction.PRIMARY)
+
         if selected_item is not None and target.kind in {
             WorldTargetKind.NPC,
             WorldTargetKind.EXIT,
             WorldTargetKind.HOTSPOT,
         }:
-            return "Left click to use the selected item"
+            return f"{primary} to use the selected item"
 
-        hints = {
-            WorldTargetKind.NPC: "Left click to talk",
-            WorldTargetKind.EXIT: "Left click to travel or inspect",
-            WorldTargetKind.ITEM_PICKUP: "Left click to collect",
-            WorldTargetKind.HOTSPOT: "Left click to inspect",
+        actions = {
+            WorldTargetKind.NPC: "talk",
+            WorldTargetKind.EXIT: "travel or inspect",
+            WorldTargetKind.ITEM_PICKUP: "collect",
+            WorldTargetKind.HOTSPOT: "inspect",
         }
-        return hints[target.kind]
+        return f"{primary} to {actions[target.kind]}"
 
     def _display_label_for_exit(
         self,

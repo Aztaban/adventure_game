@@ -60,7 +60,7 @@ def test_service_selects_deselects_and_combines_inventory_items() -> None:
     combine_outcome = service.select_or_combine_inventory_item(second_item)
 
     assert select_outcome.consumed
-    assert select_outcome.message == "Selected First Item. Click another item to combine them."
+    assert select_outcome.message == "Selected First Item. Select another item to combine them."
     assert deselect_outcome.consumed
     assert deselect_outcome.message == "Deselected First Item."
     assert combine_outcome.consumed

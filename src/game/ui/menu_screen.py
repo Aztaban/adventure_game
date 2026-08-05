@@ -5,7 +5,7 @@ from enum import Enum
 
 import pygame
 
-from game.input.bindings import InputAction, actions_for_event
+from game.input.bindings import InputAction, actions_for_event, input_summary_for
 from game.theme import (
     BORDER_DEFAULT,
     MENU_BUTTON_BACKGROUND,
@@ -184,7 +184,7 @@ class MenuScreen:
             )
 
         hint_surface = resources.hint_font.render(
-            "Mouse or Arrow Keys | Enter to select | Esc to quit",
+            self.input_hint(),
             True,
             TEXT_SECONDARY,
         )
@@ -192,6 +192,15 @@ class MenuScreen:
             center=(surface.get_width() // 2, surface.get_height() - 52),
         )
         surface.blit(hint_surface, hint_rect)
+
+    @staticmethod
+    def input_hint() -> str:
+        """Return the menu hint derived from the authoritative binding catalog."""
+        navigation = input_summary_for(InputAction.MENU_UP, InputAction.MENU_DOWN)
+        selection = input_summary_for(InputAction.PRIMARY, InputAction.MENU_CONFIRM)
+        cancel = input_summary_for(InputAction.CANCEL)
+
+        return f"Navigate: {navigation} | Select: {selection} | Quit: {cancel}"
 
     def layout(self, surface_size: tuple[int, int]) -> tuple[MenuButtonLayout, ...]:
         """Return deterministic button geometry for drawing and hit testing."""

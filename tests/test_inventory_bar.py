@@ -1,6 +1,7 @@
 import pygame
 
 from game.entities.item import Item
+from game.input.bindings import InputAction, input_summary_for
 from game.settings import LOGICAL_HEIGHT, LOGICAL_WIDTH
 from game.ui.inventory_bar import InventoryBar
 from game.ui.resources import UIResources
@@ -136,3 +137,14 @@ def test_planned_maximum_inventory_size_fits_inside_window() -> None:
 
     assert len(layout.item_rows) == PLANNED_MAXIMUM_VISIBLE_ITEMS
     assert layout.panel_rect.bottom <= LOGICAL_HEIGHT
+
+
+def test_inventory_runtime_instructions_use_primary_binding_catalog() -> None:
+    primary = input_summary_for(InputAction.PRIMARY)
+    selected_item = create_item("selected", "Selected Item")
+
+    assert InventoryBar.instruction_for(None) == f"Select item: {primary}"
+    assert (
+        InventoryBar.instruction_for(selected_item)
+        == f"Combine items: {primary}"
+    )

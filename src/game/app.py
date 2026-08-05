@@ -9,12 +9,8 @@ from game.asset_ids import SCENE_TRANSITION_SOUND, TITLE_BACKGROUND
 from game.content.demo_world import create_demo_content
 from game.display import (
     LETTERBOX_COLOR,
-    POINTER_EVENT_TYPES,
     DisplayModeChangeError,
-    calculate_destination_rect,
-    convert_pointer_event,
-    create_display_surface,
-    present_logical_surface,
+    DisplayViewport,
     primary_desktop_size,
 )
 from game.game_session import GameSession, create_game_session
@@ -50,17 +46,13 @@ class GameApp:
     def __init__(self) -> None:
         pygame.init()
 
-        self.logical_surface = pygame.Surface(LOGICAL_SIZE)
         self.is_fullscreen = True
         self.last_windowed_preset = DEFAULT_WINDOWED_SIZE
         self.display_error_message: str | None = None
-        self.screen = create_display_surface(
+        self.viewport = DisplayViewport.create(
+            LOGICAL_SIZE,
             primary_desktop_size(),
             fullscreen=True,
-        )
-        self.presentation_rect = calculate_destination_rect(
-            self.logical_surface.get_size(),
-            self.screen.get_size(),
         )
         pygame.display.set_caption(GAME_TITLE)
 
@@ -93,6 +85,7 @@ class GameApp:
             primary_label="Play Again",
             overlay_gameplay=True,
         )
+        self._draw()
 
     def _create_new_session(self) -> GameSession:
         """Create a fresh playable session using static demo content."""
@@ -149,28 +142,26 @@ class GameApp:
         windowed_preset: tuple[int, int] | None = None,
     ) -> bool:
         """Recreate only the physical display while preserving gameplay state."""
+        if self.is_fullscreen is fullscreen and self.viewport.output_size == size:
+            if windowed_preset is not None:
+                self.last_windowed_preset = windowed_preset
+
+            self.display_error_message = None
+            return True
         try:
-            new_screen = create_display_surface(size, fullscreen=fullscreen)
+            self.viewport.recreate_output(size, fullscreen=fullscreen)
         except DisplayModeChangeError as error:
             self._report_display_error(str(error))
             return False
 
-        self.screen = new_screen
         self.is_fullscreen = fullscreen
 
         if windowed_preset is not None:
             self.last_windowed_preset = windowed_preset
 
-        self._recalculate_presentation_rect()
         self.display_error_message = None
+        self._draw()
         return True
-
-    def _recalculate_presentation_rect(self) -> None:
-        """Refresh physical-to-logical viewport geometry after mode changes."""
-        self.presentation_rect = calculate_destination_rect(
-            self.logical_surface.get_size(),
-            self.screen.get_size(),
-        )
 
     def _report_display_error(self, message: str) -> None:
         """Keep the current session alive and expose a clear display error."""
@@ -199,7 +190,7 @@ class GameApp:
                 self.is_running = False
                 continue
 
-            event = self._convert_pointer_event(event)
+            event = self.viewport.convert_pointer_event(event)
             actions = actions_for_event(event)
 
             if InputAction.FULLSCREEN_TOGGLE in actions:
@@ -238,33 +229,13 @@ class GameApp:
             if InputAction.CANCEL in actions:
                 self.is_running = False
 
-    def _convert_pointer_event(
-        self,
-        event: pygame.event.Event,
-    ) -> pygame.event.Event:
-        """Translate physical pointer coordinates into the logical frame."""
-        if event.type not in POINTER_EVENT_TYPES:
-            return event
-
-        destination_rect = getattr(self, "presentation_rect", None)
-
-        if destination_rect is None:
-            self._recalculate_presentation_rect()
-            destination_rect = self.presentation_rect
-
-        return convert_pointer_event(
-            event,
-            self.logical_surface.get_size(),
-            destination_rect,
-        )
-
     def _handle_menu_event(
         self,
         menu: MenuScreen,
         event: pygame.event.Event,
     ) -> None:
         """Apply a title or ending menu action."""
-        action = menu.handle_event(event, self.logical_surface.get_size())
+        action = menu.handle_event(event, self.viewport.logical_size)
 
         if action is MenuAction.PRIMARY:
             self.start_new_game()
@@ -279,7 +250,7 @@ class GameApp:
         """Apply one local Controls-screen result through app-owned navigation."""
         result = self.controls_screen.handle_event(
             event,
-            self.logical_surface.get_size(),
+            self.viewport.logical_size,
         )
 
         if result is ControlsResult.BACK:
@@ -287,31 +258,31 @@ class GameApp:
 
     def _draw(self) -> None:
         """Draw one logical frame and present it to the physical display."""
-        self.logical_surface.fill(LETTERBOX_COLOR)
+        logical_surface = self.viewport.logical_surface
+        logical_surface.fill(LETTERBOX_COLOR)
 
         if self.mode is AppMode.TITLE:
-            self.title_screen.draw(self.logical_surface, self.ui_resources)
+            self.title_screen.draw(logical_surface, self.ui_resources)
         elif self.mode is AppMode.CONTROLS:
-            self.controls_screen.draw(self.logical_surface, self.ui_resources)
+            self.controls_screen.draw(logical_surface, self.ui_resources)
         else:
-            self.session.scene_manager.draw(self.logical_surface)
+            self.session.scene_manager.draw(logical_surface)
 
             if self.mode is AppMode.ENDING:
-                self.ending_screen.draw(self.logical_surface, self.ui_resources)
+                self.ending_screen.draw(logical_surface, self.ui_resources)
             elif SHOW_DEBUG_OVERLAY:
-                self._draw_debug_overlay(self.logical_surface)
+                self._draw_debug_overlay(logical_surface)
 
         display_error_message = getattr(self, "display_error_message", None)
 
         if display_error_message:
             MessageBox(self.ui_resources.small_font).draw(
-                self.logical_surface,
+                logical_surface,
                 display_error_message,
                 available_rect=pygame.Rect(0, 0, *LOGICAL_SIZE),
             )
 
-        present_logical_surface(self.logical_surface, self.screen)
-        pygame.display.flip()
+        self.viewport.present()
 
     def _draw_debug_overlay(self, surface: pygame.Surface) -> None:
         """Draw optional scene and FPS diagnostics onto the logical frame."""

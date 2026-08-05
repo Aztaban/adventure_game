@@ -7,7 +7,8 @@ from game.entities.item import Item
 from game.entities.item_hotspot import ItemHotspot
 from game.entities.npc import NPC
 from game.game_state import GameState
-from game.scenes.adventure_scene import AdventureScene, WorldTargetKind
+from game.input.bindings import InputAction, input_summary_for
+from game.scenes.adventure_scene import AdventureScene, WorldTarget, WorldTargetKind
 from game.systems.item_use import ItemUseInteraction
 from game.systems.recipe import Recipe, RecipeBook
 from game.ui.resources import UIResources
@@ -146,6 +147,23 @@ def test_escape_closes_active_dialogue() -> None:
 
     assert result.consumed
     assert not scene.dialogue.is_active
+
+
+def test_dialogue_cancel_takes_priority_over_inventory_cancel() -> None:
+    game_state = GameState()
+    selected_item = create_item("selected_item")
+    game_state.inventory.add(selected_item)
+    game_state.inventory.select(selected_item.item_id)
+    scene = create_test_scene(game_state)
+    scene.dialogue.start(("Active dialogue.",))
+
+    result = scene.handle_event(
+        pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)
+    )
+
+    assert result.consumed
+    assert not scene.dialogue.is_active
+    assert game_state.inventory.selected_item is selected_item
 
 
 def test_wrong_item_does_not_complete_hotspot_interaction() -> None:
@@ -707,7 +725,7 @@ def test_inventory_click_takes_precedence_over_world_target() -> None:
 
     assert result.consumed
     assert game_state.inventory.selected_item is item
-    assert scene.interaction_text == ("Selected Inventory Item. Click another item to combine them.")
+    assert scene.interaction_text == ("Selected Inventory Item. Select another item to combine them.")
 
 
 def test_existing_recipe_result_keeps_ingredients_and_clears_selection() -> None:
@@ -1026,3 +1044,26 @@ def test_non_interactive_pointer_click_does_not_advance_dialogue() -> None:
 
     assert not result.consumed
     assert scene.dialogue.current_line == "First line."
+
+
+def test_hover_runtime_hint_uses_primary_binding_catalog() -> None:
+    game_state = GameState()
+    npc = NPC(
+        rect=pygame.Rect(100, 100, 120, 120),
+        name="Test NPC",
+        dialogue_lines=("Hello.",),
+    )
+    scene = create_test_scene(game_state, npcs=[npc])
+    target = WorldTarget(WorldTargetKind.NPC, npc)
+    primary = input_summary_for(InputAction.PRIMARY)
+
+    assert scene._hover_hint_for_target(target) == f"{primary} to talk"
+
+    selected_item = create_item("selected_item")
+    game_state.inventory.add(selected_item)
+    game_state.inventory.select(selected_item.item_id)
+
+    assert (
+        scene._hover_hint_for_target(target)
+        == f"{primary} to use the selected item"
+    )
