@@ -1,6 +1,6 @@
 # Testing Plan
 
-Status: current through v0.12 D120-03 user-data path resolution
+Status: current through v0.12 D120-04 save-envelope validation
 
 ## Purpose
 
@@ -50,6 +50,7 @@ Good automated-test targets:
 - session reset/new-game behavior
 - state snapshot export/restore behavior
 - operating-system user-data and manual-save path resolution without file creation
+- save-envelope creation, UTC timestamp validation, status classification, and non-mutating snapshot validation
 - JSON item/recipe loading
 - content validation
 - recipe lookup and item-combination transactions
@@ -122,6 +123,7 @@ tests/
 ├── test_item*.py
 ├── test_json_content_loading.py
 ├── test_menu_screen.py
+├── test_save_file.py
 ├── test_save_paths.py
 ├── test_scene_manager.py
 ├── test_ui_resources.py
@@ -144,6 +146,22 @@ It covers:
 - no settings/configuration path during v0.12
 
 These tests are dependency-light pure unit/configuration checks and require no Pygame display.
+
+## Save-file envelope testing strategy
+
+`tests/test_save_file.py` protects the plain save format and inspection status model without constructing a game session.
+
+It covers:
+
+- save-file format version `1` independently from snapshot version `1`
+- the exact JSON-compatible envelope shape
+- aware timestamp normalization to UTC and rejection of naive or non-UTC stored timestamps
+- non-mutating validation through a content stub whose scene-building method must never be called
+- missing, valid, invalid JSON, invalid envelope, unsupported version, invalid snapshot, and unreadable-file statuses
+- conversion of filesystem and JSON failures into domain statuses without raw exception exposure
+- explicit failure for unsupported versions without migration behavior
+
+These are dependency-light unit tests. Session restoration remains protected by `tests/integration/test_state_snapshot.py`.
 
 ## Content-format testing strategy
 

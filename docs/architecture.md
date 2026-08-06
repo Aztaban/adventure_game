@@ -456,6 +456,33 @@ Rules:
 
 Directory creation belongs to the later save-write boundary, only when a write requires it.
 
+## Save-file boundary
+
+### `game/save_file.py`
+
+The save-file boundary owns the versioned JSON envelope and non-mutating file inspection.
+
+Envelope shape:
+
+```txt
+save_format_version
+saved_at_utc
+snapshot
+```
+
+Rules:
+
+- save-file format version `1` is independent from the state-snapshot version
+- create envelopes from plain snapshot data and aware timestamps normalized to UTC
+- require exactly the three envelope fields and validate their types before snapshot validation
+- validate ISO-8601 timestamps as UTC
+- validate the nested snapshot without constructing or mutating a `GameSession`
+- return `SaveFileStatus` outcomes for missing, valid, invalid JSON, invalid envelope, unsupported version, invalid snapshot, and unreadable files
+- do not return raw filesystem, Unicode, JSON, or snapshot exceptions to menu/application code
+- do not migrate or reinterpret unsupported versions
+
+Reading and validation are available now. Directory creation, JSON writing, temporary files, flushing, syncing, and atomic replacement belong to D120-05.
+
 ## Snapshot boundary
 
 ### `game/state_snapshot.py`
@@ -480,8 +507,9 @@ Rules:
 - no Pygame objects
 - no content definitions
 - no `pickle`
-- validate referenced IDs against `GameContent`
-- restore by constructing a fresh session and applying state
+- expose `validate_state_snapshot()` for non-mutating shape and content-ID validation
+- defer Pygame-bound imports until actual restoration
+- restore by constructing a fresh session and applying validated state
 
 ## Gameplay systems
 

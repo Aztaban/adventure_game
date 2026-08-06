@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
-from game.game_content import GameContent
-from game.game_session import GameSession
-from game.game_state import GameState
-from game.scene_manager import SceneManager
-from game.ui.resources import UIResources
+if TYPE_CHECKING:
+    from game.game_content import GameContent
+    from game.game_session import GameSession
+    from game.game_state import GameState
+    from game.ui.resources import UIResources
 
 SAVE_DATA_VERSION = 1
 
@@ -26,7 +26,7 @@ class GameSnapshot(TypedDict):
 
 
 class SnapshotValidationError(ValueError):
-    """Raised when a runtime-state snapshot references invalid content IDs."""
+    """Raised when a runtime-state snapshot is invalid."""
 
 
 def create_state_snapshot(
@@ -54,7 +54,10 @@ def restore_session_from_snapshot(
     ui_resources: UIResources,
 ) -> GameSession:
     """Create a fresh session from a validated runtime-state snapshot."""
-    validated_snapshot = _validate_snapshot(
+    from game.game_session import GameSession
+    from game.scene_manager import SceneManager
+
+    validated_snapshot = validate_state_snapshot(
         content=content,
         snapshot=snapshot,
     )
@@ -80,6 +83,8 @@ def _restore_game_state(
     snapshot: GameSnapshot,
 ) -> GameState:
     """Restore persistent runtime state into a fresh GameState."""
+    from game.game_state import GameState
+
     game_state = GameState()
 
     for item_id in snapshot["inventory_item_ids"]:
@@ -105,12 +110,15 @@ def _restore_game_state(
     return game_state
 
 
-def _validate_snapshot(
+def validate_state_snapshot(
     *,
     content: GameContent,
-    snapshot: Mapping[str, Any],
+    snapshot: object,
 ) -> GameSnapshot:
-    """Validate snapshot shape and all content references."""
+    """Validate snapshot shape and content references without restoring a session."""
+    if not isinstance(snapshot, Mapping):
+        raise SnapshotValidationError("State snapshot must be a JSON object.")
+
     errors: list[str] = []
     save_version = snapshot.get("save_version")
 
