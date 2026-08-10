@@ -454,13 +454,13 @@ Rules:
 - keep paths out of `GameState`, snapshots, gameplay services, and screen objects
 - do not define or create settings/configuration paths during v0.12
 
-Directory creation belongs to the later save-write boundary, only when a write requires it.
+Directory creation belongs to `write_save_file()` and happens only when a write requires it.
 
 ## Save-file boundary
 
 ### `game/save_file.py`
 
-The save-file boundary owns the versioned JSON envelope and non-mutating file inspection.
+The save-file boundary owns the versioned JSON envelope, non-mutating file inspection, and atomic manual-save writes.
 
 Envelope shape:
 
@@ -480,8 +480,15 @@ Rules:
 - return `SaveFileStatus` outcomes for missing, valid, invalid JSON, invalid envelope, unsupported version, invalid snapshot, and unreadable files
 - do not return raw filesystem, Unicode, JSON, or snapshot exceptions to menu/application code
 - do not migrate or reinterpret unsupported versions
+- serialize with UTF-8 JSON before changing the filesystem
+- create the destination directory only when a write requires it
+- create a temporary file in the destination directory, then write, flush, and sync it before replacement
+- close the temporary file before replacing the final path with `os.replace()`
+- return `SaveWriteStatus` outcomes rather than raw filesystem or serialization exceptions
+- remove abandoned temporary files where practical
+- leave any previous manual save unchanged unless the final atomic replacement succeeds
 
-Reading and validation are available now. Directory creation, JSON writing, temporary files, flushing, syncing, and atomic replacement belong to D120-05.
+The boundary does not restore or replace a running session. Application-level load commit behavior belongs to D120-06.
 
 ## Snapshot boundary
 

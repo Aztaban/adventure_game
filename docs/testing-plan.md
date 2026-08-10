@@ -1,6 +1,6 @@
 # Testing Plan
 
-Status: current through v0.12 D120-04 save-envelope validation
+Status: current through v0.12 D120-05 atomic manual-save I/O
 
 ## Purpose
 
@@ -51,6 +51,7 @@ Good automated-test targets:
 - state snapshot export/restore behavior
 - operating-system user-data and manual-save path resolution without file creation
 - save-envelope creation, UTC timestamp validation, status classification, and non-mutating snapshot validation
+- UTF-8 save serialization, same-directory temporary files, flush/sync ordering, atomic replacement, and previous-save preservation
 - JSON item/recipe loading
 - content validation
 - recipe lookup and item-combination transactions
@@ -147,9 +148,9 @@ It covers:
 
 These tests are dependency-light pure unit/configuration checks and require no Pygame display.
 
-## Save-file envelope testing strategy
+## Save-file persistence testing strategy
 
-`tests/test_save_file.py` protects the plain save format and inspection status model without constructing a game session.
+`tests/test_save_file.py` protects the plain save format, inspection status model, and atomic writer without constructing a game session.
 
 It covers:
 
@@ -160,6 +161,13 @@ It covers:
 - missing, valid, invalid JSON, invalid envelope, unsupported version, invalid snapshot, and unreadable-file statuses
 - conversion of filesystem and JSON failures into domain statuses without raw exception exposure
 - explicit failure for unsupported versions without migration behavior
+- UTF-8 JSON serialization and destination-directory creation only during a write
+- temporary-file creation in the final save directory
+- completed write, flush, and file sync before `os.replace()`
+- replacement of an existing valid save after a successful temporary write
+- typed directory, temporary-file, write, flush, sync, and replacement failure outcomes
+- exact preservation of the previous valid save after handled write-stage failures
+- temporary-file cleanup after handled failures where practical
 
 These are dependency-light unit tests. Session restoration remains protected by `tests/integration/test_state_snapshot.py`.
 
