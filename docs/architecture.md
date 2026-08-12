@@ -106,7 +106,7 @@ GameApp
     └── SceneManager            current scene and session scene instances
 ```
 
-A new game/reset creates a new `GameSession`. It does not manually clear many unrelated objects.
+A new game/reset creates a new `GameSession`. It does not manually clear many unrelated objects. A successful manual-save load also constructs a complete replacement session before `GameApp` commits it.
 
 ## Application layer
 
@@ -139,8 +139,11 @@ Responsibilities:
 - handle global quit behavior
 - play scene-transition presentation cues
 - keep display recreation failures non-destructive to gameplay state
+- coordinate manual-save loading by validating through `inspect_save_file()`, restoring through `restore_session_from_snapshot()`, and replacing the active session only after both succeed
+- choose `PLAYING` or `ENDING` from the restored persistent ending state
+- reset local title, Controls, and ending selection state after a successful session replacement
 
-`GameApp` composes the application. It should not implement item-use, recipe, quest, or save/load logic.
+`GameApp` composes the application. It does not parse save JSON, validate snapshot IDs, mutate restored gameplay state in place, or own filesystem rules; those responsibilities remain in the save-file and snapshot boundaries. Pause and confirmation screens are not present yet, so D120-06 has no pause/confirmation local state to clear.
 
 ## Display and input boundaries
 
@@ -488,7 +491,7 @@ Rules:
 - remove abandoned temporary files where practical
 - leave any previous manual save unchanged unless the final atomic replacement succeeds
 
-The boundary does not restore or replace a running session. Application-level load commit behavior belongs to D120-06.
+The boundary does not restore or replace a running session. `GameApp.load_session_from_save()` consumes its validated result, delegates fresh-session construction to the snapshot boundary, and commits the replacement only after restoration succeeds.
 
 ## Snapshot boundary
 
@@ -517,6 +520,7 @@ Rules:
 - expose `validate_state_snapshot()` for non-mutating shape and content-ID validation
 - defer Pygame-bound imports until actual restoration
 - restore by constructing a fresh session and applying validated state
+- fresh scene construction intentionally clears dialogue, transient interaction/speaker text, pointer hover position, and other scene-local presentation state
 
 ## Gameplay systems
 

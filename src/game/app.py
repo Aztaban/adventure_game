@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 from enum import Enum
+from pathlib import Path
 
 import pygame
 
@@ -15,6 +16,7 @@ from game.display import (
 )
 from game.game_session import GameSession, create_game_session
 from game.input.bindings import InputAction, actions_for_event
+from game.save_file import SaveFileStatus, inspect_save_file
 from game.settings import (
     DEFAULT_WINDOWED_SIZE,
     FPS,
@@ -24,6 +26,7 @@ from game.settings import (
     SHOW_DEBUG_OVERLAY,
     WINDOWED_PRESETS,
 )
+from game.state_snapshot import restore_session_from_snapshot
 from game.theme import TEXT_SECONDARY
 from game.ui.controls_screen import ControlsResult, ControlsScreen
 from game.ui.menu_screen import MenuAction, MenuScreen
@@ -95,7 +98,39 @@ class GameApp:
         """Reset the current run and enter gameplay from Village Square."""
         self.session = self._create_new_session()
         self.mode = AppMode.PLAYING
+        self._reset_local_navigation_state()
 
+    def load_session_from_save(self, path: Path) -> SaveFileStatus:
+        """Restore one validated save and commit it only after restoration succeeds."""
+        inspection = inspect_save_file(
+            path=path,
+            content=self.content,
+        )
+
+        if not inspection.is_valid:
+            return inspection.status
+
+        if inspection.envelope is None:
+            return SaveFileStatus.INVALID_ENVELOPE
+
+        restored_session = restore_session_from_snapshot(
+            content=self.content,
+            snapshot=inspection.envelope["snapshot"],
+            ui_resources=self.ui_resources,
+        )
+        restored_mode = (
+            AppMode.ENDING
+            if restored_session.game_state.ending_reached
+            else AppMode.PLAYING
+        )
+
+        self.session = restored_session
+        self.mode = restored_mode
+        self._reset_local_navigation_state()
+        return SaveFileStatus.VALID
+
+    def _reset_local_navigation_state(self) -> None:
+        """Reset local screen state after replacing the active session."""
         if hasattr(self, "title_screen"):
             self.title_screen.reset_selection()
 
@@ -104,6 +139,9 @@ class GameApp:
 
         if hasattr(self, "controls_screen"):
             self.controls_screen.reset_selection()
+
+        if hasattr(self, "controls_return_mode"):
+            self.controls_return_mode = AppMode.TITLE
 
     def set_windowed_preset(self, size: tuple[int, int]) -> bool:
         """Switch to one approved windowed size for the current session."""

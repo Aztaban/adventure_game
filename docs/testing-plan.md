@@ -1,6 +1,6 @@
 # Testing Plan
 
-Status: current through v0.12 D120-05 atomic manual-save I/O
+Status: current through v0.12 D120-06 application-level session restoration
 
 ## Purpose
 
@@ -52,6 +52,7 @@ Good automated-test targets:
 - operating-system user-data and manual-save path resolution without file creation
 - save-envelope creation, UTC timestamp validation, status classification, and non-mutating snapshot validation
 - UTF-8 save serialization, same-directory temporary files, flush/sync ordering, atomic replacement, and previous-save preservation
+- application-level save loading with commit-after-restore behavior and restored mode selection
 - JSON item/recipe loading
 - content validation
 - recipe lookup and item-combination transactions
@@ -170,6 +171,22 @@ It covers:
 - temporary-file cleanup after handled failures where practical
 
 These are dependency-light unit tests. Session restoration remains protected by `tests/integration/test_state_snapshot.py`.
+
+## Application-level load testing strategy
+
+`tests/test_game_app.py` protects the application commit boundary around a validated manual save.
+
+It covers:
+
+- fresh, mid-quest, selected-item, changed-scene, and completed-save restoration through the real save envelope and snapshot boundaries
+- preservation of current scene, inventory order, selected item, flags, pickups, completed interactions, and ending state
+- fresh scene construction with no stale dialogue, transient interaction/speaker text, or pointer hover position
+- reset of current title, Controls, and ending local navigation state after a successful load
+- normal saves entering `PLAYING` and completed saves entering `ENDING` immediately
+- every non-valid `SaveFileStatus` leaving the current session and application mode unchanged
+- restoration exceptions leaving the current session and mode unchanged because assignment happens only after a replacement session is complete
+
+Pause and confirmation screens are introduced by D120-07 and D120-08. Their local reset behavior should extend the same session-replacement reset point when those states exist.
 
 ## Content-format testing strategy
 
