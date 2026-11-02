@@ -144,7 +144,4 @@ def test_inventory_runtime_instructions_use_primary_binding_catalog() -> None:
     selected_item = create_item("selected", "Selected Item")
 
     assert InventoryBar.instruction_for(None) == f"Select item: {primary}"
-    assert (
-        InventoryBar.instruction_for(selected_item)
-        == f"Combine items: {primary}"
-    )
+    assert InventoryBar.instruction_for(selected_item) == f"Combine items: {primary}"

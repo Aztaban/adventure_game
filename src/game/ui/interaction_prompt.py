@@ -21,9 +21,9 @@ class InteractionPrompt:
     MAXIMUM_WIDTH = 720
 
     def __init__(
-            self,
-            action_font: pygame.font.Font,
-            hint_font: pygame.font.Font,
+        self,
+        action_font: pygame.font.Font,
+        hint_font: pygame.font.Font,
     ) -> None:
         self.action_font = action_font
         self.hint_font = hint_font
