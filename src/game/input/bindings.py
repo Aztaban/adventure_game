@@ -140,6 +140,7 @@ def binding_for(action: InputAction) -> ActionBinding:
     """Return the authoritative binding metadata for an action."""
     return INPUT_BINDINGS[action]
 
+
 def input_summary_for(*actions: InputAction) -> str:
     """Return unique player-facing input labels for one or more actions."""
     labels: list[str] = []

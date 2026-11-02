@@ -32,9 +32,7 @@ class RecordingViewport:
         self.draw_calls = draw_calls
 
     def present(self) -> None:
-        self.draw_calls.append(
-            ("present", (self.logical_surface, self.output_surface))
-        )
+        self.draw_calls.append(("present", (self.logical_surface, self.output_surface)))
 
 
 def create_draw_test_app(
@@ -79,11 +77,7 @@ def test_top_level_modes_draw_to_logical_surface_before_presentation(
     app._draw()
 
     assert [name for name, _ in draw_calls] == [*expected_presenters, "present"]
-    assert all(
-        surface is app.viewport.logical_surface
-        for name, surface in draw_calls
-        if name != "present"
-    )
+    assert all(surface is app.viewport.logical_surface for name, surface in draw_calls if name != "present")
     assert draw_calls[-1][1] == (
         app.viewport.logical_surface,
         app.viewport.output_surface,

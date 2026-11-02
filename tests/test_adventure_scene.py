@@ -157,9 +157,7 @@ def test_dialogue_cancel_takes_priority_over_inventory_cancel() -> None:
     scene = create_test_scene(game_state)
     scene.dialogue.start(("Active dialogue.",))
 
-    result = scene.handle_event(
-        pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)
-    )
+    result = scene.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE))
 
     assert result.consumed
     assert not scene.dialogue.is_active
@@ -1063,7 +1061,4 @@ def test_hover_runtime_hint_uses_primary_binding_catalog() -> None:
     game_state.inventory.add(selected_item)
     game_state.inventory.select(selected_item.item_id)
 
-    assert (
-        scene._hover_hint_for_target(target)
-        == f"{primary} to use the selected item"
-    )
+    assert scene._hover_hint_for_target(target) == f"{primary} to use the selected item"

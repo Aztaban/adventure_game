@@ -53,7 +53,7 @@ def _create_item(
 ) -> Item:
     """Create one item from a validated JSON object."""
     return Item(
-        item_id = require_string(entry, "id", context),
-        name = require_string(entry, "name", context),
-        description = require_string(entry, "description", context),
+        item_id=require_string(entry, "id", context),
+        name=require_string(entry, "name", context),
+        description=require_string(entry, "description", context),
     )

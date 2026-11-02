@@ -108,12 +108,8 @@ class GameApp:
     def set_windowed_preset(self, size: tuple[int, int]) -> bool:
         """Switch to one approved windowed size for the current session."""
         if size not in WINDOWED_PRESETS:
-            approved_sizes = ", ".join(
-                f"{width} x {height}" for width, height in WINDOWED_PRESETS
-            )
-            raise ValueError(
-                f"Unsupported windowed size {size!r}. Approved sizes: {approved_sizes}."
-            )
+            approved_sizes = ", ".join(f"{width} x {height}" for width, height in WINDOWED_PRESETS)
+            raise ValueError(f"Unsupported windowed size {size!r}. Approved sizes: {approved_sizes}.")
 
         return self._change_display_mode(
             size,

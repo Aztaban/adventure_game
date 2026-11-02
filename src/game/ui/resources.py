@@ -138,10 +138,10 @@ class UIResources:
         return sound
 
     def play_sound(
-            self,
-            asset_id: str | None,
-            *,
-            volume: float = 0.55,
+        self,
+        asset_id: str | None,
+        *,
+        volume: float = 0.55,
     ) -> None:
         """Play an optional cached sound without making missing assets fatal."""
         if asset_id is None:

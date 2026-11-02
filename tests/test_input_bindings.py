@@ -127,8 +127,11 @@ def test_primary_action_ignores_non_interactive_pointer_position() -> None:
 
 
 def test_input_summary_for_combines_catalog_labels_without_duplicates() -> None:
-    assert input_summary_for(
-        InputAction.PRIMARY,
-        InputAction.DIALOGUE_ADVANCE,
-        InputAction.MENU_CONFIRM,
-    ) == "Left Click / Space / Enter / Numpad Enter"
+    assert (
+        input_summary_for(
+            InputAction.PRIMARY,
+            InputAction.DIALOGUE_ADVANCE,
+            InputAction.MENU_CONFIRM,
+        )
+        == "Left Click / Space / Enter / Numpad Enter"
+    )
