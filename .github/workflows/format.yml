@@ -1,6 +1,9 @@
 name: Format code
 
 on:
+  push:
+    branches-ignore:
+      - main
   workflow_dispatch:
     inputs:
       target_branch:
@@ -9,7 +12,11 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: format-${{ inputs.target_branch || github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   format:
@@ -18,22 +25,24 @@ jobs:
     timeout-minutes: 5
 
     env:
-      TARGET_BRANCH: ${{ inputs.target_branch }}
+      TARGET_BRANCH: ${{ inputs.target_branch || github.ref_name }}
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
 
     steps:
       - name: Validate target branch
         run: |
           git check-ref-format --branch "$TARGET_BRANCH"
-          if [ "$TARGET_BRANCH" = "$DEFAULT_BRANCH" ]; then
-            echo "Choose a PR branch instead of the default branch."
+          if [ "$TARGET_BRANCH" = "main" ] ||
+             [ "$TARGET_BRANCH" = "$DEFAULT_BRANCH" ]; then
+            echo "Formatting the main/default branch is disabled."
             exit 1
           fi
 
       - name: Check out target branch
         uses: actions/checkout@v7
         with:
-          ref: refs/heads/${{ inputs.target_branch }}
+          ref: refs/heads/${{ inputs.target_branch || github.ref_name }}
+          token: ${{ secrets.FORMATTER_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v7
