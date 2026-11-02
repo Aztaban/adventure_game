@@ -41,7 +41,7 @@ class ExitHotspot:
         font: pygame.font.Font,
         is_locked: bool = False,
         is_hovered: bool = False,
-        image: pygame.Surface | None = None
+        image: pygame.Surface | None = None,
     ) -> None:
         """Draw an image-backed or fallback exit."""
         background_color = EXIT_LOCKED_BACKGROUND if is_locked else EXIT_BACKGROUND

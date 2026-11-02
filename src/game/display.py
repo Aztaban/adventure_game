@@ -21,9 +21,7 @@ def primary_desktop_size() -> tuple[int, int]:
     try:
         desktop_sizes = pygame.display.get_desktop_sizes()
     except pygame.error as error:
-        raise DisplayModeChangeError(
-            f"Could not read the desktop display size: {error}"
-        ) from error
+        raise DisplayModeChangeError(f"Could not read the desktop display size: {error}") from error
 
     if not desktop_sizes:
         raise DisplayModeChangeError("Pygame did not report an available desktop display.")
@@ -31,9 +29,7 @@ def primary_desktop_size() -> tuple[int, int]:
     width, height = desktop_sizes[0]
 
     if width <= 0 or height <= 0:
-        raise DisplayModeChangeError(
-            f"Pygame reported an invalid desktop display size: {width} x {height}."
-        )
+        raise DisplayModeChangeError(f"Pygame reported an invalid desktop display size: {width} x {height}.")
 
     return int(width), int(height)
 
@@ -50,9 +46,7 @@ def create_display_surface(
     try:
         return pygame.display.set_mode(size, flags)
     except pygame.error as error:
-        raise DisplayModeChangeError(
-            f"Could not switch to {mode_name} mode: {error}"
-        ) from error
+        raise DisplayModeChangeError(f"Could not switch to {mode_name} mode: {error}") from error
 
 
 def calculate_destination_rect(
@@ -152,6 +146,7 @@ def present_logical_surface(
 
     output_surface.blit(presented_surface, destination_rect)
 
+
 class DisplayViewport:
     """Own logical rendering, physical presentation and pointer conversion."""
 
@@ -174,10 +169,7 @@ class DisplayViewport:
         fullscreen: bool,
     ) -> DisplayViewport:
         """Create the physical display and its authoritative logical viewport."""
-        return cls(
-            logical_size,
-            create_display_surface(output_size, fullscreen=fullscreen)
-        )
+        return cls(logical_size, create_display_surface(output_size, fullscreen=fullscreen))
 
     @property
     def logical_size(self) -> tuple[int, int]:
