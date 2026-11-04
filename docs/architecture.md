@@ -1,10 +1,10 @@
 # Architecture
 
-Status: current for the v0.11 display and controls milestone
+Status: current through v0.12 D120-06 in supplied archive; planned movement design appended separately (2026-11-04)
 
 ## Goal
 
-Keep the game architecture small enough to understand while separating six things that should not own each other's work:
+Keep the game architecture small enough to understand while separating responsibilities that should not own each other's work:
 
 ```txt
 Application flow      -> title, Controls, gameplay, ending, global actions
@@ -13,6 +13,7 @@ Pygame presentation   -> event translation, drawing, UI state, optional asset pl
 Gameplay rules        -> interactions, item use, recipes, exits
 Reusable content      -> item/recipe data, scene factories, IDs, validation
 Persistent state      -> inventory, scene position, flags, pickups, completions, ending
+Save path resolution  -> operating-system user-data directory and manual-save filename
 ```
 
 The project is still a prototype. Avoid large engine patterns unless the game actually needs them.
@@ -31,6 +32,8 @@ src/
     ├── game_state.py
     ├── scene_event_result.py
     ├── scene_manager.py
+    ├── save_file.py
+    ├── save_paths.py
     ├── settings.py
     ├── state_snapshot.py
     ├── theme.py
@@ -93,8 +96,7 @@ Current startup/session ownership:
 ```txt
 GameApp
 ├── AppMode                     title, Controls, playing, or ending
-├── logical Surface             fixed 1280 x 720 drawing target
-├── physical display Surface    fullscreen desktop or approved window preset
+├── DisplayViewport             owns logical/physical surfaces and authoritative destination rectangle
 ├── MenuScreen                  title and ending presentation
 ├── ControlsScreen              read-only binding presentation and local Back result
 ├── UIResources                 shared font/image/sound caches
@@ -104,7 +106,7 @@ GameApp
     └── SceneManager            current scene and session scene instances
 ```
 
-A new game/reset creates a new `GameSession`. It does not manually clear many unrelated objects.
+A new game/reset creates a new `GameSession`. It does not manually clear many unrelated objects. A successful manual-save load also constructs a complete replacement session before `GameApp` commits it.
 
 ## Application layer
 
@@ -121,7 +123,7 @@ Responsibilities:
 Responsibilities:
 
 - initialize Pygame
-- create the logical surface, physical display, and clock
+- create the clock and a DisplayViewport that owns logical/physical surfaces
 - start in fullscreen desktop mode
 - remember the last approved windowed preset for the current process only
 - load/create reusable `GameContent`
@@ -137,14 +139,17 @@ Responsibilities:
 - handle global quit behavior
 - play scene-transition presentation cues
 - keep display recreation failures non-destructive to gameplay state
+- coordinate manual-save loading by validating through `inspect_save_file()`, restoring through `restore_session_from_snapshot()`, and replacing the active session only after both succeed
+- choose `PLAYING` or `ENDING` from the restored persistent ending state
+- reset local title, Controls, and ending selection state after a successful session replacement
 
-`GameApp` composes the application. It should not implement item-use, recipe, quest, or save/load logic.
+`GameApp` composes the application. It does not parse save JSON, validate snapshot IDs, mutate restored gameplay state in place, or own filesystem rules; those responsibilities remain in the save-file and snapshot boundaries. Pause and confirmation screens are not present yet, so D120-06 has no pause/confirmation local state to clear.
 
 ## Display and input boundaries
 
 ### `game/display.py`
 
-The display module owns the Pygame-light geometry and event-conversion operations used by `GameApp`:
+`DisplayViewport` owns the logical surface, physical output surface, stored destination rectangle, presentation, and pointer conversion. `GameApp` requests high-level display-mode changes. Geometry helpers remain in the same module:
 
 ```txt
 logical frame: 1280 x 720
@@ -300,10 +305,10 @@ Reasons:
 
 - There are not enough scenes yet to justify full-scene JSON.
 - The full-scene schema would include coordinates, entity types, item-use rules, flags, exits, and conditions.
-- Dialogue choices are planned for v0.13, so the dialogue schema is not stable yet.
+- Dialogue choices are now planned for v0.16, after the movement and animation pilots, so the dialogue schema is not stable yet.
 - Python factories currently give clearer errors and simpler refactoring than a premature scene loader.
 
-Re-evaluate after v0.13, once dialogue choices have a real shape.
+Re-evaluate after v0.16, once dialogue choices have a real shape.
 
 ## Scene/session layer
 
@@ -436,6 +441,58 @@ Do not store these in `GameState`:
 - Pygame surfaces
 - layout rectangles
 
+## Save path boundary
+
+### `game/save_paths.py`
+
+`resolve_save_paths()` is the single current boundary for save-file locations.
+
+Rules:
+
+- use `platformdirs.user_data_path()` with application name `Mysterious Forest`
+- pass `appauthor=False` so no separate publisher/author directory is introduced
+- keep `ensure_exists=False`; path lookup does not create a directory or file
+- expose only the user-data directory and `save.json` manual-save path
+- accept an injected user-data directory for tests and future composition
+- keep paths out of `GameState`, snapshots, gameplay services, and screen objects
+- do not define or create settings/configuration paths during v0.12
+
+Directory creation belongs to `write_save_file()` and happens only when a write requires it.
+
+## Save-file boundary
+
+### `game/save_file.py`
+
+The save-file boundary owns the versioned JSON envelope, non-mutating file inspection, and atomic manual-save writes.
+
+Envelope shape:
+
+```txt
+save_format_version
+saved_at_utc
+snapshot
+```
+
+Rules:
+
+- save-file format version `1` is independent from the state-snapshot version
+- create envelopes from plain snapshot data and aware timestamps normalized to UTC
+- require exactly the three envelope fields and validate their types before snapshot validation
+- validate ISO-8601 timestamps as UTC
+- validate the nested snapshot without constructing or mutating a `GameSession`
+- return `SaveFileStatus` outcomes for missing, valid, invalid JSON, invalid envelope, unsupported version, invalid snapshot, and unreadable files
+- do not return raw filesystem, Unicode, JSON, or snapshot exceptions to menu/application code
+- do not migrate or reinterpret unsupported versions
+- serialize with UTF-8 JSON before changing the filesystem
+- create the destination directory only when a write requires it
+- create a temporary file in the destination directory, then write, flush, and sync it before replacement
+- close the temporary file before replacing the final path with `os.replace()`
+- return `SaveWriteStatus` outcomes rather than raw filesystem or serialization exceptions
+- remove abandoned temporary files where practical
+- leave any previous manual save unchanged unless the final atomic replacement succeeds
+
+The boundary does not restore or replace a running session. `GameApp.load_session_from_save()` consumes its validated result, delegates fresh-session construction to the snapshot boundary, and commits the replacement only after restoration succeeds.
+
 ## Snapshot boundary
 
 ### `game/state_snapshot.py`
@@ -460,8 +517,10 @@ Rules:
 - no Pygame objects
 - no content definitions
 - no `pickle`
-- validate referenced IDs against `GameContent`
-- restore by constructing a fresh session and applying state
+- expose `validate_state_snapshot()` for non-mutating shape and content-ID validation
+- defer Pygame-bound imports until actual restoration
+- restore by constructing a fresh session and applying validated state
+- fresh scene construction intentionally clears dialogue, transient interaction/speaker text, pointer hover position, and other scene-local presentation state
 
 ## Gameplay systems
 
@@ -577,7 +636,7 @@ Current order:
 
 1. Items and recipes are JSON.
 2. Scenes and dialogue stay in Python.
-3. Dialogue format is revisited after v0.13 dialogue choices.
+3. Dialogue format is revisited after v0.16 dialogue choices.
 4. Full scene JSON waits until a one-scene pilot proves the schema is simpler than Python.
 
 Never evaluate arbitrary code or expression strings from content files.
@@ -596,3 +655,108 @@ Do not add these until the game has a concrete need:
 - UI framework
 
 Add them only when real gameplay complexity justifies them.
+
+## Planned architecture: v0.13-v0.15 (not implemented)
+
+The sections above describe current source. This section defines responsibilities
+for future work; it does not promise new classes or prescribe a directory rewrite.
+See [decisions](decisions.md) and the individual milestone plans.
+
+### Coordinates and actor state
+
+- Keep physical-to-logical conversion exclusively in DisplayViewport.
+- A player position is a floating-point foot anchor in scene logical units.
+- For single-screen scenes, scene coordinates equal logical gameplay coordinates;
+  floor geometry must exclude UI-covered space. No camera transform is introduced yet.
+- Ground position, sprite draw rectangle, click target, collision footprint, approach
+  area, and depth anchor are distinct. Do not derive all of them from one image rectangle.
+- Runtime position/facing belongs to the session, not reusable GameContent. It becomes
+  persistent state at the v0.14 save milestone. Route, held-input state, and pending
+  interaction are transient session state and must have one owner.
+- Choose the smallest player-state holder during implementation; this document does
+  not require an entity-component system, generic entity tree, or event bus.
+
+### Scene content for navigation
+
+Python factories remain authoritative. Add only proven fields: walkable floor,
+blocking geometry, safe default spawn/facing, target approach areas, and exit-to-entry
+mapping. Validate their scene bounds and reachability where feasible. All mandatory
+puzzle targets must have at least one reachable approach point.
+
+v0.13 selects a bounded representation that proves one obstacle detour. Straight-line
+travel is sufficient only where the whole route is walkable. Both control methods
+use the same footprint and collision policy. A library is not a prerequisite.
+
+### Held input and update flow
+
+The current InputTrigger catalog detects discrete KEYDOWN/MOUSEBUTTONDOWN events.
+Walking also needs held-state handling (key up/down or a polling adapter), semantic
+move directions, focus-loss clearing, and menu/dialogue consumption. Physical arrow
+labels and accepted bindings must continue to share one catalog. Do not move once
+per KEYDOWN or depend on keyboard-repeat speed.
+
+Integrate movement with delta_time, normalized diagonals, collision-safe stepping,
+and a bounded policy for large frame times. Frame rate and output scaling must not
+change speed or allow tunnelling through blockers. Losing focus, opening pause, or
+restoring a session must not leave a stuck held key.
+
+### Interaction request and arrival
+
+The scene resolves click/hover targets using its existing UI-first policy. A small
+runtime coordinator owns a movement destination and, when applicable, one pending
+action identified by target, action kind, and selected inventory item ID.
+
+After arrival, revalidate target existence, walkable approach, interaction distance,
+selected-item availability, and relevant world state before invoking gameplay rules.
+Cancel stale requests instead of executing them remotely or against a replacement
+target. The exact identity shape is an implementation decision; use stable IDs for
+new long-lived references rather than serializing live Pygame objects.
+
+AdventureInteractionService remains the owner of gameplay transactions. The
+coordinator must establish reachability/range before dispatching any player-facing
+world action to it. Pure transaction tests may still call the service directly;
+new scene/integration tests prove that real input cannot bypass the range boundary.
+Inventory selection/combination remains immediate UI behavior.
+
+### Deferred exits and scene lifecycle
+
+Currently SceneManager handles target_scene_id only from handle_event(); update()
+returns no transition result. Movement can reach an exit during update. v0.14 must
+add one explicit result/transition path usable by event and update processing,
+preserving scene-transition audio and ending detection. Do not switch scenes from
+draw() or apply an interaction twice.
+
+Each exit needs a target entry point (or a validated destination default). Place the
+player there once, cancel the old route/action, and avoid immediately retriggering
+the return exit. Default spawn is used for new games and legacy save fallback;
+regular traversal follows its entrance contract, not a serialized last-visit route.
+Add small scene entry/exit hooks only if these actual operations justify them.
+
+### Movement-aware snapshots and legacy loading
+
+v0.12 retains snapshot version 1 and the current envelope. v0.14 writes an explicitly
+versioned movement-aware snapshot with position/facing plus existing progress facts.
+Known version-1 snapshots remain loadable: validate them, choose their saved scene's
+safe default spawn/facing, and preserve all quest/inventory facts. Re-saving writes
+the current snapshot version. Unknown versions fail safely.
+
+Define exact v2 fields in v0.14 before code; do not silently accept missing position
+in a new-format save. Reject non-finite/out-of-bounds/unwalkable new-format position
+according to the agreed validation policy. The envelope can remain version 1 when
+only its nested payload contract changes. A narrow v1-to-current adapter is enough.
+Do not persist routes, queued actions, held keys, animation frame indices, open UI,
+or Pygame objects. Load stationary and rebuild transient state.
+
+### Animation and layering
+
+v0.15 draws from movement/facing state; animation must not become the owner of
+collision or quest logic. Foot anchors stay stable across frames. Sort ground actors
+and appropriate props by authored ground/depth anchors; use explicit foreground
+layers for overhangs that cannot be represented by a single depth value. UI is drawn
+above the world and remains separate from sorting and hit testing.
+
+Use elapsed-time playback for idle/walk clips and small scene-owned ambient loops.
+Only active-scene loops update. Establish pause/reset/load behavior before coding;
+ambient visuals cannot mutate progression or block interaction completion. Missing
+clips have a deterministic fallback. Resource ownership stays small; no full animation
+editor, skeletal engine, mandatory atlas, or broad preload framework is introduced.

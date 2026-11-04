@@ -1,7 +1,7 @@
 # Game Design Document
 
-Status: draft  
-Working title: TBD  
+Status: current product direction revised 2026-11-04; movement/animation are planned, not implemented  
+Working title: Mysterious Forest  
 Genre: funny mysterious fantasy adventure  
 Initial style: 2D / 2.5D point-and-click adventure  
 Initial implementation target: Python + Pygame
@@ -28,7 +28,7 @@ The game should start as a simple 2D prototype and may later visually move towar
 - 2D characters
 - clickable objects/hotspots
 - fake depth
-- possible depth sorting later
+- foot-anchor depth sorting and explicit foreground occlusion in the animation pilot
 - scene transitions instead of full open-world movement
 
 ### Not the current target
@@ -64,7 +64,8 @@ The forest is cursed, but the local mushroom clerk still needs Form 7B before op
 ```txt
 enter scene
 look around
-click objects/NPCs
+choose destination or world target
+walk to a reachable interaction point
 talk to NPCs
 collect items
 combine or use items
@@ -81,10 +82,12 @@ Initial player actions:
 - pick up item
 - use inventory item on hotspot/NPC
 - combine two inventory items
-- move between scenes
+- move with held arrow keys or click-to-move across a 2D floor
+- approach world targets before interacting once the movement rollout is complete
+- move between scenes through reachable exits
 - complete simple quest
 
-Future player actions:
+Uncommitted future ideas (outside the active roadmap):
 
 - use magic
 - unlock skills/abilities
@@ -92,32 +95,52 @@ Future player actions:
 - solve optional side quests
 - level up
 
-## 6. Movement
+## 6. Movement and interaction
 
-### MVP movement
+### Agreed experience
 
-For the first prototype, movement can be simplified.
+The player is a visible 2D character standing on a floor area with depth, in the
+visual spirit of Polda-like adventures. Both horizontal and vertical movement on
+the floor are required; this is not limited to a left/right platforming lane.
 
-Allowed MVP behavior:
+- Hold arrow keys to move continuously.
+- Left-click walkable ground to walk toward that position.
+- Left-click an NPC, pickup, inspectable object, or exit to approach and then interact.
+- Select an inventory item and click a world target to approach and use it in range.
+- Inventory selection and combining inventory items do not require walking.
+- Dialogue and menus consume input before movement or world interactions.
 
-```txt
-click hotspot -> interaction happens
-click exit -> change scene
-```
+### Space and reachability
 
-The player character does not need real walking/pathfinding in the first version.
+A scene needs authored walkable ground, blocking geometry, a default spawn, and
+reachable approach points/areas for its targets. Visual rectangles, clickable
+rectangles, interaction areas, and actor collision footprints are different concepts.
+The player's logical position is the foot anchor, not the sprite's centre.
 
-### Later movement
+The route must stay inside walkable ground and avoid obstacles. Prove a simple
+obstacle detour in the pilot before selecting broader routing machinery. Unreachable
+targets never trigger remote interactions. Exact floor/routing representation and
+failure wording are open decisions, recorded in [decisions](decisions.md).
 
-Later versions may add:
+### Commands, cancellation, and feedback
 
-- click-to-move
-- walking animation
-- straight-line movement to target
-- navigation areas
-- simple pathfinding
+The intended sequence is target selection, travel, arrival/range revalidation, then
+one interaction. A pending action must not execute early, twice, after its target
+has disappeared, or using an inventory item that is no longer selected/available.
+Proposed cancellation defaults are in OPEN-05; confirm them before implementation.
+Keep the existing Escape modal order while adding movement; pause must stop travel.
+F11 only changes presentation and must preserve the session.
 
-Keyboard movement is optional and not the main target.
+### Phased delivery
+
+- v0.13: one-scene navigation pilot with placeholder player art. It is an internal
+  prototype, not full movement support for the demo or a new public save contract.
+- v0.14: range-gated world interactions, all demo scenes, explicit exit entry points,
+  and movement-aware saves. Older supported saves preserve progress and use default spawn.
+- v0.15: directional idle/walk animation, scene occlusion, and small ambient animations.
+
+The original MVP intentionally used immediate remote clicks. That historical
+simplification does not describe the intended post-v0.14 behavior.
 
 ## 7. World structure
 
@@ -145,14 +168,14 @@ Each scene can contain:
 
 MVP scenes should fit one screen.
 
-Later, a scene may be larger than the screen and use a camera.
+Keep single-screen scenes through the movement and animation pilots. Larger scenes and a camera are deferred until content demonstrates a need.
 
 Recommended path:
 
 ```txt
-MVP: one-screen scenes
-Later: larger scenes with camera
-Much later: larger world exploration
+Current demo and movement pilots: one-screen scenes
+Later evidence-gated experiment: larger scenes with camera
+No open-world expansion is currently committed
 ```
 
 ## 8. Hotspots
@@ -335,35 +358,23 @@ A small demo should contain:
 ```txt
 3 scenes
 2 NPCs
-4 items
+5 items
 1 item combination
 1 locked obstacle
 1 small quest
 1 ending condition
 ```
 
-Possible first quest:
-
-The player wants to enter a cursed tower.
-
-Obstacle:
+Implemented first quest:
 
 ```txt
-The tower door is locked by a dramatic magical lock.
+Find Empty Cup; fill it at the Old Well to obtain Cup of Water.
+Collect Moon Herb; combine it with Cup of Water to make Glowing Tea.
+Give Glowing Tea to the Retired Witch; receive Rusty Key.
+Use Rusty Key on the tower gate; enter Ancient Tower; finish the demo.
 ```
 
-Quest chain:
-
-```txt
-Talk to retired witch.
-Find cup.
-Find moon herb.
-Combine cup + moon herb = glowing tea.
-Give glowing tea to witch.
-Witch gives rusty key.
-Use rusty key on tower door.
-Demo ends.
-```
+Movement changes how the player reaches these interactions, not the puzzle solution.
 
 ## 18. Future expansion ideas
 
@@ -373,11 +384,27 @@ Future features after MVP:
 - dialogue choices
 - quest journal
 - save/load
-- larger scenes with camera
-- click-to-move animation
+- larger scenes with camera only after a dedicated evidence-gated pilot
+- richer interaction animation after the v0.15 idle/walk pilot
 - magic puzzles
 - optional skills
 - simple combat
 - sound/music
 - better art
 - 2.5D visual polish
+
+## 19. Animation and a lively scene
+
+v0.15 proves a small coherent visual set: directional idle and walk clips, a stable
+foot anchor, consistent movement/animation timing, and one or two ambient loops
+such as foliage, a lantern, smoke, or water. Gameplay completion must not depend on
+an ambient animation frame. Full NPC schedules, cinematic cutscenes, skeletal
+animation, and universal animation tooling are not part of this pilot.
+
+## 20. Status and plan references
+
+Current v0.12 code implements persistence foundations and a load method, but not
+pause/confirmation/Continue screens. This document states the target design; see
+[roadmap](roadmap.md) for actual progress and [architecture](architecture.md) for
+implemented versus planned responsibilities. Dialogue choices now follow movement
+and animation at v0.16; older forward references to v0.13 are superseded.

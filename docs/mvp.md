@@ -1,6 +1,6 @@
 # MVP
 
-Status: current after R091-06 content-format decision
+Status: historical v0.9 MVP contract; revised movement is a post-MVP requirement (2026-11-04)
 
 ## MVP goal
 
@@ -84,7 +84,7 @@ Do not implement these in MVP:
 - pathfinding
 - real asset pipeline
 - full scene JSON loader before scene schema is proven
-- dialogue JSON before v0.13 dialogue choices stabilize
+- dialogue JSON before the rescheduled v0.16 dialogue-choice pilot stabilizes
 
 ## MVP demo example for v0.9
 
@@ -152,4 +152,13 @@ Scenes:    Python factories
 Dialogue:  Python factories
 ```
 
-This is enough for the MVP. Full scene/dialogue JSON is deferred until there is enough content and a stable enough schema to justify it. Dialogue JSON should be reconsidered after v0.13 dialogue choices.
+This is enough for the MVP. Full scene/dialogue JSON is deferred until there is enough content and a stable enough schema to justify it. Dialogue JSON should be reconsidered after the rescheduled v0.16 dialogue-choice pilot.
+
+## Post-MVP movement direction
+
+The no-walking/no-pathfinding simplifications above describe the original MVP.
+The owner now requires a visible player on a 2D floor, held arrow movement,
+click-to-move, proximity-gated world interaction, and later player/ambient animation.
+These are staged through v0.13-v0.15, not retroactive requirements for v0.9.
+Keep the proven cup/herb/tea/key puzzle as the movement regression route.
+See [GDD](gdd.md), [decisions](decisions.md), and [roadmap](roadmap.md).

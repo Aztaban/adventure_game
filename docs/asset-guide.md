@@ -1,6 +1,6 @@
 # Presentation Asset Guide
 
-Status: current for the v0.11 logical-rendering contract
+Status: current static-asset/display contract; planned v0.13-v0.15 additions revised 2026-11-04
 
 ## Purpose
 
@@ -8,7 +8,7 @@ The current presentation layer includes a deliberately small set of replaceable 
 
 All scene and UI art is authored for the fixed `1280 x 720` logical frame. The completed frame is scaled uniformly to fullscreen or an approved window size, so runtime assets do not need physical-resolution variants.
 
-Do not add an asset manifest, atlas system, animation format, or external pipeline until production asset volume demonstrates the need.
+The current loader is static. Define a small animation asset contract during v0.15; a manifest, atlas, or external pipeline is optional and requires demonstrated need.
 
 ## Image format
 
@@ -161,3 +161,39 @@ For text and baked-in detail:
 - remember that the current presentation path uses smooth scaling for the complete frame
 
 Asset authors should not compensate for letterboxing or physical monitor dimensions inside scene artwork. Black unused space belongs to the display presentation layer, not to background PNG files.
+
+## Planned grounded scene and animation assets
+
+These requirements apply to v0.13-v0.15 work; the current loader does not implement
+sprite animation or layer metadata yet.
+
+### Floor composition
+
+Author the visible floor for a 2D foot-position character. Keep UI-covered space
+outside the active navigation area. Floor polygons, blocker footprints, clickable
+regions, and target approach points are authored metadata; they must not depend on
+sampling arbitrary background colors. Preserve safe spawns and routes to every
+mandatory target when replacing artwork.
+
+### Character pilot contract
+
+Before creating the full set, settle OPEN-09 in [decisions](decisions.md): directions,
+idle/walk clips, frame size/count/timing, file layout, fallback facing, and anchor.
+Use transparent RGBA frames with a stable foot anchor and compatible apparent scale.
+A placeholder shape/static image is sufficient for v0.13-v0.14. Walking artwork
+belongs to v0.15 and should match actual motion speed without changing collision.
+
+Do not bake shadows, labels, or backgrounds into frames if doing so causes anchor
+jitter or conflicting layering. Exact sprite dimensions are chosen in the art pilot;
+this plan does not prescribe a final character model or resolution beyond logical-frame readability.
+
+### Foreground and ambient art
+
+Separate background, ground-depth props, and explicit foreground/overhang layers
+where the player passes behind scenery. Start with one or two small loops; retain a
+static fallback. Keep mandatory pickups visually distinct and all required target
+states readable. Ambient clips are cosmetic and cannot alter puzzle timing/state.
+
+Track creator/source/license and modification notes for each introduced asset. Use
+original or appropriately licensed work. Record selected formats and replacement
+steps once implemented, rather than documenting a nonexistent loader as available.

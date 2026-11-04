@@ -1,108 +1,77 @@
 # AI Workflow
 
-Status: draft
+Status: planning and GitHub migration workflow revised 2026-11-04.
 
-## Goal
+## Choose one deliverable
 
-Use AI agents step by step without wasting tokens or creating uncontrolled code.
+Before coding, identify the active milestone and one task or issue. Read AGENTS.md,
+[roadmap](roadmap.md), [architecture](architecture.md), [coding standards](coding-standards.md),
+and the relevant milestone plan. Consult [GDD](gdd.md), [content plan](content-plan.md),
+and [decisions](decisions.md) when the task affects player behavior.
 
-The project should be developed through small milestones.
+The confirmed movement direction supersedes older optional-movement language.
+It does not authorize movement inside the unfinished v0.12 save/load task.
 
-## Main workflow
+## Current branch baseline
 
-1. Pick one milestone from `docs/roadmap.md`.
-2. Ask the agent to implement only that milestone.
-3. Agent reads:
-   - `AGENTS.md`
-   - `docs/mvp.md`
-   - `docs/roadmap.md`
-   - `docs/architecture.md`
-   - `docs/coding-standards.md`
-4. Agent summarizes the plan before coding.
-5. Agent changes only necessary files.
-6. Agent explains what changed.
-7. Agent gives manual test steps.
-8. User tests locally.
-9. Fix bugs before moving to next milestone.
+The supplied v0.12 archive lacks newer main workflows and some main changelog entries.
+Integrate current main deliberately, preserve feature work/history, resolve conflicts,
+and establish CI on the feature branch before the next feature task. Do not overwrite
+main wholesale with the uploaded ZIP or claim main's 304-pass run tested this branch.
 
-## Good prompt example
+## Planning review before issue creation
 
-```txt
-Implement milestone v0.3 from docs/roadmap.md.
-Follow AGENTS.md and docs/architecture.md.
-Do not implement later milestones.
-After the change, give me manual test steps.
+This revision precedes further GitHub migration. Resolve open decisions only when
+they block upcoming work. Keep completed implementation separate from pending
+verification. Do not create open issues for every completed checkbox or speculative
+.1 refactor. Existing issue #4 remains a documentation-reconciliation task; do not
+mark it done without its PR and checks.
+
+After migration, use GitHub issues as execution status and these files as stable
+scope/decision/acceptance references. Replace duplicate status checklists with actual
+issue links once they exist; do not invent issue IDs. A Project draft card is not a
+repository issue until converted. The active issue text must be supplied to an agent
+that lacks authenticated GitHub access.
+
+## Implementation loop
+
+1. Move a well-scoped issue to Ready after its blocking decisions are resolved.
+2. Move it to In Progress when implementation actually starts; use a development branch.
+3. Summarize the narrow implementation and relevant tests before changing code.
+4. Implement only that deliverable; avoid future systems and unrequested dependencies.
+5. Run format/lint and meaningful focused/full tests with real declared dependencies.
+6. Report what passed, what failed, and which desktop checks remain unavailable.
+7. Open a PR describing behavior, relevant checks, and manual steps; link its issue.
+8. Let development-branch formatting/CI complete; inspect the latest bot/user commit.
+9. Resolve conversations, update from main as required, and merge only with required checks.
+10. Close the issue only when its own acceptance is complete; retain separate desktop
+    acceptance tasks when the coding task cannot establish visual/platform behavior.
+
+`Closes #<real issue number>` in the PR description can close the linked issue on
+merge. Do not close a combined coding-and-desktop issue while desktop acceptance
+remains open. Configure Project status automation to reflect the chosen task boundary.
+
+## Honest verification
+
+Record branch/commit, command, dependencies, outcome, and manual limitations. Historical
+shim-based or dependency-light tests remain historical evidence, not current real-Pygame
+acceptance. Never silence failed tests merely to make CI green. Formatting does not
+replace lint or pytest. Headless SDL cannot establish fullscreen transition feel or audio quality.
+
+## Task prompt pattern
+
+```text
+Implement only task <ID or real issue number> from the active milestone.
+Follow AGENTS.md and the linked design/architecture decisions.
+Do not implement later milestones or add dependencies without asking.
+Report changed files, behavior, verification results, and desktop checks still needed.
 ```
 
-## Bad prompt example
+## Stop and resolve scope when
 
-```txt
-Build the whole game with inventory, quests, combat, magic and all scenes.
-```
+- a required product decision is still open
+- unrelated rewrites or general frameworks appear
+- an agent skips existing source/tests or duplicates content/state ownership
+- combat, 3D, camera/editor work, extra save slots, or speculative migrations enter the task
 
-## Token-saving rule
-
-Do not paste the whole GDD into every prompt.
-
-Instead say:
-
-```txt
-Follow AGENTS.md and docs/gdd.md.
-Implement only milestone v0.X.
-```
-
-## Agent response expectations
-
-After coding, the agent should answer with:
-
-```txt
-Changed files:
-- ...
-
-What changed:
-- ...
-
-How to test:
-- ...
-
-Notes / next step:
-- ...
-```
-
-## When to stop an agent
-
-Stop or correct the agent if it:
-
-- starts implementing future milestones
-- rewrites unrelated files
-- adds libraries without asking
-- creates too many abstractions
-- ignores existing architecture
-- mixes all logic into one file
-- starts combat/3D/levels too early
-
-## Development rhythm
-
-Recommended rhythm:
-
-```txt
-small prompt
-small code change
-manual test
-commit
-next milestone
-```
-
-## Commit style
-
-Suggested commit messages:
-
-```txt
-feat: add basic game window
-feat: add scene manager
-feat: add hotspot interactions
-feat: add basic dialogue box
-feat: add inventory system
-fix: prevent duplicate item pickup
-docs: update MVP scope
-```
+Small change -> meaningful verification -> reviewable PR -> next deliverable.

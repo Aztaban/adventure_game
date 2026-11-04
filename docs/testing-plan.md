@@ -1,12 +1,24 @@
 # Testing Plan
 
-Status: current for the v0.11 display and controls milestone
+Status: source coverage through v0.12 D120-06; future movement/animation acceptance revised 2026-11-04
 
 ## Purpose
 
 The goal is to protect gameplay behavior while keeping tests simple enough to maintain during fast prototype refactors.
 
 The project uses pytest for automated tests and manual checks for game feel, visuals, and full-window behavior.
+
+## Verification evidence and historical behavior
+
+The owner reported 304 passing real-Pygame tests in main CI after configuring
+format/lint/pytest. That result does not certify this supplied v0.12 feature branch.
+It lacks those workflow files; incorporate current main and record the exact branch
+commit, command, dependencies, result, and manual limitations for a new run.
+
+No tests were executed as part of this documentation revision. Historical v0.10/v0.11
+checklists below retain old Escape/N/Play Again behavior; v0.12 intentionally replaces
+it. Once v0.12 is accepted, use its new input/menu contract for current acceptance.
+Headless real Pygame validates API behavior, not OS fullscreen transitions or sound quality.
 
 ## How to run checks
 
@@ -49,6 +61,10 @@ Good automated-test targets:
 - game state flags, collected pickups, completed interactions, and ending state
 - session reset/new-game behavior
 - state snapshot export/restore behavior
+- operating-system user-data and manual-save path resolution without file creation
+- save-envelope creation, UTC timestamp validation, status classification, and non-mutating snapshot validation
+- UTF-8 save serialization, same-directory temporary files, flush/sync ordering, atomic replacement, and previous-save preservation
+- application-level save loading with commit-after-restore behavior and restored mode selection
 - JSON item/recipe loading
 - content validation
 - recipe lookup and item-combination transactions
@@ -121,12 +137,68 @@ tests/
 ├── test_item*.py
 ├── test_json_content_loading.py
 ├── test_menu_screen.py
+├── test_save_file.py
+├── test_save_paths.py
 ├── test_scene_manager.py
 ├── test_ui_resources.py
 └── other focused unit and Pygame-adapter tests
 ```
 
 Add new test files only when they describe a real boundary.
+
+## Save-path testing strategy
+
+`tests/test_save_paths.py` protects the operating-system path boundary without touching the real user-data location.
+
+It covers:
+
+- the approved `Mysterious Forest` application identity and omitted author directory
+- `save.json` under the resolved user-data directory
+- `ensure_exists=False` so lookup creates no directory or file
+- temporary-directory injection that bypasses platform lookup
+- `platformdirs` as a declared runtime dependency rather than a development-only dependency; the supplied archive has no lockfile
+- no settings/configuration path during v0.12
+
+These tests are dependency-light pure unit/configuration checks and require no Pygame display.
+
+## Save-file persistence testing strategy
+
+`tests/test_save_file.py` protects the plain save format, inspection status model, and atomic writer without constructing a game session.
+
+It covers:
+
+- save-file format version `1` independently from snapshot version `1`
+- the exact JSON-compatible envelope shape
+- aware timestamp normalization to UTC and rejection of naive or non-UTC stored timestamps
+- non-mutating validation through a content stub whose scene-building method must never be called
+- missing, valid, invalid JSON, invalid envelope, unsupported version, invalid snapshot, and unreadable-file statuses
+- conversion of filesystem and JSON failures into domain statuses without raw exception exposure
+- explicit failure for unsupported versions without migration behavior
+- UTF-8 JSON serialization and destination-directory creation only during a write
+- temporary-file creation in the final save directory
+- completed write, flush, and file sync before `os.replace()`
+- replacement of an existing valid save after a successful temporary write
+- typed directory, temporary-file, write, flush, sync, and replacement failure outcomes
+- exact preservation of the previous valid save after handled write-stage failures
+- temporary-file cleanup after handled failures where practical
+
+These are dependency-light unit tests. Session restoration remains protected by `tests/integration/test_state_snapshot.py`.
+
+## Application-level load testing strategy
+
+`tests/test_game_app.py` protects the application commit boundary around a validated manual save.
+
+It covers:
+
+- fresh, mid-quest, selected-item, changed-scene, and completed-save restoration through the real save envelope and snapshot boundaries
+- preservation of current scene, inventory order, selected item, flags, pickups, completed interactions, and ending state
+- fresh scene construction with no stale dialogue, transient interaction/speaker text, or pointer hover position
+- reset of current title, Controls, and ending local navigation state after a successful load
+- normal saves entering `PLAYING` and completed saves entering `ENDING` immediately
+- every non-valid `SaveFileStatus` leaving the current session and application mode unchanged
+- restoration exceptions leaving the current session and mode unchanged because assignment happens only after a replacement session is complete
+
+Pause and confirmation screens are introduced by D120-07 and D120-08. Their local reset behavior should extend the same session-replacement reset point when those states exist.
 
 ## Content-format testing strategy
 
@@ -307,7 +379,7 @@ Automated coverage protects these completed foundation behaviors during later ch
 
 - no scene JSON loader is added by accident
 - no dialogue JSON source competes with Python dialogue
-- docs say Python factories are the supported scene/dialogue format until v0.13 re-evaluation
+- docs retain Python factories until the rescheduled v0.16 dialogue-choice re-evaluation
 
 ## v0.8.1 regression checklist
 
@@ -448,3 +520,36 @@ Known issues or intentional behavior
 ```
 
 Keep tests close to the behavior they protect. Avoid testing private helpers unless the helper is a deliberately small boundary such as text wrapping, item combination, JSON loading, state snapshots, or target resolution.
+
+## Planned movement and animation verification (not current coverage)
+
+The detailed checklists in the v0.13-v0.15 milestone plans are acceptance requirements,
+not a claim that those tests already exist.
+
+| Layer | Behavioral checks |
+| --- | --- |
+| Pure navigation | Held-direction vector, normalized diagonals, delta-time stepping, footprint/floor containment, blocker detour, unreachable goal, arrival tolerance |
+| Command coordination | New command replacement, stale target/item cancellation, exactly-once arrival action, no remote interaction, no movement under UI/modals |
+| Scene/session | Update-driven exit result, safe source/destination positions, no immediate return transition, fresh-session reset, unchanged puzzle facts |
+| Persistence | Current position/facing round trip, stationary load, known v1 default-spawn fallback with progress intact, invalid/unknown data preserves active session |
+| Animation | Actual-motion state selection, facing fallback, timed frame advancement, stable feet, layer order, pause/reset policy, missing clip fallback |
+| Full integration | Complete the original demo with approach-required world actions; save/load mid-progress; finish after legacy load |
+
+Use deterministic time inputs and temporary directories. Avoid wall-clock sleeps,
+real user-data writes, pixel-perfect screenshots for pure logic, or shim-based claims
+about real-Pygame compatibility. Keep pure gameplay transaction tests even when the
+scene adapter gains range checks; add integration coverage for the actual player path.
+
+Desktop acceptance must additionally prove navigation feels responsive, routes and
+unreachable feedback are understandable, player/scenery overlap is credible,
+UI-covered ground is not accidentally walkable, animation stride matches speed,
+ambient motion stays subtle, and targets remain readable at native/scaled/fullscreen
+outputs. Verify focus loss does not cause stuck keys or a large movement jump.
+
+## Planned v0.12 remaining acceptance
+
+D120-07A explicitly connects the Save command to snapshot -> envelope -> atomic writer
+and Load to the existing validated session restoration. Test those real command
+boundaries, not just isolated helpers. Confirm OS-close and unsupported-save policy
+before tests assert the new behavior. Remove obsolete N and direct Escape-quit tests
+only when their replacement behavior is implemented and tested.

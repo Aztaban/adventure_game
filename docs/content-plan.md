@@ -1,6 +1,6 @@
 # Content Plan
 
-Status: current for the v0.10 presentation milestone
+Status: current demo content retained; navigation/animation authoring plan revised 2026-11-04
 
 ## Purpose
 
@@ -36,11 +36,11 @@ Scenes:    Python factories
 Dialogue:  Python factories
 ```
 
-Items and recipes are data-driven because their schemas are small and stable. Scene and dialogue content remain in Python because full scenes include coordinates, exits, entity types, conditions, flags, and interactions. Dialogue also stays in Python until the planned v0.13 dialogue-choice system proves its final shape.
+Items and recipes are data-driven because their schemas are small and stable. Scene and dialogue content remain in Python because full scenes include coordinates, exits, entity types, conditions, flags, and interactions. Dialogue also stays in Python until the planned v0.16 dialogue-choice system proves its final shape.
 
 Do not keep the same item or recipe definition in both Python and JSON. Stable Python constants are still acceptable when Python scene factories need to refer to item, flag, pickup, interaction, or scene IDs.
 
-Re-evaluate dialogue JSON after v0.13. Re-evaluate full scene JSON only after at least one larger scene proves that a data schema would be clearer than Python factories.
+Re-evaluate dialogue JSON after v0.16. Re-evaluate full scene JSON only after at least one larger scene proves that a data schema would be clearer than Python factories.
 
 ## Current presentation assets
 
@@ -318,32 +318,43 @@ Content growth should emphasize:
 
 ## Content-format decision gates
 
-Do not move content into JSON only because the project is larger. Move a content type when its schema is stable, validation is useful, and authoring becomes clearer.
+Keep items and recipes in JSON; keep scenes and dialogue in Python while their
+schemas are changing. v0.13-v0.14 prove floor, obstacle, spawn, target approach,
+and exit-entry metadata. v0.15 proves visual layers and animation metadata.
+Dialogue choices and their content-format decision move to v0.16. Compare scene
+JSON with a Python factory only after a representative production scene demonstrates
+real authoring friction. A scrolling camera is not required to do that comparison.
 
-```txt
-v0.13 dialogue choices
-    -> prove branching and stable IDs
-    -> reconsider dialogue JSON
+## Navigation authoring pilot (planned)
 
-v0.15 larger-scene/camera pilot
-    -> prove coordinate and interaction needs
+Choose Village Square or Forest Path for the v0.13 pilot and record why. Author:
 
-v0.17 production content pilot
-    -> compare one representative scene in Python and data form
-    -> decide whether scene JSON is useful
+- visible usable floor with at least one obstacle detour
+- a safe player foot-position spawn and initial facing
+- no walkable space under active inventory/dialogue/menu UI
+- reachable approach points/areas near an NPC, pickup, inspectable, and exit
+- clearly separate sprite bounds, click bounds, footprints, and interaction reach
 
-v0.20 larger chapter pilot
-    -> measure authoring duplication
-    -> decide whether focused tooling is justified
-```
+In v0.14 apply the same contract to all three scenes. Pair every exit with a valid
+arrival point, keep all mandatory puzzle targets reachable, and verify that locked
+exits can be approached without entering the destination. Default legacy-save spawns
+must be safe at fresh, mid-quest, and completed progression states.
 
-Items and recipes should continue using stable JSON IDs. Add fields such as inventory icon IDs, examine text, or categories only when the corresponding player-facing feature is implemented.
+Do not expand the story while adapting the existing demo. Movement changes how the
+player reaches the well, witch, herb, and gate; it does not change their puzzle rules.
 
-## Interaction design gates
+## Animation and ambient pilot (planned v0.15)
 
-The exact Polda-style interaction language remains intentionally undecided until the relevant pilots:
+Create a coherent placeholder/original/licensed player idle/walk set, then one or
+two small ambient loops such as lantern flicker, foliage, smoke, or water. Mark
+foreground layers explicitly where the player can pass behind scenery. Avoid baking
+mandatory pickups into an animated background. Ambient loops remain cosmetic.
 
-- v0.15 decides contextual click, inspect behavior, selected-item cursor feedback, and larger-scene/camera needs
-- v0.16 decides instant interaction versus visible move-then-interact behavior and whether pathfinding is required
+## Later content gates
 
-Do not write large amounts of content that depend on one option before the option is proven.
+- v0.16: one branching conversation to prove dialogue outcomes and stable references.
+- v0.17: objective guidance based on actual puzzle facts.
+- v0.18: production scene/NPC assets, larger inventory presentation, and audio as
+  separate small experiments, each with authored content that demonstrates value.
+- v0.20: larger chapter production measures whether a focused authoring helper/editor
+  is justified. Do not make an editor a prerequisite to writing playable content.

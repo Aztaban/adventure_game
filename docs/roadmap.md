@@ -1,6 +1,6 @@
 # Roadmap
 
-Status: v0.11 implementation complete; automated dependency and manual display acceptance pending
+Status: planning revision 2026-11-04; supplied v0.12 branch implemented through D120-06; branch CI and desktop acceptance pending
 
 ## Development principle
 
@@ -14,7 +14,10 @@ Prefer this order:
 prove gameplay -> protect with tests -> refactor boundary -> document decision
 ```
 
-## Completed milestones
+## Historical delivered milestones
+
+These entries record delivered implementations. They do not certify outstanding
+desktop acceptance or verification for later branch changes.
 
 ### Milestone v0.1 — Window and game loop
 
@@ -233,7 +236,7 @@ Scenes:    Python factories
 Dialogue:  Python factories
 ```
 
-Revisit dialogue JSON after v0.13 dialogue choices. Consider full-scene data only after a larger-scene pilot proves that its schema is clearer than Python factories.
+Revisit dialogue JSON after the rescheduled v0.16 dialogue-choice pilot. Consider full-scene data only after a larger-scene pilot proves that its schema is clearer than Python factories.
 
 ## Milestone v0.9.2 — Post-refactor cleanup
 
@@ -320,6 +323,8 @@ A `.1` milestone must not become an unrelated architecture rewrite. It should pr
 
 ## Milestone v0.11 — Display and controls foundation
 
+Status: implemented in the supplied branch; desktop acceptance remains distinct from code delivery.
+
 Goal:
 
 ```txt
@@ -385,6 +390,11 @@ Avoid:
 
 ## Milestone v0.11.1 — Display/input refactor and regression hardening
 
+Status: display/input implementation is present, including DisplayViewport and
+catalog-derived runtime hints. The audit questions below describe the original
+scope, not unanswered instructions to repeat it. Desktop transition acceptance and
+documentation reconciliation remain open; preserve historical evidence in the task log.
+
 Goal:
 
 ```txt
@@ -414,298 +424,243 @@ docs/milestones/v0.11.1-display-input-refactor.md
 
 ## Milestone v0.12 — Pause, save/load, and menu foundation
 
+Status: in progress; D120-01 through D120-06 have recorded decisions/implementation.
+Pause, confirmations, player-facing load/continue, and full acceptance remain open.
+The supplied archive has no new GitHub workflows; incorporate main and obtain fresh
+branch-specific CI results before continuing. The reported 304-test main run is not
+evidence that this feature branch passes.
+
 Goal:
 
 ```txt
 Save and restore the current demo through clear player-facing menus.
 ```
 
-Planned scope:
+Confirmed player behavior:
 
-- add a pause menu
-- add title-menu Continue/Load behavior when a valid save exists
-- write and restore the existing plain-data snapshot format
-- use an operating-system user-data location instead of the project directory
-- write save files atomically
-- show useful errors for missing, invalid, corrupt, or unsupported saves
-- preserve current scene, inventory, selection, flags, pickups, completions, and ending state
-- close transient dialogue, messages, hover, and menu selection state after load unless the milestone proves a better rule
-- change unconsumed gameplay `Escape` from immediate quit to pause
-- provide explicit quit and new-game confirmation where destructive behavior requires it
+- use one manual save slot during v0.12
+- defer autosave until a larger content milestone provides meaningful authored checkpoints
+- title menu: New Game, Continue when the manual save is valid, Controls, Exit
+- pause menu: Resume, Save Game, Load Game, Controls, Return to Title, Exit Game
+- ending menu: Title Menu and Exit Game; do not start a fresh game directly from the ending
+- remove the global `N` new-game shortcut and its Controls-screen entry
+- `Escape` never quits the application directly
+- gameplay `Escape` closes dialogue first, clears inventory selection next, and otherwise opens pause
+- paused `Escape` resumes gameplay; Controls and confirmation dialogs keep their local Back/Cancel behavior
+- keep `F11` global without closing menus, confirmations, dialogue, or changing gameplay state
+- New Game does not delete the existing manual save
+- restore a completed save directly into the ending presentation over its restored final scene
+- restore persistent snapshot facts and clear transient dialogue, messages, hover, menu selection, pause, and confirmation state
+- keep settings/configuration persistence separate and deferred
+
+Persistence scope:
+
+- store the manual save in an operating-system user-data directory resolved with `platformdirs`
+- keep filesystem paths out of menus, `GameState`, and gameplay rules
+- wrap the existing plain-data snapshot in a versioned save-file envelope
+- write UTF-8 JSON atomically through a temporary file in the same directory and `os.replace()`
+- preserve the last valid save when a new write fails
+- distinguish missing, invalid JSON, invalid shape, unsupported version, invalid snapshot, unreadable, and write-failure cases clearly
+- do not add migration infrastructure before a second save-file version exists
+
+Confirmation behavior:
+
+- confirm overwriting an existing valid manual save
+- confirm replacing the active session when loading from pause
+- confirm Return to Title and Exit Game from pause
+- title New Game requires no confirmation because it starts from a non-playing surface and leaves the manual save intact
+- ending Title Menu and Exit Game are direct actions after completion
 
 Tests/checks:
 
 - fresh, mid-quest, and completed-demo save/load
-- title Continue visibility follows save validity
-- pause Save/Load/Resume/Quit flow works
-- corrupt and unknown-version saves fail safely
+- title Continue visibility follows actual save validity
+- missing, corrupt, unsupported, and invalid-snapshot saves fail safely
+- pause Resume/Save/Load/Controls/Return to Title/Exit flow
+- overwrite, load, return-to-title, and exit confirmations are modal
 - failed save writes do not destroy the last valid save
-- loading creates a valid session without stale transient UI
+- failed loads do not replace the active session
+- loading creates a fresh valid session without stale transient UI
+- loading preserves scene, inventory, selection, flags, pickups, completed interactions, and ending state
+- `N` is no longer accepted or displayed
+- unconsumed `Escape` pauses/resumes and never exits directly
+- full demo-flow integration remains unchanged
 
-Decision gates during the milestone:
+Remaining decision checkpoints during the milestone:
 
-- One manual slot, one autosave slot, or both?
-- Which menu surfaces expose Save and Load?
-- Does `N` remain a development shortcut, require confirmation, or disappear from release controls?
-- Is a separate settings/config file needed yet?
-- Should loading a completed save show the ending immediately or enter the final scene first?
+- save identity and Load availability were already decided in D120-01; retain them
+- resolve OPEN-01 (OS close behavior) and OPEN-02 (unsupported-save overwrite) in [decisions](decisions.md)
+- decide the exact player-facing wording for save/load errors and confirmation prompts
+- decide the smallest change needed for dynamic title/pause/ending menu options without introducing a general screen framework
+
+Detailed task list:
+
+```txt
+docs/milestones/v0.12-pause-save-load.md
+```
 
 Avoid:
 
-- multiple-profile management
+- autosave before authored checkpoint behavior exists
+- multiple slots or profile management
 - cloud saves
-- save thumbnails unless needed by the chosen menu
-- migration infrastructure before a second supported save version exists
+- save thumbnails
+- settings/configuration persistence
+- save migration machinery before version 2 exists
+- a repository abstraction for one local slot
+- a general screen framework during the feature milestone
 
 ## Milestone v0.12.1 — Persistence/menu refactor and hardening
 
 Goal:
 
 ```txt
-Separate proven file persistence and menu responsibilities after the save/load workflow works.
+Audit and harden the proven save/load and menu flow without changing player behavior or save compatibility.
 ```
 
-Expected refactor focus:
+Expected audit focus:
 
-- isolate filesystem access from snapshot creation and session restoration
-- centralize save-path resolution and atomic writes
-- evaluate a small app-screen or screen-stack boundary if title, controls, pause, save/load, ending, and confirmations make `AppMode` branching cumbersome
-- keep gameplay rules independent from menu and filesystem code
-- add migration handling only if more than one save version must be supported
+- trace path resolution, envelope validation, atomic writing, snapshot restoration, and application-mode transitions
+- verify filesystem access is isolated from snapshot creation, gameplay rules, and screen objects
+- identify duplicated save-validity checks, error translation, confirmation state, or menu navigation
+- evaluate whether `GameApp` remains understandable with title, Controls, gameplay, pause, ending, and confirmation behavior
+- keep the current concrete-screen/AppMode design when it remains clearer than a new abstraction
+- introduce a small screen contract or stack only if v0.12 creates concrete duplicated navigation/event/draw logic
+- keep migrations deferred until more than one save-file version is supported
 
-## Milestone v0.13 — Dialogue choices
-
-Goal:
+Detailed task list:
 
 ```txt
-NPC dialogue can offer small, clear choices that affect conversation or world state.
+docs/milestones/v0.12.1-persistence-menu-refactor.md
 ```
 
-Planned scope:
+## Revised sequence after v0.12
 
-- dialogue nodes or another small branching representation
-- keyboard and mouse choice selection
-- optional requirements and flag outcomes
-- at least one meaningful conversation
-- no arbitrary script execution
+The owner confirmed arrow-key movement, click-to-move, approach-before-interact,
+single-screen scenes first, and default-spawn loading for older supported saves.
+See [decisions](decisions.md). Only future unpublished plan labels are reassigned;
+existing release tags and historical task IDs are not rewritten.
 
-Decision gates during the milestone:
+| Version | Goal | Acceptance boundary |
+| --- | --- | --- |
+| v0.13 | Visible-player navigation pilot | One representative scene, arrow and mouse control, floor bounds, obstacle detour, predictable stopping |
+| v0.14 | Approach and interact across the demo | Range-gated target actions, deferred exits, entry spawns, old-save fallback, full puzzle still completable |
+| v0.15 | Player and ambient animation pilot | Directional idle/walk, foot anchoring, readable depth/occlusion, a small ambient loop |
+| v0.16 | Dialogue choices | One authored branching conversation, persistent outcomes, mouse/menu-key input |
+| v0.17 | Objective hints/journal | Clear current goals using existing facts before introducing quest machinery |
+| v0.18 | Production presentation/content pilot | Separately scoped art, inventory, and audio experiments; do not bundle them into one large implementation task |
+| v0.19 | Packaging/settings and release hardening | Chosen platform, reliable resources/user-data paths, approved persistent settings |
+| v0.20 | Larger chapter production pilot | Connected authored content exposes real production bottlenecks |
 
-- Are unavailable choices hidden or disabled?
-- Which choice outcomes are persistent?
-- Are stable dialogue-node IDs required for save/load?
-- Is the proven schema clearer in JSON than in Python factories?
+v0.13-v0.15 are detailed below. Later versions are provisional planning containers,
+not authorization to implement everything listed. A .1 audit may follow a feature;
+it is not a mandatory release or an instruction to invent abstractions.
 
-## Milestone v0.13.1 — Dialogue model/content refactor
+## Milestone v0.13 — Player navigation pilot
 
-Expected refactor focus:
+Goal: a visible player can walk across one authored 2D floor using held arrows or
+a ground click. Choose one of the current demo scenes as the pilot.
 
-- separate persistent conversation facts from transient dialogue presentation where needed
-- consolidate branching structures and stable IDs
-- pilot dialogue JSON only if the v0.13 schema is stable and easier to author than Python
+- foot-anchored placeholder player and facing state
+- continuous time-based movement with normalized diagonal speed
+- one shared walkability/collision policy for keyboard and mouse travel
+- a bounded route around one representative obstacle; no walking through scenery
+- modal input, stopping, focus changes, and presentation-scale regression checks
+- no scrolling camera, final animation art, remote interaction redesign, or broad engine framework
 
-## Milestone v0.14 — Objective hints and journal
+Details: [v0.13 task plan](milestones/v0.13-player-navigation.md).
+This is an internal pilot. Legacy direct interaction and positionless saves remain
+known temporary limitations until v0.14, not accepted final game behavior.
 
-Goal:
+## Milestone v0.14 — Approach and interact
 
-```txt
-Players can understand the current goal without external instructions.
-```
+Goal: apply movement and proximity to the full demo without changing its puzzle.
 
-Decision gates during the milestone:
+- stable target references, approach areas, interaction distance, revalidation on arrival
+- click-to-approach for talk, inspect, pickup, item use, and exits
+- explicit destination-scene entry points and update-driven transition handling
+- save valid position/facing, clear routes/actions on load
+- support known old saves through validated default-spawn fallback; reject unknown versions
+- all existing scenes remain traversable and the original puzzle still completes
 
-- Is objective text derived from inventory/flags sufficient?
-- Are stable quest-step IDs needed?
-- Should completed objectives remain visible?
+Details: [v0.14 task plan](milestones/v0.14-approach-and-interact.md).
+Complete gameplay interactions at the arrival boundary; later animation is presentation.
 
-## Milestone v0.14.1 — Objective-state refactor
+## Milestone v0.15 — Player and ambient animation pilot
 
-Expected refactor focus:
+Goal: make proven movement feel alive using a small original or licensed asset set.
 
-- separate player-facing objective wording from internal progression flags if duplication appears
-- introduce explicit quest definitions only when derived objectives become unclear
+- directional idle/walk playback tied to actual movement
+- stable foot anchors, correct depth and explicit foreground layering
+- one or two ambient loops with no effect on puzzle rules
+- deterministic playback, pause/load/reset behavior, and fallback visuals
+- no full animation editor, NPC scheduling, cinematic system, or mandatory camera
 
-## Milestone v0.15 — Interaction UX and larger-scene/camera pilot
+Details: [v0.15 task plan](milestones/v0.15-animation-pilot.md).
 
-Goal:
+## Milestone v0.16 — Dialogue choices
 
-```txt
-Prove the intended Polda-style interaction language and whether scenes need world-space camera movement.
-```
+Build one meaningful branching conversation before generalizing dialogue content.
+Decide unavailable-choice visibility, persistent outcomes, node IDs, and save behavior.
+Revisit dialogue JSON only after this pilot proves a stable schema. No arbitrary
+expression evaluation or embedded scripting. Follow with a focused model audit only
+if the conversation reveals duplication or unclear state ownership.
 
-Planned experiments:
+## Milestone v0.17 — Objective hints and journal
 
-- one larger representative scene
-- camera offset and screen/world coordinate conversion
-- direct contextual click versus separate inspect/use behavior
-- optional right-click inspect pilot
-- selected inventory item cursor feedback
-- inventory and menus remain screen-space
+Start with objectives derived from inventory and flags. Decide whether completed
+objectives remain visible and add explicit quest-step IDs only if derived state is
+insufficient. Validate hints against the existing puzzle and one representative
+new authored goal. A general quest engine is not a prerequisite.
 
-Decision gates during the milestone:
+## Milestone v0.18 — Production presentation and content pilot
 
-- Keep direct contextual interaction or introduce distinct inspect/use actions?
-- Should inventory items attach visually to the cursor?
-- Are one-screen scenes sufficient for the intended game?
-- Who owns camera state?
+Choose small independent deliverables rather than one feature bundle:
 
-## Milestone v0.15.1 — Scene coordinate and interaction refactor
+- coherent production art and NPC/scene asset authoring using the proven animation contract
+- inventory icons/examination plus paging or scrolling only when item count requires it
+- music/ambience with explicit lifetime and master/music/SFX volume decisions
+- scene data pilot only if Python factories are an authoring bottleneck
+- credits, asset licenses, and practical localization readiness
 
-Expected refactor focus:
+Audit resource caching, audio lifetime, and data boundaries only after real usage.
+A manifest, atlas, streaming layer, or JSON scene format is not required by default.
 
-- formalize logical-screen, world, and camera coordinate boundaries
-- centralize target resolution under the chosen interaction model
-- add spatial indexing only if measured target counts justify it
-- split `AdventureScene` only where the pilot proves distinct responsibilities
+## Milestone v0.19 — Packaging, settings, and release hardening
 
-## Milestone v0.16 — Visible player movement pilot
+Choose the first supported desktop OS and distribution format before building.
+Resolve runtime assets independently of the current working directory; centralize
+resource/save/config/log/credit paths where needed. Persist approved display/audio
+settings separately from gameplay saves and provide safe failure diagnostics.
 
-Goal:
-
-```txt
-Determine whether visible move-then-interact behavior improves the adventure feel.
-```
-
-Decision gates during the milestone:
-
-- Keep instant interactions or require movement into range?
-- Are simple walk areas sufficient?
-- Is pathfinding necessary for authored scenes?
-- How should movement interact with dialogue and scene transitions?
-
-## Milestone v0.16.1 — Movement/runtime entity refactor
-
-Expected refactor focus:
-
-- separate content definitions, runtime state, and Pygame views only where movement/animation requires it
-- isolate movement and interaction sequencing
-- avoid an entity-component system unless a concrete need appears
-
-## Milestone v0.17 — Production assets, inventory scalability, and content pilot
-
-Goal:
-
-```txt
-Prove a coherent production-art workflow and a content structure that can support a larger chapter.
-```
-
-Planned scope:
-
-- production-quality scene and character asset pilot
-- inventory icons and fixed-size grid or scrolling behavior
-- item examination presentation
-- asset credits and license tracking
-- one representative data-driven scene experiment only if Python factories have become a bottleneck
-- localization-ready handling for growing player-facing text where practical
-
-Decision gates during the milestone:
-
-- Is an asset manifest justified?
-- Which assets are shared, scene-owned, preloaded, or releasable?
-- Should rectangle fallbacks remain in tests/debug builds?
-- Is scene JSON clearer than the equivalent Python factory?
-- Is inventory paging or scrolling the better interaction?
-
-## Milestone v0.17.1 — Resource/content refactor
-
-Expected refactor focus:
-
-- resolve assets relative to the installed package/application
-- split image, audio, and path responsibilities only if `UIResources` has become overloaded
-- add bounded scaled-image caching or scene resource release only if measured memory use requires it
-- centralize asset validation and manifest data if approved
-- separate static definitions, runtime state, and views where production entities require it
-
-## Milestone v0.18 — Music, ambience, and audio settings
-
-Goal:
-
-```txt
-Add controlled scene audio without turning short sound-effect loading into a general media engine.
-```
-
-Decision gates during the milestone:
-
-- Which scene lifecycle events start and stop music/ambience?
-- Which channels and volume groups are needed?
-- How should transitions fade or crossfade?
-
-## Milestone v0.18.1 — Audio/lifecycle refactor
-
-Expected refactor focus:
-
-- separate short effects, streaming music, and ambience ownership
-- introduce explicit scene enter/exit hooks only when proven necessary
-- centralize master/music/SFX volume behavior
-
-## Milestone v0.19 — Packaging, settings, and user-data hardening
-
-Goal:
-
-```txt
-Run as an installable game with reliable asset, save, configuration, and diagnostic paths.
-```
-
-Planned scope:
-
-- executable/package build
-- platform user-data and config paths
-- persist the selected fullscreen/windowed mode and last approved windowed preset
-- persist audio and other approved user settings separately from game-save data
-- evaluate whether arbitrary drag-resizing is useful beyond the approved 16:9 presets
-- if drag-resizing is approved, add aspect-preserving live resizing, minimum-size behavior, and reliable pointer conversion
-- logging and useful crash diagnostics
-- asset license/credit output
-- localization-readiness review
-
-Decision gates during the milestone:
-
-- Should the game continue to launch with the saved display mode, or provide a safe startup override?
-- Are the approved windowed presets sufficient for the target players and platforms?
-- If arbitrary drag-resizing is added, what minimum physical window size preserves readable text and usable controls?
-- Which display, audio, text, language, and accessibility settings belong in the first persisted configuration schema?
-
-## Milestone v0.19.1 — Release architecture hardening
-
-Expected refactor focus:
-
-- centralize application paths and configuration loading
-- remove development-working-directory assumptions
-- validate packaged resources and release startup behavior
-
-## Milestone v0.20 — First larger chapter production pilot
-
-Goal:
-
-```txt
-Build enough connected content to test whether authoring and runtime systems scale beyond the original demo.
-```
-
-Decision gates during the milestone:
-
-- Are Python scene factories still efficient to author and review?
-- Is content validation sufficient for the larger chapter?
-- Is lightweight tooling needed?
-- Which systems are genuinely reusable and which remain game-specific?
-
-## Milestone v0.20.1 — Content-authoring refactor
-
-Expected refactor focus:
-
-- remove authoring duplication exposed by the chapter pilot
-- add focused loaders or tools only for proven content bottlenecks
-- avoid a general editor or scripting language unless chapter production clearly requires one
-
-## Deferred candidates
-
-Potential future work:
-
-```txt
-optional side quests
-additional puzzle abilities
-accessibility features beyond the initial settings baseline
-content editor or modding research
-combat research only if the game's final design genuinely requires it
-```
-
-Do not schedule combat, RPG progression, a generic engine framework, or a universal content editor while the authored point-and-click loop still has higher-priority needs.
+A minimal playtest build may be pulled forward after v0.14/v0.15 when someone needs
+it; this does not require all settings work. Do not promise cross-platform binaries
+before testing them. Consider drag-resizing only if approved presets prove inadequate.
+
+## Milestone v0.20 — Larger chapter production pilot
+
+Add enough connected authored content to measure writing, puzzle design, scene
+construction, and validation friction. Consider autosave only when authored
+checkpoints exist. A content editor is an optional future response to measured
+bottlenecks, not a prerequisite to building scenes. Review tooling before committing
+to a game-dev-club event or an editor project; those are separate decisions.
+
+## Deferred experiments
+
+- larger scenes and camera movement after the one-screen interaction model works
+- perspective sprite scaling, extra facing directions, interaction/cinematic animation
+- autosave/checkpoint authoring and extra save slots
+- optional side quests, puzzle abilities, and broader accessibility improvements
+- a small content-authoring helper/editor if chapter production demonstrates need
+
+Combat, RPG progression, 3D, procedural generation, and generic engine frameworks
+remain outside the active authored-adventure plan.
+
+## Plan-to-issue migration
+
+Review this revision before creating more GitHub tasks. Resolve only decisions that
+block the next milestone. Then create issues for coherent unfinished deliverables,
+use milestones as shared finish lines, and keep small verification steps as issue
+checklists. Do not migrate completed code or every hypothetical .1 refactor into
+open issues. Once migrated, link actual issues from these plans and let GitHub own
+execution status; these files own scope, decisions, and acceptance contracts.
