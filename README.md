@@ -96,7 +96,7 @@ make format
 make check
 ```
 
-`make format` applies the configured Ruff formatter. `make check` runs Ruff lint checks and the complete pytest suite.
+`make format` applies Ruff to source, tests, and automation scripts. `make check` runs formatting validation, Ruff lint, and pytest.
 
 ## Presentation assets
 
@@ -132,3 +132,14 @@ CLAUDE.md
 ## Scope rule
 
 Work one milestone at a time. Do not expand the demo with additional quest chains while a presentation, architecture, or save milestone is in progress.
+
+## Versions and downloadable releases
+
+PR titles select automatic version bumps and generated changelog entries: `fix:`
+for patch, `feat:` for minor, and `!` for major. Merging advances main's version;
+publishing is separate. Use **Actions → Release playable builds → Run workflow →
+main** (or `make release` with authenticated GitHub CLI) for Windows/Linux x64
+archives, a matching `vX.Y.Z` tag, and GitHub Release notes. No version is bumped
+by publishing. See [the development and release workflow](docs/ai-workflow.md) for
+setup, examples, supported systems, and retry guidance. Download and extract the
+complete platform archive from this repository's Releases page; Python is included.

@@ -14,7 +14,7 @@ own work items, implementation checklists, dependencies, and progress.
 | [Asset guide](asset-guide.md) | Art/audio contracts and planned animation requirements |
 | [Testing guide](testing-plan.md) | Test strategy and behavioral contracts |
 | [Coding standards](coding-standards.md) | Implementation conventions |
-| [AI workflow](ai-workflow.md) | Working from a supplied GitHub issue |
+| [Development and release workflow](ai-workflow.md) | Issues, PR versioning, CI, and playable releases |
 
 Do not add milestone task files, a second refactor backlog, or a documentation
 history folder. Link real GitHub issues when useful; never invent their numbers.

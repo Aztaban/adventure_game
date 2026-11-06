@@ -17,6 +17,13 @@ dev = [
     "ruff",
 ]
 
+release = [
+    "pyinstaller==6.22.3",
+]
+
+[tool.setuptools.package-data]
+"game.content" = ["data/*.json"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

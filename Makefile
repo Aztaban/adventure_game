@@ -16,15 +16,16 @@ test:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m pytest
 
 lint:
-	$(PYTHON) -m ruff check src tests
+	$(PYTHON) -m ruff check src tests scripts
 
 fix:
-	$(PYTHON) -m ruff check src tests --fix
+	$(PYTHON) -m ruff check src tests scripts --fix
 
 format:
-	$(PYTHON) -m ruff format src tests
+	$(PYTHON) -m ruff format src tests scripts
 
 check: lint test
+	$(PYTHON) -m ruff format --check src tests scripts
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
@@ -39,16 +40,11 @@ fclean: clean
 
 re: fclean setup
 
-.PHONY: bump-patch bump-minor bump-major publish-version
+.PHONY: release build-release
 
-bump-patch:
-	$(PYTHON) scripts/bump_version.py patch
+release:
+	$(PYTHON) scripts/release.py request
 
-bump-minor:
-	$(PYTHON) scripts/bump_version.py minor
-
-bump-major:
-	$(PYTHON) scripts/bump_version.py major
-
-publish-version:
-	$(PYTHON) scripts/publish_version.py --push
+build-release:
+	$(PIP) install -e ".[release]"
+	$(PYTHON) scripts/release.py build

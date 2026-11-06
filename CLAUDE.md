@@ -58,3 +58,13 @@ GitHub issues own scope, acceptance checklists, dependencies, and status. Supply
 issue text when an agent cannot access GitHub. Permanent docs describe design and
 architecture. Do not recreate milestone task files, duplicate refactor backlogs, or
 a documentation history archive; Git preserves previous versions.
+
+## Version and release ownership
+
+Follow [Development and release workflow](docs/ai-workflow.md) for PR titles,
+automation, and packaging. Use `fix:` for patch, `feat:` for minor, and an explicit
+`!` for major. Maintenance types bump patch. Automation prepares the version and
+CHANGELOG on the PR branch; do not hand-bump or add manual changelog placeholders.
+Keep `Python checks` passing on the final bot commit and update from main when stale.
+Publishing is a separate manual action for current main, producing Windows/Linux
+builds and the matching tag without another version bump. Never move published tags.

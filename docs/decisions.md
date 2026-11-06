@@ -23,6 +23,7 @@ Proposed defaults below guide the next review; they are not additional approvals
 | DEC-14 | Changing or clearing the selected inventory item while approaching a target to use it cancels the pending action and stops travel. | v0.14 |
 | DEC-15 | The first player animation set supports four facing directions: up, down, left, and right. Movement may still be diagonal; diagonal art is not required. | v0.15 |
 | DEC-16 | Pause freezes both player and ambient scene animation. Pause time does not advance their clocks or cause catch-up jumps on return. | v0.15 |
+| DEC-17 | Initial downloadable builds target Windows and Linux x64, packaged natively as ZIP and tar.gz. Publish manually from current main, separate from automatic PR versioning. | Initial playtest packaging |
 
 Polda is a genre/visual reference, not a requirement to copy its art, characters,
 writing, interface, or exact mechanics. Original assets and writing remain the direction.
@@ -135,7 +136,9 @@ NPC schedules, cinematics, cameras, and an animation editor remain separate scop
 | OPEN-05 | How should a replacement world-target request be sequenced? | Keep one pending action; replace the old request atomically and revalidate the new target. Item selection changes are already settled by DEC-14, and arrow/modal cancellation by DEC-09/DEC-11. This is an implementation detail within the one-action contract. | v0.14 implementation |
 | OPEN-06 | Add right-click inspect or a keyboard-only nearest-target action? | Neither is required for v0.14. Preserve contextual left-click and apply the agreed world-action proximity rule. Extra controls need a separate future product choice. | Deferred extension |
 | OPEN-09 | Exact frame/asset contract and deterministic facing/clock details? | Four directions and full pause freeze are already confirmed (DEC-15/16). Choose frame sizes/count/rate, clip layout, diagonal-to-cardinal mapping, and scene reset/re-entry rules during the scoped art/playback task. These are implementation choices; request a new product decision only if scope changes. | v0.15 implementation |
-| OPEN-10 | Which platform and distribution format is first? | Choose one desktop OS before committing to an executable build. A small playtest build may precede full v0.19 packaging. | First external playtest |
+
+OPEN-10 (initial release platforms) is resolved by DEC-17. Full settings/diagnostics
+remain later scope; initial packaging does not complete the v0.19 milestone.
 
 ## Save compatibility boundary
 
