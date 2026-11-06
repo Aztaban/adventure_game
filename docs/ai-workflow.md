@@ -1,108 +1,49 @@
 # AI Workflow
 
-Status: draft
+## Start from one GitHub issue
 
-## Goal
+Read AGENTS.md, the active issue, [architecture](architecture.md), [coding standards](coding-standards.md),
+and relevant [decisions](decisions.md). Use [GDD](gdd.md), [content plan](content-plan.md),
+[testing guide](testing-plan.md), and [roadmap](roadmap.md) for context.
+If an agent cannot access GitHub, supply the complete issue text including acceptance
+criteria and dependencies. Do not reconstruct scope from a deleted milestone task file.
 
-Use AI agents step by step without wasting tokens or creating uncontrolled code.
+## Ownership
 
-The project should be developed through small milestones.
+Issues own implementation checklists, status, blockers, and test evidence. GitHub
+milestones group deliverables; the Project shows progress. Permanent docs hold design,
+architecture, conventions, and reusable verification contracts. Git holds history.
+Do not maintain parallel docs/milestones, docs/history, or refactor-backlog files.
+No issue number or completed status should be invented in a documentation edit.
 
-## Main workflow
+## Implementation loop
 
-1. Pick one milestone from `docs/roadmap.md`.
-2. Ask the agent to implement only that milestone.
-3. Agent reads:
-   - `AGENTS.md`
-   - `docs/mvp.md`
-   - `docs/roadmap.md`
-   - `docs/architecture.md`
-   - `docs/coding-standards.md`
-4. Agent summarizes the plan before coding.
-5. Agent changes only necessary files.
-6. Agent explains what changed.
-7. Agent gives manual test steps.
-8. User tests locally.
-9. Fix bugs before moving to next milestone.
+1. Resolve the issue's blocking product questions; verify its dependencies are complete.
+2. Start a development branch and move the issue to In Progress when work actually begins.
+3. Inspect current source/tests and explain the narrow change before coding.
+4. Implement only that deliverable. Do not add dependencies or future systems without authorization.
+5. Run meaningful focused/full checks with real declared dependencies; give desktop steps.
+6. Open a small PR linked to the real issue; verify checks on the latest user/bot commit.
+7. Merge through the main ruleset after required checks/conversations are satisfied.
+8. Close only when that issue's acceptance is met. Keep desktop acceptance separate when needed.
 
-## Good prompt example
+## Honest verification and scope
 
-```txt
-Implement milestone v0.3 from docs/roadmap.md.
-Follow AGENTS.md and docs/architecture.md.
-Do not implement later milestones.
-After the change, give me manual test steps.
-```
+Record tested branch/commit, commands, results, and limitations in the issue/PR.
+Headless Pygame does not establish fullscreen/window-manager behavior, sound quality,
+or animation feel. Main's 304-pass historical run does not verify another branch.
+Older shim/dependency-light evidence remains evidence for that old environment only.
+Formatting is not lint or pytest. Never hide failing checks merely to make CI green.
 
-## Bad prompt example
+Before continuing an old feature branch, incorporate current main deliberately and
+preserve its workflows/release history. Audit/refactor only demonstrated duplication
+or unclear ownership; no generic screen/ECS/migration/navigation framework by default.
 
-```txt
-Build the whole game with inventory, quests, combat, magic and all scenes.
-```
+## Task prompt
 
-## Token-saving rule
-
-Do not paste the whole GDD into every prompt.
-
-Instead say:
-
-```txt
-Follow AGENTS.md and docs/gdd.md.
-Implement only milestone v0.X.
-```
-
-## Agent response expectations
-
-After coding, the agent should answer with:
-
-```txt
-Changed files:
-- ...
-
-What changed:
-- ...
-
-How to test:
-- ...
-
-Notes / next step:
-- ...
-```
-
-## When to stop an agent
-
-Stop or correct the agent if it:
-
-- starts implementing future milestones
-- rewrites unrelated files
-- adds libraries without asking
-- creates too many abstractions
-- ignores existing architecture
-- mixes all logic into one file
-- starts combat/3D/levels too early
-
-## Development rhythm
-
-Recommended rhythm:
-
-```txt
-small prompt
-small code change
-manual test
-commit
-next milestone
-```
-
-## Commit style
-
-Suggested commit messages:
-
-```txt
-feat: add basic game window
-feat: add scene manager
-feat: add hotspot interactions
-feat: add basic dialogue box
-feat: add inventory system
-fix: prevent duplicate item pickup
-docs: update MVP scope
+```text
+Implement only the supplied GitHub issue.
+Follow AGENTS.md and the confirmed design decisions.
+Do not implement later milestones or add unapproved dependencies.
+Report behavior, changed files, verification results, and remaining desktop checks.
 ```

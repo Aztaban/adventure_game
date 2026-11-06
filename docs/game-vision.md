@@ -1,136 +1,50 @@
 # Game Vision
 
-Status: long-term direction; implementation decisions remain milestone-gated
+Status: direction agreed 2026-11-04; implementation staged by milestone.
 
 ## Goal
 
-Build a solid, humorous 2D point-and-click adventure inspired by the authored puzzle and dialogue feel associated with games such as *Polda*.
-
-The project should develop its own world, characters, writing, art, interface, and interaction details. The reference describes the desired genre and player experience, not content to copy.
+Build an original humorous fantasy adventure with the authored puzzle/dialogue
+feel and 2D/2.5D visual character of classic adventures such as Polda. Painted-style
+backgrounds, visible characters, grounded movement, clear interaction, and a lively
+world support the comedy and mystery. No 3D engine is required.
 
 ## Experience pillars
 
-### Authored comedy and mystery
+- Memorable characters, authored jokes, readable clues, and coherent puzzle chains.
+- A visible player walking across a two-dimensional floor area with depth.
+- Arrow-key control and click-to-move as equal supported movement methods.
+- Click a person/object/item/exit: approach a reachable point, then act when close.
+- Inventory selection and combination remain immediate UI actions.
+- One consistent logical display composition; clear targets without pixel hunting.
+- Player idle/walk animation and small ambient scene motion after movement is sound.
+- One useful playable example per feature; no speculative general-purpose engine.
 
-- memorable characters with distinct voices
-- inspectable environments with optional jokes and clues
-- a coherent mystery that grows across connected scenes
-- dialogue that rewards curiosity without blocking progress unnecessarily
+## Confirmed scope
 
-### Clear point-and-click interaction
+See [decisions](decisions.md) for the authoritative confirmed choices and open details.
+Initial movement uses the existing single-screen scene model. Grounded actors use
+foot anchors; depth and occlusion are visual composition concerns, not physics in 3D.
+A scrolling camera, perspective scaling, and elaborate animation systems are deferred.
 
-- visible targets and readable feedback
-- predictable inspect, talk, collect, combine, and use behavior
-- inventory puzzles based on authored logic rather than generic crafting
-- controls that can always be viewed from the menu
-- interaction rules that remain consistent across scenes
+The original direct-click demo remains the current implementation until the movement
+milestones replace that behavior. It is a completed proof of puzzle rules, not the
+final intended control model.
 
-### Deliberate puzzle progression
+## Development sequence
 
-- short dependency chains with understandable causes and effects
-- stable world facts and conversation outcomes
-- objective hints or a journal before the game becomes large enough to feel directionless
-- no puzzle solution should depend on hidden pixel hunting or undocumented controls
-
-### Strong presentation without engine overgrowth
-
-- fixed logical composition that scales cleanly to modern displays
-- readable dialogue, prompts, menus, and inventory
-- art and audio loaded through stable IDs
-- feature-driven refactors instead of speculative abstract frameworks
-
-## Current proven core
-
-The v0.10 vertical slice proves:
-
-```txt
-explore scene
-talk and inspect
-collect item
-use item on world target
-combine items
-unlock progression
-reach ending
-restart a fresh session
-```
-
-Current architecture already separates reusable content, one running session, persistent game state, interaction transactions, scene presentation, and snapshot data. This is sufficient to continue without a general rewrite.
-
-## Important undecided interaction details
-
-These decisions materially affect player behavior and must be made through milestone prototypes rather than documentation alone.
-
-### Input language
-
-Decide during v0.15:
-
-- one contextual left-click action
-- left-click action plus right-click inspect
-- verb or cursor modes
-- whether a selected inventory item visibly follows the cursor
-
-### Player movement
-
-Decide during v0.16:
-
-- instant interaction from anywhere
-- visible move-then-interact behavior
-- simple authored walk areas
-- pathfinding only if scene layouts require it
-
-### Scene size
-
-Decide during v0.15:
-
-- continue using one-screen authored scenes
-- support larger scenes with a camera
-- mix both approaches under one coordinate policy
-
-### Content data
-
-Current rule:
-
-```txt
-Items:     JSON
-Recipes:   JSON
-Scenes:    Python factories
-Dialogue:  Python factories
-```
-
-Future decisions:
-
-- reconsider dialogue JSON only after v0.13 choices prove the schema
-- reconsider scene JSON only after v0.15/v0.17 representative scene pilots
-- prefer data files when they improve authoring and validation, not merely to reduce Python usage
-
-## Scale strategy
-
-The game should grow by proving one pressure point at a time:
-
-```txt
-logical display/input
--> pause and save/load
--> dialogue choices
--> objectives
--> interaction/camera pilot
--> player movement decision
--> production asset and inventory pilot
--> music/ambience
--> packaging/settings
--> larger chapter production
-```
-
-Each feature milestone may be followed by a focused `.1` refactor milestone. Refactors must solve observed duplication, ownership, or scalability problems while preserving behavior.
+1. Finish v0.12 pause/save/load and establish branch-specific CI and desktop evidence.
+2. Perform a focused v0.12.1 audit only where the feature exposes concrete pressure.
+3. Prove arrow and mouse navigation in one scene with a visible placeholder player.
+4. Apply approach/range interaction, exits, scene-entry positions, and save compatibility
+   across the original demo.
+5. Add one coherent player animation set and a small ambient animation pilot.
+6. Build dialogue choices and objective guidance using representative authored content.
+7. Grow production assets, audio, inventory presentation, packaging, and chapter content.
 
 ## Scope guard
 
-The project is not currently aiming to become:
-
-- a combat RPG
-- a generic adventure-game engine
-- an entity-component framework
-- a procedural world generator
-- a universal modding platform
-- a complex crafting simulator
-
-Those directions should not displace the authored point-and-click experience without a deliberate future design change.
+Keep combat, levels/skills, procedural generation, multiplayer, a general editor,
+modding support, ECS/event-bus frameworks, and 3D outside the active roadmap.
+Obstacle-aware navigation is approved as part of the movement pilots; it is not
+permission to create a general navigation engine. Refactors require observed evidence.

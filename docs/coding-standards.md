@@ -1,6 +1,6 @@
 # Coding Standards
 
-Status: draft
+Status: current conventions with planned movement boundaries (2026-11-04)
 
 ## General principles
 
@@ -64,11 +64,11 @@ Bad:
 
 ## Testing
 
-Early game development can use manual tests.
+Use automated behavior tests plus desktop acceptance for presentation; neither replaces the other.
 
 Every milestone should have manual test steps in the response/PR.
 
-Later, add unit tests for pure logic:
+Maintain unit tests for pure logic:
 
 - inventory
 - recipes
@@ -89,6 +89,14 @@ Do not implement these without explicit request:
 - levels
 - skills
 - 3D
-- pathfinding
+- navigation beyond the scoped v0.13/v0.14 floor/obstacle requirements
 - procedural generation
 - advanced save system
+
+## Planned movement code
+
+Use explicit semantic held input, time-based movement, finite scene coordinates,
+and one navigation/collision policy for keyboard and mouse travel. Keep immutable
+content separate from per-session actor and pending-command state. Use plain data
+for movement saves; do not serialize Pygame objects, routes, animation clocks, or
+live target references. Avoid broad new class hierarchies merely to match this plan.

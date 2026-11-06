@@ -17,7 +17,7 @@ The project should grow step by step through small milestones.
 ## Read first
 
 ```txt
-docs/mvp.md
+docs/decisions.md
 docs/roadmap.md
 docs/architecture.md
 docs/coding-standards.md
@@ -33,7 +33,7 @@ docs/content-plan.md
 
 ## Behavior rules
 
-- Work only on the requested milestone.
+- Work only on the supplied active GitHub issue; roadmap entries are not permission to implement future features.
 - Keep changes small and reviewable.
 - Do not add dependencies without asking.
 - Do not implement combat, levels, skills, or 3D unless explicitly requested.
@@ -51,3 +51,10 @@ Core loop:
 ```txt
 explore -> talk -> collect item -> combine/use item -> solve obstacle -> progress
 ```
+
+## Task ownership
+
+GitHub issues own scope, acceptance checklists, dependencies, and status. Supply the
+issue text when an agent cannot access GitHub. Permanent docs describe design and
+architecture. Do not recreate milestone task files, duplicate refactor backlogs, or
+a documentation history archive; Git preserves previous versions.

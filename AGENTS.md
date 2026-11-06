@@ -15,7 +15,7 @@ The goal is to build the game step by step, not to generate a large engine at on
 Before making changes, read:
 
 ```txt
-docs/mvp.md
+docs/decisions.md
 docs/roadmap.md
 docs/architecture.md
 docs/coding-standards.md
@@ -31,7 +31,7 @@ docs/content-plan.md
 
 ## Current scope
 
-Build only the current milestone from `docs/roadmap.md`.
+Implement only the supplied active GitHub issue. Use `docs/roadmap.md` for direction, not a task checklist.
 
 Do not implement future features unless explicitly asked.
 
@@ -74,3 +74,10 @@ Expected:
 - dialogue opens
 - ESC closes game
 ```
+
+## Task ownership
+
+GitHub issues own scope, acceptance checklists, dependencies, and status. Supply the
+issue text when an agent cannot access GitHub. Permanent docs describe design and
+architecture. Do not recreate milestone task files, duplicate refactor backlogs, or
+a documentation history archive; Git preserves previous versions.
