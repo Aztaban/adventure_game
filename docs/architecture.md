@@ -781,3 +781,12 @@ clock reset behavior in implementation;
 ambient visuals cannot mutate progression or block interaction completion. Missing
 clips have a deterministic fallback. Resource ownership stays small; no full animation
 editor, skeletal engine, mandatory atlas, or broad preload framework is introduced.
+
+## Packaged resource boundary
+
+`UIResources` resolves source assets from the repository location, or frozen assets
+from PyInstaller's bundle directory, independent of the launch working directory.
+Content JSON remains module-relative and is explicitly included in builds. The
+entry point accepts `--smoke-test` for bounded packaged startup/event-loop checking;
+normal startup behavior is unchanged. Native platform packaging and publication
+live in `scripts/release.py`; see [workflow](ai-workflow.md) for lifecycle ownership.

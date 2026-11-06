@@ -1,0 +1,53 @@
+name: Prepare PR version
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+# Share the branch lock with formatting: both jobs make normal, non-force pushes.
+concurrency:
+  group: branch-edit-${{ github.event.pull_request.head.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref != 'main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      TARGET_BRANCH: ${{ github.event.pull_request.head.ref }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.FORMATTER_TOKEN }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Read current PR metadata
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" > "$RUNNER_TEMP/pr.json"
+      - name: Generate version and changelog from current main
+        run: python scripts/pr_version.py
+        env:
+          PR_METADATA_PATH: ${{ runner.temp }}/pr.json
+      - name: Commit generated files
+        run: |
+          git add pyproject.toml CHANGELOG.md
+          if git diff --cached --quiet; then
+            echo 'Version and changelog are current.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'chore: prepare PR version and changelog'
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"

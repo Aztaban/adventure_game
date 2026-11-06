@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: format-${{ inputs.target_branch || github.ref_name }}
+  group: branch-edit-${{ inputs.target_branch || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -53,11 +53,11 @@ jobs:
         run: python -m pip install ruff
 
       - name: Format source and tests
-        run: python -m ruff format src tests
+        run: python -m ruff format src tests scripts
 
       - name: Commit and push formatting changes
         run: |
-          git add -u -- src tests
+          git add -u -- src tests scripts
 
           if git diff --cached --quiet; then
             echo "Everything is already formatted."

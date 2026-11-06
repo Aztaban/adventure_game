@@ -1,16 +1,24 @@
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import pygame
 
 
+def default_asset_root() -> Path:
+    """Resolve bundled assets or source assets independently of the launch directory."""
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS) / "assets"
+    return Path(__file__).resolve().parents[3] / "assets"
+
+
 @dataclass
 class UIResources:
     """Own shared cached fonts and optional image/audio assets."""
 
-    asset_root: Path = Path("assets")
+    asset_root: Path = field(default_factory=default_asset_root)
     _font_cache: dict[int, pygame.font.Font] = field(default_factory=dict)
     _image_cache: dict[tuple[str, tuple[int, int] | None], pygame.Surface | None] = field(default_factory=dict)
     _sound_cache: dict[str, pygame.mixer.Sound | None] = field(default_factory=dict)

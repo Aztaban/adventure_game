@@ -48,6 +48,6 @@ until a production example demonstrates a better authoring format.
 
 A camera/larger scene, perspective scaling, interaction/cinematic animations,
 autosave/checkpoints, extra slots, authoring editor, and modding need separate scope
-and evidence. A small downloadable playtest can precede full v0.19 packaging once a
-first target OS is chosen. Keep combat, RPG progression, 3D, procedural generation,
+and evidence. A small downloadable playtest can precede full v0.19 packaging on the
+confirmed Windows/Linux targets (DEC-17). Keep combat, RPG progression, 3D, procedural generation,
 and generic engine frameworks outside the active authored-adventure plan.

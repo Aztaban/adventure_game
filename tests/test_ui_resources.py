@@ -35,10 +35,10 @@ def test_ui_resources_caches_fonts_by_size() -> None:
 
 
 def test_ui_resources_exposes_asset_paths_by_stable_id() -> None:
-    resources = UIResources()
+    resources = UIResources(asset_root=Path("assets"))
 
-    assert str(resources.image_path("scene.village")) == ("assets/images/scene.village.png")
-    assert str(resources.audio_path("music.theme")) == "assets/audio/music.theme.ogg"
+    assert resources.image_path("scene.village") == Path("assets/images/scene.village.png")
+    assert resources.audio_path("music.theme") == Path("assets/audio/music.theme.ogg")
 
 
 def test_ui_resources_loads_and_caches_scaled_images(tmp_path: Path) -> None:
@@ -91,3 +91,18 @@ def test_demo_placeholder_asset_files_exist() -> None:
 
     assert all(resources.image_path(asset_id).is_file() for asset_id in image_ids)
     assert all(resources.audio_path(asset_id).is_file() for asset_id in sound_ids)
+
+
+def test_default_assets_work_from_another_directory(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    resources = UIResources()
+    assert resources.image_path(TITLE_BACKGROUND).is_file()
+    assert resources.audio_path(PICKUP_SOUND).is_file()
+
+
+def test_frozen_assets_use_bundle_directory(tmp_path, monkeypatch) -> None:
+    import sys
+
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "_MEIPASS", str(tmp_path), raising=False)
+    assert UIResources().asset_root == tmp_path / "assets"

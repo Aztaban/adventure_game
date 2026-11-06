@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.2
+
+- ci: automate versioning and playable releases (#33)
+
 ## 0.11.1 - 2026-08-05
 
 ### Fixed

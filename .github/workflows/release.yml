@@ -1,0 +1,79 @@
+name: Release playable builds
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    name: Build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      SDL_VIDEODRIVER: dummy
+      SDL_AUDIODRIVER: dummy
+      PYGAME_HIDE_SUPPORT_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Capture the main commit at dispatch, even if main advances during the builds.
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install development and packaging tools
+        run: python -m pip install -e ".[dev,release]"
+      - name: Check formatting and lint
+        run: |
+          python -m ruff format --check src tests scripts
+          python -m ruff check src tests scripts
+      - name: Run tests on target OS
+        run: python -m pytest -q
+      - name: Build archive and smoke-test executable outside source directory
+        run: python scripts/release.py build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: playable-${{ matrix.os }}
+          path: |
+            dist/mysterious-forest-*.zip
+            dist/mysterious-forest-*.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish tag and GitHub Release
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: playable-*
+          merge-multiple: true
+          path: release-artifacts
+      - name: Publish existing version with notes since previous published release
+        run: python scripts/release.py publish
+        env:
+          GH_TOKEN: ${{ github.token }}
