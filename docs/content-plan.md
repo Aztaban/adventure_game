@@ -358,3 +358,21 @@ mandatory pickups into an animated background. Ambient loops remain cosmetic.
   separate small experiments, each with authored content that demonstrates value.
 - v0.20: larger chapter production measures whether a focused authoring helper/editor
   is justified. Do not make an editor a prerequisite to writing playable content.
+
+## Confirmed navigation authoring constraints (v0.13)
+
+Outside-floor ground clicks project into reachable floor space (DEC-10). Author
+floor/blocker geometry so the selected point respects the player footprint and does
+not fall on an isolated floor island. Keep UI click space outside the ground-command
+resolver. Target approach points remain explicit v0.14 content, not arbitrary projected
+sprite centres. Choose and document one pilot scene before implementation; Village
+Square is a proposal, not a newly confirmed owner choice.
+
+## v0.14 entrance and saved-position contract
+
+Each regular scene exit must name its corresponding destination entrance (DEC-12),
+with safe foot position/facing and no immediate return-trigger overlap. Validate all
+entrances, locked-exit approach areas, and default spawns against walkability.
+Normal traversal does not restore last-visit position. A current movement save uses
+its saved position/facing; a supported legacy save uses the saved scene's default
+spawn while preserving progress. Keep these three entry cases distinct.

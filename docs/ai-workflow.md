@@ -1,77 +1,49 @@
 # AI Workflow
 
-Status: planning and GitHub migration workflow revised 2026-11-04.
+## Start from one GitHub issue
 
-## Choose one deliverable
+Read AGENTS.md, the active issue, [architecture](architecture.md), [coding standards](coding-standards.md),
+and relevant [decisions](decisions.md). Use [GDD](gdd.md), [content plan](content-plan.md),
+[testing guide](testing-plan.md), and [roadmap](roadmap.md) for context.
+If an agent cannot access GitHub, supply the complete issue text including acceptance
+criteria and dependencies. Do not reconstruct scope from a deleted milestone task file.
 
-Before coding, identify the active milestone and one task or issue. Read AGENTS.md,
-[roadmap](roadmap.md), [architecture](architecture.md), [coding standards](coding-standards.md),
-and the relevant milestone plan. Consult [GDD](gdd.md), [content plan](content-plan.md),
-and [decisions](decisions.md) when the task affects player behavior.
+## Ownership
 
-The confirmed movement direction supersedes older optional-movement language.
-It does not authorize movement inside the unfinished v0.12 save/load task.
-
-## Current branch baseline
-
-The supplied v0.12 archive lacks newer main workflows and some main changelog entries.
-Integrate current main deliberately, preserve feature work/history, resolve conflicts,
-and establish CI on the feature branch before the next feature task. Do not overwrite
-main wholesale with the uploaded ZIP or claim main's 304-pass run tested this branch.
-
-## Planning review before issue creation
-
-This revision precedes further GitHub migration. Resolve open decisions only when
-they block upcoming work. Keep completed implementation separate from pending
-verification. Do not create open issues for every completed checkbox or speculative
-.1 refactor. Existing issue #4 remains a documentation-reconciliation task; do not
-mark it done without its PR and checks.
-
-After migration, use GitHub issues as execution status and these files as stable
-scope/decision/acceptance references. Replace duplicate status checklists with actual
-issue links once they exist; do not invent issue IDs. A Project draft card is not a
-repository issue until converted. The active issue text must be supplied to an agent
-that lacks authenticated GitHub access.
+Issues own implementation checklists, status, blockers, and test evidence. GitHub
+milestones group deliverables; the Project shows progress. Permanent docs hold design,
+architecture, conventions, and reusable verification contracts. Git holds history.
+Do not maintain parallel docs/milestones, docs/history, or refactor-backlog files.
+No issue number or completed status should be invented in a documentation edit.
 
 ## Implementation loop
 
-1. Move a well-scoped issue to Ready after its blocking decisions are resolved.
-2. Move it to In Progress when implementation actually starts; use a development branch.
-3. Summarize the narrow implementation and relevant tests before changing code.
-4. Implement only that deliverable; avoid future systems and unrequested dependencies.
-5. Run format/lint and meaningful focused/full tests with real declared dependencies.
-6. Report what passed, what failed, and which desktop checks remain unavailable.
-7. Open a PR describing behavior, relevant checks, and manual steps; link its issue.
-8. Let development-branch formatting/CI complete; inspect the latest bot/user commit.
-9. Resolve conversations, update from main as required, and merge only with required checks.
-10. Close the issue only when its own acceptance is complete; retain separate desktop
-    acceptance tasks when the coding task cannot establish visual/platform behavior.
+1. Resolve the issue's blocking product questions; verify its dependencies are complete.
+2. Start a development branch and move the issue to In Progress when work actually begins.
+3. Inspect current source/tests and explain the narrow change before coding.
+4. Implement only that deliverable. Do not add dependencies or future systems without authorization.
+5. Run meaningful focused/full checks with real declared dependencies; give desktop steps.
+6. Open a small PR linked to the real issue; verify checks on the latest user/bot commit.
+7. Merge through the main ruleset after required checks/conversations are satisfied.
+8. Close only when that issue's acceptance is met. Keep desktop acceptance separate when needed.
 
-`Closes #<real issue number>` in the PR description can close the linked issue on
-merge. Do not close a combined coding-and-desktop issue while desktop acceptance
-remains open. Configure Project status automation to reflect the chosen task boundary.
+## Honest verification and scope
 
-## Honest verification
+Record tested branch/commit, commands, results, and limitations in the issue/PR.
+Headless Pygame does not establish fullscreen/window-manager behavior, sound quality,
+or animation feel. Main's 304-pass historical run does not verify another branch.
+Older shim/dependency-light evidence remains evidence for that old environment only.
+Formatting is not lint or pytest. Never hide failing checks merely to make CI green.
 
-Record branch/commit, command, dependencies, outcome, and manual limitations. Historical
-shim-based or dependency-light tests remain historical evidence, not current real-Pygame
-acceptance. Never silence failed tests merely to make CI green. Formatting does not
-replace lint or pytest. Headless SDL cannot establish fullscreen transition feel or audio quality.
+Before continuing an old feature branch, incorporate current main deliberately and
+preserve its workflows/release history. Audit/refactor only demonstrated duplication
+or unclear ownership; no generic screen/ECS/migration/navigation framework by default.
 
-## Task prompt pattern
+## Task prompt
 
 ```text
-Implement only task <ID or real issue number> from the active milestone.
-Follow AGENTS.md and the linked design/architecture decisions.
-Do not implement later milestones or add dependencies without asking.
-Report changed files, behavior, verification results, and desktop checks still needed.
+Implement only the supplied GitHub issue.
+Follow AGENTS.md and the confirmed design decisions.
+Do not implement later milestones or add unapproved dependencies.
+Report behavior, changed files, verification results, and remaining desktop checks.
 ```
-
-## Stop and resolve scope when
-
-- a required product decision is still open
-- unrelated rewrites or general frameworks appear
-- an agent skips existing source/tests or duplicates content/state ownership
-- combat, 3D, camera/editor work, extra save slots, or speculative migrations enter the task
-
-Small change -> meaningful verification -> reviewable PR -> next deliverable.

@@ -120,15 +120,22 @@ The player's logical position is the foot anchor, not the sprite's centre.
 The route must stay inside walkable ground and avoid obstacles. Prove a simple
 obstacle detour in the pilot before selecting broader routing machinery. Unreachable
 targets never trigger remote interactions. Exact floor/routing representation and
-failure wording are open decisions, recorded in [decisions](decisions.md).
+failure wording are recorded or gated in [decisions](decisions.md). An outside-floor
+ground click selects the nearest reachable valid floor point and walks there; it is
+not rejected merely because it is outside the floor. UI/letterbox clicks are excluded.
 
 ### Commands, cancellation, and feedback
 
 The intended sequence is target selection, travel, arrival/range revalidation, then
 one interaction. A pending action must not execute early, twice, after its target
 has disappeared, or using an inventory item that is no longer selected/available.
-Proposed cancellation defaults are in OPEN-05; confirm them before implementation.
-Keep the existing Escape modal order while adding movement; pause must stop travel.
+Confirmed controls: arrow input cancels automatic travel permanently; releasing keys
+does not resume it. Pause or dialogue cancels the route and clears held movement.
+Returning from pause, dialogue, or Controls requires a fresh movement command.
+Remaining pending-world-interaction details are in OPEN-05 for v0.14.
+Keep the existing Escape modal order while adding movement.
+Changing the selected inventory item during approach cancels the pending item-use
+interaction and stops walking (DEC-14); the old request never adopts a new item.
 F11 only changes presentation and must preserve the session.
 
 ### Phased delivery
@@ -138,6 +145,11 @@ F11 only changes presentation and must preserve the session.
 - v0.14: range-gated world interactions, all demo scenes, explicit exit entry points,
   and movement-aware saves. Older supported saves preserve progress and use default spawn.
 - v0.15: directional idle/walk animation, scene occlusion, and small ambient animations.
+
+Normal scene traversal places the player at the matching destination entrance
+(DEC-12). Movement-aware saves restore current position/facing standing still
+(DEC-13), while supported older saves retain progress at a safe scene default spawn.
+Routes, pending actions, and held input do not resume on load.
 
 The original MVP intentionally used immediate remote clicks. That historical
 simplification does not describe the intended post-v0.14 behavior.
@@ -395,7 +407,7 @@ Future features after MVP:
 
 ## 19. Animation and a lively scene
 
-v0.15 proves a small coherent visual set: directional idle and walk clips, a stable
+v0.15 proves a small coherent visual set: four-direction (up/down/left/right) idle and walk clips, a stable
 foot anchor, consistent movement/animation timing, and one or two ambient loops
 such as foliage, a lantern, smoke, or water. Gameplay completion must not depend on
 an ambient animation frame. Full NPC schedules, cinematic cutscenes, skeletal
@@ -408,3 +420,25 @@ pause/confirmation/Continue screens. This document states the target design; see
 [roadmap](roadmap.md) for actual progress and [architecture](architecture.md) for
 implemented versus planned responsibilities. Dialogue choices now follow movement
 and animation at v0.16; older forward references to v0.13 are superseded.
+
+## Demo scope and regression baseline
+
+The original demo proves three scenes, two NPCs, five story-relevant items, one item
+combination, one locked obstacle, and one ending. The core solution is cup -> well
+-> water; water + herb -> tea; tea -> witch -> key; key -> gate -> tower.
+Maintain observable behavior and this puzzle while changing how the player reaches
+its interactions. Initial placeholder art and single-screen geometry are intentional.
+Current feature acceptance and manual execution checklists belong to GitHub issues.
+The original immediate-click implementation is a source baseline, not the final
+movement model. New screenshots or CI runs must identify their tested commit.
+
+## Confirmed animation pause behavior
+
+DEC-15 requires four player-facing directions; diagonal movement maps to a consistent
+cardinal facing and does not require diagonal art. DEC-16 freezes the player and all
+ambient scene animation while paused, including screens reached through pause.
+Animation clocks exclude paused time, so returning creates no catch-up jump.
+Player travel remains cancelled under DEC-11; its animation follows the resulting
+stationary state rather than restarting an old walk. Exact clip dimensions/rates
+and diagonal mapping are chosen in implementation. These features are planned,
+not present in the supplied source archive.

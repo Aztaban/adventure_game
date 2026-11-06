@@ -660,7 +660,7 @@ Add them only when real gameplay complexity justifies them.
 
 The sections above describe current source. This section defines responsibilities
 for future work; it does not promise new classes or prescribe a directory rewrite.
-See [decisions](decisions.md) and the individual milestone plans.
+See [decisions](decisions.md) and the active GitHub issues for approved scope and acceptance.
 
 ### Coordinates and actor state
 
@@ -700,6 +700,17 @@ and a bounded policy for large frame times. Frame rate and output scaling must n
 change speed or allow tunnelling through blockers. Losing focus, opening pause, or
 restoring a session must not leave a stuck held key.
 
+DEC-09: arrow input clears the current automatic route before keyboard movement.
+DEC-10: a ground command outside floor space selects the nearest reachable valid
+foot position using the current actor's connected/reachable navigation space and
+footprint clearance, not merely the closest geometric point anywhere in the scene.
+Resolve UI/target/letterbox classification before projection. If no valid result
+exists, return a non-mutating navigation failure rather than crossing obstacles.
+
+DEC-11: pause/dialogue clears the route and held directions. Returning from those
+modes or Controls requires fresh movement input; do not simply poll a still-held key
+and restart motion immediately. F11 is not a movement cancellation event.
+
 ### Interaction request and arrival
 
 The scene resolves click/hover targets using its existing UI-first policy. A small
@@ -709,7 +720,9 @@ action identified by target, action kind, and selected inventory item ID.
 After arrival, revalidate target existence, walkable approach, interaction distance,
 selected-item availability, and relevant world state before invoking gameplay rules.
 Cancel stale requests instead of executing them remotely or against a replacement
-target. The exact identity shape is an implementation decision; use stable IDs for
+target. DEC-14 additionally requires an inventory-selection change to cancel the
+pending item-use action and stop travel immediately; never substitute a newly
+selected item into the old request. The exact identity shape is an implementation decision; use stable IDs for
 new long-lived references rather than serializing live Pygame objects.
 
 AdventureInteractionService remains the owner of gameplay transactions. The
@@ -726,9 +739,11 @@ add one explicit result/transition path usable by event and update processing,
 preserving scene-transition audio and ending detection. Do not switch scenes from
 draw() or apply an interaction twice.
 
-Each exit needs a target entry point (or a validated destination default). Place the
-player there once, cancel the old route/action, and avoid immediately retriggering
-the return exit. Default spawn is used for new games and legacy save fallback;
+DEC-12 requires an explicit corresponding destination entry point for each exit.
+Place the player there once, cancel the old route/action, and avoid immediately
+retriggering the return exit. A missing/broken entrance reference is a content
+validation error, not a reason to restore a last-visit position or silently use an
+unrelated default. Default spawn is used for new games and legacy save fallback;
 regular traversal follows its entrance contract, not a serialized last-visit route.
 Add small scene entry/exit hooks only if these actual operations justify them.
 
@@ -744,6 +759,7 @@ Define exact v2 fields in v0.14 before code; do not silently accept missing posi
 in a new-format save. Reject non-finite/out-of-bounds/unwalkable new-format position
 according to the agreed validation policy. The envelope can remain version 1 when
 only its nested payload contract changes. A narrow v1-to-current adapter is enough.
+DEC-13 requires saving the valid current foot position and facing even during travel.
 Do not persist routes, queued actions, held keys, animation frame indices, open UI,
 or Pygame objects. Load stationary and rebuild transient state.
 
@@ -755,8 +771,13 @@ and appropriate props by authored ground/depth anchors; use explicit foreground
 layers for overhangs that cannot be represented by a single depth value. UI is drawn
 above the world and remains separate from sorting and hit testing.
 
-Use elapsed-time playback for idle/walk clips and small scene-owned ambient loops.
-Only active-scene loops update. Establish pause/reset/load behavior before coding;
+Use elapsed-time playback for four-direction idle/walk clips (DEC-15) and small
+scene-owned ambient loops. Choose deterministic cardinal facing for diagonal motion.
+Only active-scene loops update. DEC-16 freezes player and ambient clocks during pause
+and its submenus; exclude elapsed pause duration instead of catching up on resume.
+Player state selection still follows actual movement, so DEC-11 route cancellation
+cannot be undone by animation playback. Define explicit new-session/load/scene-entry
+clock reset behavior in implementation;
 ambient visuals cannot mutate progression or block interaction completion. Missing
 clips have a deterministic fallback. Resource ownership stays small; no full animation
 editor, skeletal engine, mandatory atlas, or broad preload framework is introduced.

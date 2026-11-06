@@ -177,8 +177,10 @@ mandatory target when replacing artwork.
 
 ### Character pilot contract
 
-Before creating the full set, settle OPEN-09 in [decisions](decisions.md): directions,
-idle/walk clips, frame size/count/timing, file layout, fallback facing, and anchor.
+DEC-15 confirms four directions: up, down, left, right, with idle/walk presentation.
+Diagonal motion uses a documented cardinal mapping; diagonal art is not required.
+Choose remaining OPEN-09 implementation details in [decisions](decisions.md):
+frame size/count/timing, file layout, fallback facing, and stable anchor.
 Use transparent RGBA frames with a stable foot anchor and compatible apparent scale.
 A placeholder shape/static image is sufficient for v0.13-v0.14. Walking artwork
 belongs to v0.15 and should match actual motion speed without changing collision.
@@ -197,3 +199,10 @@ states readable. Ambient clips are cosmetic and cannot alter puzzle timing/state
 Track creator/source/license and modification notes for each introduced asset. Use
 original or appropriately licensed work. Record selected formats and replacement
 steps once implemented, rather than documenting a nonexistent loader as available.
+
+### Paused presentation
+
+DEC-16 freezes both player and ambient clips during pause. A loop does not need a
+special pause asset; playback preserves its frame/elapsed phase without accumulating
+paused time. Test this with the actual pilot assets rather than assuming a static
+pause overlay hides ongoing animation correctly.

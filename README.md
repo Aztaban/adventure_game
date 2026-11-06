@@ -115,7 +115,7 @@ Start with:
 ```txt
 docs/game-vision.md
 docs/gdd.md
-docs/mvp.md
+docs/decisions.md
 docs/roadmap.md
 docs/architecture.md
 docs/testing-plan.md
